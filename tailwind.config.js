@@ -4,15 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        // BioMar brand palette
+        // Official BioMar brand palette (extracted from the brand deck theme)
         biomar: {
-          navy: "#0A2A54", // deep corporate navy
-          blue: "#123E7C",
-          swoosh: "#00A0DC", // bright swoosh cyan-blue
-          sky: "#CFE8F5",
-          ice: "#EAF4FB",
-          green: "#7AB648", // EWOS / change quadrant accent
-          sand: "#F5A623",
+          navy: "#1F3E77", // BioMar deep blue (dk2 / accent1)
+          blue: "#16356E", // deeper navy for gradients / hover
+          swoosh: "#0471AD", // BioMar bright blue (swoosh accent)
+          sky: "#92CEE8", // light swoosh blue
+          ice: "#EAF4FB", // pale background tint
+          pale: "#C3E4EF", // brand pale blue
+          green: "#97D130", // brand green accent
+          sand: "#EAB318", // brand yellow accent
+          orange: "#DD6928", // brand orange accent
+          gray: "#575756", // brand warm gray (dk1)
         },
       },
       fontFamily: {
