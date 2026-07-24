@@ -1,0 +1,18 @@
+{
+  // Cloudflare Worker + Static Assets config.
+  //
+  // IMPORTANT: `name` must match the Worker created in the Cloudflare dashboard.
+  // If your Worker has a different name (see the title of the project page),
+  // change this one value to match it.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onboarding-design",
+  "main": "worker/index.ts",
+  "compatibility_date": "2024-11-01",
+  "assets": {
+    // The Vite build output. `npm run build` runs before the deploy command.
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Serve index.html for unknown paths so client-side routing works.
+    "not_found_handling": "single-page-application"
+  }
+}
