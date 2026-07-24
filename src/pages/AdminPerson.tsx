@@ -5,6 +5,13 @@ import { modules } from "../content/modules";
 import { profiles, profilesById } from "../content/profiles";
 import { suggestWithAI, recommendByProfile, type Suggestion } from "../lib/ai";
 import { completionStats } from "../lib/progress";
+import {
+  autoSchedule,
+  orderedAssigned,
+  formatDay,
+  formatLoad,
+} from "../lib/schedule";
+import { modulesById } from "../content/modules";
 import type { Person, ProfileId } from "../content/types";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -35,6 +42,14 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
   );
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [schedule, setScheduleState] = useState<Record<string, string>>(
+    existing?.schedule ?? {},
+  );
+  const [startISO, setStartISO] = useState(
+    existing?.startDate ?? new Date().toISOString().slice(0, 10),
+  );
+  const [dailyBudget, setDailyBudget] = useState(120);
+  const [includeWeekends, setIncludeWeekends] = useState(false);
 
   if (mode === "edit" && !existing) {
     return (
@@ -76,6 +91,10 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
       alert("Name and email are required.");
       return;
     }
+    // Keep only dates for modules that are still assigned.
+    const cleanSchedule = Object.fromEntries(
+      Object.entries(schedule).filter(([id]) => assigned.includes(id)),
+    );
     const person: Person = existing
       ? {
           ...existing,
@@ -83,6 +102,8 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
           email,
           profile: profile || null,
           assignedModuleIds: assigned,
+          startDate: startISO,
+          schedule: cleanSchedule,
         }
       : {
           id: `emp-${Date.now().toString(36)}`,
@@ -90,8 +111,9 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
           email,
           role: "employee",
           profile: profile || null,
-          startDate: new Date().toISOString().slice(0, 10),
+          startDate: startISO,
           assignedModuleIds: assigned,
+          schedule: cleanSchedule,
           progress: {},
         };
     upsertPerson(person);
@@ -326,6 +348,166 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
           </div>
         </div>
       </div>
+
+      {/* Schedule / calendar */}
+      <div className="card p-5">
+        <div className="mb-1 flex items-center gap-2">
+          <h2 className="text-sm font-bold text-biomar-navy">
+            📅 Schedule (calendar)
+          </h2>
+          <span className="text-xs text-slate-400">
+            Set a date per module. Saved with the assignment.
+          </span>
+        </div>
+
+        {assigned.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-400">
+            Assign modules above first, then schedule them here.
+          </p>
+        ) : (
+          <>
+            <div className="mt-3 flex flex-wrap items-end gap-3 rounded-xl bg-slate-50 p-3">
+              <label className="text-xs">
+                <span className="mb-1 block font-medium uppercase tracking-wide text-slate-400">
+                  Start date
+                </span>
+                <input
+                  type="date"
+                  className="input"
+                  value={startISO}
+                  onChange={(e) => setStartISO(e.target.value)}
+                />
+              </label>
+              <label className="text-xs">
+                <span className="mb-1 block font-medium uppercase tracking-wide text-slate-400">
+                  Minutes / day
+                </span>
+                <input
+                  type="number"
+                  min={30}
+                  step={30}
+                  className="input w-28"
+                  value={dailyBudget}
+                  onChange={(e) => setDailyBudget(Number(e.target.value) || 30)}
+                />
+              </label>
+              <label className="flex items-center gap-2 pb-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={includeWeekends}
+                  onChange={(e) => setIncludeWeekends(e.target.checked)}
+                  className="accent-biomar-swoosh"
+                />
+                Include weekends
+              </label>
+              <button
+                className="btn-accent"
+                onClick={() =>
+                  setScheduleState(
+                    autoSchedule(assigned, {
+                      startISO,
+                      dailyBudgetMin: dailyBudget,
+                      includeWeekends,
+                    }),
+                  )
+                }
+              >
+                ✨ Auto-fill by load
+              </button>
+              {Object.keys(schedule).length > 0 && (
+                <button
+                  className="text-xs text-slate-400 hover:text-red-500"
+                  onClick={() => setScheduleState({})}
+                >
+                  Clear dates
+                </button>
+              )}
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-[1fr_260px]">
+              {/* per-module date inputs */}
+              <div className="space-y-1.5">
+                {orderedAssigned(assigned).map((id) => {
+                  const m = modulesById[id];
+                  return (
+                    <div
+                      key={id}
+                      className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2"
+                    >
+                      <span className="flex-1 text-sm text-biomar-navy">
+                        {m.title}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {m.estMinutes}m
+                      </span>
+                      <input
+                        type="date"
+                        className="input w-40"
+                        value={schedule[id] ?? ""}
+                        onChange={(e) =>
+                          setScheduleState((s) => {
+                            const next = { ...s };
+                            if (e.target.value) next[id] = e.target.value;
+                            else delete next[id];
+                            return next;
+                          })
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* per-day load preview */}
+              <div>
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Load per day
+                </h3>
+                <DayLoadPreview schedule={schedule} budget={dailyBudget} />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DayLoadPreview({
+  schedule,
+  budget,
+}: {
+  schedule: Record<string, string>;
+  budget: number;
+}) {
+  const byDate: Record<string, number> = {};
+  for (const [id, date] of Object.entries(schedule)) {
+    byDate[date] = (byDate[date] ?? 0) + (modulesById[id]?.estMinutes ?? 0);
+  }
+  const days = Object.entries(byDate).sort((a, b) => a[0].localeCompare(b[0]));
+  if (days.length === 0)
+    return <p className="text-xs text-slate-400">No dates set yet.</p>;
+  return (
+    <div className="space-y-1.5">
+      {days.map(([date, min]) => {
+        const over = min > budget;
+        return (
+          <div
+            key={date}
+            className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 text-xs"
+          >
+            <span className="text-slate-600">{formatDay(date)}</span>
+            <span
+              className={`font-semibold ${
+                over ? "text-biomar-orange" : "text-biomar-navy"
+              }`}
+            >
+              {formatLoad(min)}
+              {over && " ⚠︎"}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Person } from "./types";
 import { profilesById } from "./profiles";
+import { autoSchedule } from "../lib/schedule";
 
 // Seed people. In production these live in the repo as data and are edited by
 // the admin (published back to GitHub). Progress accrues on the employee side.
@@ -25,6 +26,12 @@ export const seedPeople: Person[] = [
     profile: "graphic-junior",
     startDate: "2026-07-20",
     assignedModuleIds: profilesById["graphic-junior"].recommendedModuleIds,
+    // Demo calendar auto-built from her start date at ~2h/day (admin-editable).
+    schedule: autoSchedule(profilesById["graphic-junior"].recommendedModuleIds, {
+      startISO: "2026-07-20",
+      dailyBudgetMin: 120,
+      includeWeekends: false,
+    }),
     progress: {
       "what-is-biomar": { completed: true, quizScore: 100 },
       "global-marketing": { completed: true, quizScore: 50 },

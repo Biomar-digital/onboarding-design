@@ -38,6 +38,7 @@ interface StoreValue {
   upsertPerson: (person: Person) => void;
   removePerson: (id: string) => void;
   setAssignments: (personId: string, moduleIds: string[]) => void;
+  setSchedule: (personId: string, schedule: Record<string, string>) => void;
   markModuleComplete: (
     personId: string,
     moduleId: string,
@@ -107,6 +108,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           people.map((p) =>
             p.id === personId ? { ...p, assignedModuleIds: moduleIds } : p,
           ),
+        ),
+      setSchedule: (personId, schedule) =>
+        setPeople((people) =>
+          people.map((p) => (p.id === personId ? { ...p, schedule } : p)),
         ),
       markModuleComplete: (personId, moduleId, quizScore) =>
         setPeople((people) =>

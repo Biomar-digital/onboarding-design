@@ -107,6 +107,8 @@ export interface Person {
   startDate: string;
   /** Modules assigned to this person (after admin approval). */
   assignedModuleIds: string[];
+  /** Admin-set calendar: moduleId → "YYYY-MM-DD". Optional per module. */
+  schedule?: Record<string, string>;
   /** Per-module progress the employee accrues. */
   progress: Record<
     string,
