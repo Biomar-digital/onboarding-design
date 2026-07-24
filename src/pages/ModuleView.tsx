@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { modulesById } from "../content/modules";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
+import { DeckViewer } from "../components/DeckViewer";
+import { moduleMaterials } from "../content/materials";
 import type { LessonSection, QuizQuestion } from "../content/types";
 
 export function ModuleView() {
@@ -48,7 +50,14 @@ export function ModuleView() {
           <p className="mt-1 text-slate-500">{module.summary}</p>
         </div>
 
+        <DeckViewer moduleId={module.id} />
+
         <section className="card space-y-5 p-6">
+          {moduleMaterials[module.id]?.length ? (
+            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+              Key points
+            </h2>
+          ) : null}
           {module.sections.map((s, i) => (
             <Section key={i} section={s} />
           ))}

@@ -41,9 +41,29 @@ get in:
 2. Add a policy: allow emails ending in `@biomar.com` (or your Entra/Google
    IdP group).
 3. Access injects the signed-in user's email in the `Cf-Access-Authenticated-User-Email`
-   header. Map that to a person record (extend `functions/` with a
-   `/api/me` endpoint that returns the matching person) to drop the demo
+   header. Map that to a person record (extend the Worker with a
+   `/api/me` route that returns the matching person) to drop the demo
    picker entirely.
+
+## Presentation materials & the embedded viewer
+
+The original decks live in `/public/materials` and deploy as static assets, so
+each has a public URL (e.g. `https://<site>/materials/design-hub-playbook.pptx`).
+Each module embeds its deck **exactly as the original PowerPoint** using
+Microsoft's Office Online viewer (`view.officeapps.live.com/op/embed.aspx`).
+
+> ⚠️ **Important tradeoff:** the Office viewer works by having Microsoft's
+> servers fetch the `.pptx` from that public URL. This means:
+> - The decks must be **publicly reachable** for the viewer to render them.
+> - If you put the whole site behind **Cloudflare Access**, Microsoft can no
+>   longer fetch the files and the embedded viewer breaks (the "Open /
+>   download" link still works for signed-in users).
+>
+> If the decks are confidential and must stay private, the alternative is to
+> **export each deck to PDF** (PowerPoint → File → Export → PDF), drop the PDFs
+> in `/public/materials`, and swap the viewer for a self-hosted PDF.js viewer —
+> that renders exactly, stays private, and works behind Access. Ping me to make
+> that switch.
 
 ## 3. Environment variables
 
