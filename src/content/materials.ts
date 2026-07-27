@@ -12,6 +12,8 @@ export interface ModuleMaterial {
   title: string;
   /** Path under the site root (served from /public/materials). */
   file: string;
+  /** "pptx" → embedded Office viewer (default); "pdf" → native PDF viewer. */
+  type?: "pptx" | "pdf";
 }
 
 const SLICE = "/materials/slices";
@@ -75,6 +77,11 @@ export const moduleMaterials: Record<string, ModuleMaterial[]> = {
   ],
   // Brand
   "brand-guidelines": [
+    {
+      title: "BioMar Brand Guidelines 2020",
+      file: `/materials/brand-guidelines-2020.pdf`,
+      type: "pdf",
+    },
     { title: STRATEGIC, file: `${SLICE}/brand-guidelines--strategic.pptx` },
   ],
   "material-guide": [

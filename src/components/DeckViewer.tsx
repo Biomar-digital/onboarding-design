@@ -57,7 +57,14 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
         <span className="font-semibold text-biomar-navy">{current.title}</span>
       </div>
 
-      {isLocalhost ? (
+      {current.type === "pdf" ? (
+        <iframe
+          key={current.file}
+          title={current.title}
+          src={`${current.file}#view=FitH`}
+          className="h-[80vh] w-full border-0 bg-slate-100"
+        />
+      ) : isLocalhost ? (
         <div className="m-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
           The embedded PowerPoint viewer only works on the deployed site (the
           viewer needs a public URL it can reach).
@@ -88,7 +95,7 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
       )}
 
       <div className="flex items-center justify-between gap-2 px-4 py-2 text-xs text-slate-400">
-        <span>Shown exactly as the original PowerPoint.</span>
+        <span>Shown exactly as the original document.</span>
         <a
           className="font-semibold text-biomar-swoosh hover:underline"
           href={current.file}
