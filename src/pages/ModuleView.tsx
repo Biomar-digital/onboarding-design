@@ -4,6 +4,7 @@ import { modulesById } from "../content/modules";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
 import { DeckViewer } from "../components/DeckViewer";
+import { VideoPlayer } from "../components/VideoPlayer";
 import { moduleMaterials } from "../content/materials";
 import type { LessonSection, QuizQuestion } from "../content/types";
 
@@ -51,6 +52,7 @@ export function ModuleView() {
         </div>
 
         <DeckViewer moduleId={module.id} />
+        <VideoPlayer moduleId={module.id} />
 
         <section className="card space-y-5 p-6">
           {moduleMaterials[module.id]?.length ? (

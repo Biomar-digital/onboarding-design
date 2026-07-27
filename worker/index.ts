@@ -11,12 +11,35 @@
 //   *                  → static assets (dist/) + SPA fallback
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Minimal R2 shape (avoids needing @cloudflare/workers-types in this file).
+interface R2Range {
+  offset?: number;
+  length?: number;
+  suffix?: number;
+}
+interface R2Object {
+  body: ReadableStream | null;
+  size: number;
+  httpEtag: string;
+  range?: R2Range;
+  writeHttpMetadata: (headers: Headers) => void;
+}
+interface R2Bucket {
+  get: (
+    key: string,
+    opts?: { range?: R2Range; onlyIf?: Headers },
+  ) => Promise<R2Object | null>;
+  head: (key: string) => Promise<R2Object | null>;
+}
+
 export interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
   GITHUB_TOKEN?: string;
   GITHUB_REPO?: string;
   GITHUB_BRANCH?: string;
   ANTHROPIC_API_KEY?: string;
+  /** Private R2 bucket for confidential videos (bound in wrangler.jsonc). */
+  MEDIA?: R2Bucket;
 }
 
 export default {
@@ -30,6 +53,16 @@ export default {
     if (url.pathname === "/api/suggest") {
       if (request.method !== "POST") return json({ error: "Use POST." }, 405);
       return handleSuggest(request, env);
+    }
+
+    // Private video streaming from R2 (confidential — served through the Worker,
+    // never a public bucket URL). Gate the site with Cloudflare Access so only
+    // BioMar identities can reach this.
+    if (url.pathname.startsWith("/media/video/")) {
+      const key = decodeURIComponent(
+        url.pathname.slice("/media/video/".length),
+      );
+      return handleVideo(request, env, key);
     }
 
     // Not an API route → static site (SPA fallback handled by the assets config).
@@ -160,6 +193,59 @@ async function handleSuggest(request: Request, env: Env): Promise<Response> {
   } catch (err) {
     return json({ error: (err as Error).message }, 500);
   }
+}
+
+// ── /media/video/:key — private R2 streaming with HTTP Range support ─────────
+async function handleVideo(
+  request: Request,
+  env: Env,
+  key: string,
+): Promise<Response> {
+  if (!env.MEDIA) {
+    return json(
+      {
+        error:
+          "Video storage not configured. Create an R2 bucket and bind it as MEDIA in wrangler.jsonc.",
+      },
+      501,
+    );
+  }
+  if (!key || key.includes("..")) return json({ error: "Bad key." }, 400);
+
+  const rangeHeader = request.headers.get("Range");
+  let range: R2Range | undefined;
+  if (rangeHeader) {
+    const m = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
+    if (m) {
+      const start = m[1] ? parseInt(m[1], 10) : undefined;
+      const end = m[2] ? parseInt(m[2], 10) : undefined;
+      if (start !== undefined && end !== undefined)
+        range = { offset: start, length: end - start + 1 };
+      else if (start !== undefined) range = { offset: start };
+      else if (end !== undefined) range = { suffix: end };
+    }
+  }
+
+  const obj = await env.MEDIA.get(key, range ? { range } : undefined);
+  if (!obj) return json({ error: "Not found." }, 404);
+
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set("Accept-Ranges", "bytes");
+  headers.set("etag", obj.httpEtag);
+  headers.set("Cache-Control", "private, max-age=3600");
+  if (!headers.has("Content-Type")) headers.set("Content-Type", "video/mp4");
+
+  if (range && obj.range) {
+    const offset = obj.range.offset ?? 0;
+    const length = obj.range.length ?? obj.size - offset;
+    const end = offset + length - 1;
+    headers.set("Content-Range", `bytes ${offset}-${end}/${obj.size}`);
+    headers.set("Content-Length", String(length));
+    return new Response(obj.body, { status: 206, headers });
+  }
+  headers.set("Content-Length", String(obj.size));
+  return new Response(obj.body, { status: 200, headers });
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────

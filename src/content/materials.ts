@@ -20,6 +20,23 @@ const PLAYBOOK = "Design Hub Playbook";
 const STRATEGIC = "Strategic Presentation";
 const GLOBAL = "Global & Group Marketing";
 
+// ── Confidential videos (private R2, streamed through the Worker) ────────────
+export interface ModuleVideo {
+  /** The object key in the R2 bucket, e.g. "task-manager-walkthrough.mp4". */
+  key: string;
+  /** Caption shown under the player. */
+  title?: string;
+  /** Optional poster image path (e.g. a /materials/... thumbnail). */
+  poster?: string;
+}
+
+// Map each module to its videos by R2 key. Fill this in once the videos are
+// uploaded to the "biomar-onboarding-media" bucket. Example:
+//   "task-manager": [{ key: "task-manager-walkthrough.mp4", title: "Board walkthrough" }],
+export const moduleVideos: Record<string, ModuleVideo[]> = {
+  // (empty until videos are uploaded to R2 and keys are added here)
+};
+
 export const moduleMaterials: Record<string, ModuleMaterial[]> = {
   // Foundations
   "what-is-biomar": [
