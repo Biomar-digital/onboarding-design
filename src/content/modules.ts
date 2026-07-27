@@ -309,6 +309,141 @@ export const modules: Module[] = [
     ],
   },
   {
+    id: "tasks-vs-projects",
+    category: "process",
+    title: "Tasks vs Projects",
+    summary:
+      "When a request is a quick Task and when it's a multi-part Project — and how that changes the workflow.",
+    estMinutes: 15,
+    source: "Design Hub 2026",
+    sections: [
+      {
+        heading: "Before you reach out: what do you need?",
+        body: [
+          "A simple decision guide: do you need one quick deliverable, or a bigger goal made of multiple pieces? That answer tells you whether you're asking for a Task or a Project — and it sets the right expectations for reviews, timeline and the information the Design Hub needs.",
+        ],
+      },
+      {
+        heading: "The distinction",
+        facts: [
+          {
+            label: "Task",
+            value:
+              "Small, short — not many reviews or much info needed. E.g. ads, handouts, brochures.",
+          },
+          {
+            label: "Project",
+            value:
+              "A group of tasks toward a bigger goal. E.g. logos, new product branding, global campaigns.",
+          },
+        ],
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "single",
+        prompt: "A single event flyer with one round of review is a…",
+        options: ["Project", "Task", "Campaign", "Program"],
+        correct: [1],
+        explanation:
+          "A small, short, self-contained deliverable is a Task. Projects are groups of tasks toward a bigger goal.",
+      },
+      {
+        id: "q2",
+        type: "single",
+        prompt: "Launching a new product brand (logo, guidelines, campaign) is a…",
+        options: ["Task", "Project"],
+        correct: [1],
+        explanation:
+          "Multiple interdependent deliverables toward one bigger goal = a Project.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Task or Project?",
+        prompt:
+          "Take five recent requests and label each Task or Project, with a one-line reason.",
+        successCriteria: [
+          "All five labelled",
+          "Reasoning references reviews / scope / info needed",
+        ],
+      },
+    ],
+  },
+  {
+    id: "deadlines-priorities",
+    category: "process",
+    title: "Deadlines, Priorities & Turnaround",
+    summary:
+      "'ASAP is not a deadline' — real dates, how priority is set by business value, and how turnaround works.",
+    estMinutes: 20,
+    source: "Design Hub 2026",
+    sections: [
+      {
+        heading: "ASAP is not a deadline",
+        body: ["Every request needs two real dates:"],
+        facts: [
+          { label: "First Draft Date", value: "When the first version (PROOF) is expected." },
+          { label: "Final Due Date", value: "When the approved final is needed." },
+        ],
+      },
+      {
+        heading: "How we set priority — business value",
+        body: [
+          "Work is prioritized by business value and impact, not by who asks loudest.",
+        ],
+        bullets: [
+          "Low priority → lower business value",
+          "High priority → higher business value / impact",
+        ],
+      },
+      {
+        heading: "Turnaround times",
+        bullets: [
+          "The sooner you submit, the sooner it goes on the calendar and gets an accurate timeframe.",
+          "First come, first served — although prioritisation by business value still applies.",
+          "Build the rounds of review into the timeline.",
+        ],
+        note: "Plan around the yearly calendar (sustainability booklet, Christmas / Easter / Summer artwork) so recurring work is booked ahead.",
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "single",
+        prompt: "What are the two dates every request must have?",
+        options: [
+          "Start date and end date",
+          "First Draft Date and Final Due Date",
+          "ASAP and EOD",
+          "Draft and review",
+        ],
+        correct: [1],
+        explanation:
+          "First Draft Date and Final Due Date — 'ASAP' is not a deadline.",
+      },
+      {
+        id: "q2",
+        type: "boolean",
+        prompt: "Priority is set by whoever asks the loudest.",
+        options: ["True", "False"],
+        correct: [1],
+        explanation: "False — priority is set by business value and impact.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Set real dates",
+        prompt:
+          "Take an 'ASAP' request and turn it into a First Draft Date + Final Due Date, factoring in the rounds of review.",
+        successCriteria: ["Both dates defined", "Review rounds accounted for"],
+      },
+    ],
+  },
+  {
     id: "the-brief",
     category: "process",
     title: "The Brief",
@@ -886,6 +1021,78 @@ export const modules: Module[] = [
   },
 
   // ── TOOLS ───────────────────────────────────────────────────────────────────
+  {
+    id: "incopy-indesign",
+    category: "tools",
+    title: "InCopy & InDesign Workflow",
+    summary:
+      "How InCopy lets writers and designers work on the same layout without clashing — plus the training course.",
+    estMinutes: 30,
+    source: "Design Hub 2026",
+    sections: [
+      {
+        heading: "What is Adobe InCopy?",
+        body: [
+          "Adobe InCopy lets people create, edit and format content and helps teams work collaboratively. It integrates with InDesign so designers and writers work in unison on the same layout without clashing — avoiding unnecessary back-and-forth between design and editing.",
+        ],
+      },
+      {
+        heading: "The course — 4 modules",
+        bullets: [
+          "Module 1: Introduction to InCopy",
+          "Module 2: Editing Text",
+          "Module 3: Reviewing Copy",
+          "Module 4: Saving and Export",
+        ],
+      },
+      {
+        heading: "Available courses",
+        facts: [
+          { label: "EN — 5 hours", value: "Beginner–Intermediate" },
+          { label: "EN — 3 hours", value: "Infrequent users" },
+          { label: "ES — 5 hours", value: "Beginner–Intermediate" },
+        ],
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "single",
+        prompt: "What problem does the InCopy + InDesign workflow solve?",
+        options: [
+          "Rendering 3D",
+          "Letting writers and designers work on the same layout without clashing",
+          "Video editing",
+          "Color management",
+        ],
+        correct: [1],
+        explanation:
+          "InCopy integrates with InDesign so writers and designers work on the same layout in unison, avoiding back-and-forth.",
+      },
+      {
+        id: "q2",
+        type: "single",
+        prompt: "How many modules is the InCopy course split into?",
+        options: ["2", "3", "4", "6"],
+        correct: [2],
+        explanation:
+          "Four: Introduction, Editing Text, Reviewing Copy, and Saving & Export.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Try the InCopy flow",
+        prompt:
+          "Open a sample InDesign layout with an InCopy story, make a text edit with track changes, and export.",
+        successCriteria: [
+          "Edited via InCopy, not directly in InDesign",
+          "Track changes used",
+          "Exported correctly",
+        ],
+      },
+    ],
+  },
   {
     id: "platforms",
     category: "tools",

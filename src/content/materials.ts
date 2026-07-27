@@ -21,6 +21,7 @@ const SLICE = "/materials/slices";
 const PLAYBOOK = "Design Hub Playbook";
 const STRATEGIC = "Strategic Presentation";
 const GLOBAL = "Global & Group Marketing";
+const DH2026 = "Design Hub 2026";
 
 // ── Videos (Vimeo) ───────────────────────────────────────────────────────────
 export interface ModuleVideo {
@@ -51,12 +52,20 @@ export const moduleMaterials: Record<string, ModuleMaterial[]> = {
   "what-is-design-hub": [
     { title: STRATEGIC, file: `${SLICE}/what-is-design-hub--strategic.pptx` },
   ],
-  // Process
+  // Process — start with Design Hub 2026 (how we work), then the Playbook (extended).
   "process-overview": [
+    { title: DH2026, file: `${SLICE}/process-overview--dh2026.pptx` },
     { title: PLAYBOOK, file: `${SLICE}/process-overview--playbook.pptx` },
     { title: STRATEGIC, file: `${SLICE}/process-overview--strategic.pptx` },
   ],
+  "tasks-vs-projects": [
+    { title: DH2026, file: `${SLICE}/tasks-vs-projects--dh2026.pptx` },
+  ],
+  "deadlines-priorities": [
+    { title: DH2026, file: `${SLICE}/deadlines-priorities--dh2026.pptx` },
+  ],
   "the-brief": [
+    { title: DH2026, file: `${SLICE}/the-brief--dh2026.pptx` },
     { title: PLAYBOOK, file: `${SLICE}/the-brief--playbook.pptx` },
     { title: "Brief Template", file: `/materials/design-hub-brief-template.potx` },
   ],
@@ -67,9 +76,11 @@ export const moduleMaterials: Record<string, ModuleMaterial[]> = {
     { title: PLAYBOOK, file: `${SLICE}/task-manager--playbook.pptx` },
   ],
   "files-naming": [
+    { title: DH2026, file: `${SLICE}/files-naming--dh2026.pptx` },
     { title: PLAYBOOK, file: `${SLICE}/files-naming--playbook.pptx` },
   ],
   "versioning-review": [
+    { title: DH2026, file: `${SLICE}/versioning-review--dh2026.pptx` },
     { title: PLAYBOOK, file: `${SLICE}/versioning-review--playbook.pptx` },
   ],
   "export-close": [
@@ -88,7 +99,11 @@ export const moduleMaterials: Record<string, ModuleMaterial[]> = {
     { title: STRATEGIC, file: `${SLICE}/material-guide--strategic.pptx` },
   ],
   // Tools
+  "incopy-indesign": [
+    { title: DH2026, file: `${SLICE}/incopy-indesign--dh2026.pptx` },
+  ],
   communication: [
+    { title: DH2026, file: `${SLICE}/communication--dh2026.pptx` },
     { title: PLAYBOOK, file: `${SLICE}/communication--playbook.pptx` },
     { title: STRATEGIC, file: `${SLICE}/communication--strategic.pptx` },
     { title: GLOBAL, file: `${SLICE}/communication--global.pptx` },

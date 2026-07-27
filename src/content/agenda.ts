@@ -23,6 +23,8 @@ export const agenda: AgendaPhase[] = [
       "Learn the backbone every request flows through: brief, board, files, versioning, review and closeout.",
     moduleIds: [
       "process-overview",
+      "tasks-vs-projects",
+      "deadlines-priorities",
       "the-brief",
       "email-tags-folders",
       "task-manager",
@@ -46,7 +48,7 @@ export const agenda: AgendaPhase[] = [
     title: "Tools & Ways of Working",
     timeframe: "Week 2–3",
     description: "Get fluent in the platforms and the communication rhythms.",
-    moduleIds: ["platforms", "communication"],
+    moduleIds: ["incopy-indesign", "platforms", "communication"],
     milestones: ["Confirm access to every core platform"],
   },
   {
