@@ -5,6 +5,7 @@ import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
 import { DeckViewer } from "../components/DeckViewer";
 import { VideoPlayer } from "../components/VideoPlayer";
+import { ToolsMap } from "../components/ToolsMap";
 import { moduleMaterials } from "../content/materials";
 import type { LessonSection, QuizQuestion } from "../content/types";
 
@@ -54,16 +55,20 @@ export function ModuleView() {
         <DeckViewer moduleId={module.id} />
         <VideoPlayer moduleId={module.id} />
 
-        <section className="card space-y-5 p-6">
-          {moduleMaterials[module.id]?.length ? (
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Key points
-            </h2>
-          ) : null}
-          {module.sections.map((s, i) => (
-            <Section key={i} section={s} />
-          ))}
-        </section>
+        {module.id === "tools-map" ? (
+          <ToolsMap />
+        ) : (
+          <section className="card space-y-5 p-6">
+            {moduleMaterials[module.id]?.length ? (
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+                Key points
+              </h2>
+            ) : null}
+            {module.sections.map((s, i) => (
+              <Section key={i} section={s} />
+            ))}
+          </section>
+        )}
 
         {module.exercises.length > 0 && (
           <section className="card p-6">
