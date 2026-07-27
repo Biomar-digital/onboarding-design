@@ -15,16 +15,4 @@
     // Serve index.html for unknown paths so client-side routing works.
     "not_found_handling": "single-page-application"
   }
-
-  // ── Private video storage (R2) ─────────────────────────────────────────────
-  // Confidential videos are streamed through the Worker from a PRIVATE R2
-  // bucket (never a public r2.dev URL). To enable:
-  //   1. Create an R2 bucket named "biomar-onboarding-media" (keep it private).
-  //   2. Uncomment the binding below and redeploy.
-  //   3. Upload videos to the bucket; reference them by key in src/content/materials.ts.
-  // Until this is enabled, /media/video/* returns a friendly 501 and nothing breaks.
-  //
-  // "r2_buckets": [
-  //   { "binding": "MEDIA", "bucket_name": "biomar-onboarding-media" }
-  // ]
 }

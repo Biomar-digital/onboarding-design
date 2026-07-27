@@ -20,21 +20,20 @@ const PLAYBOOK = "Design Hub Playbook";
 const STRATEGIC = "Strategic Presentation";
 const GLOBAL = "Global & Group Marketing";
 
-// ── Confidential videos (private R2, streamed through the Worker) ────────────
+// ── Videos (Vimeo) ───────────────────────────────────────────────────────────
 export interface ModuleVideo {
-  /** The object key in the R2 bucket, e.g. "task-manager-walkthrough.mp4". */
-  key: string;
+  /** Vimeo video id, or an id/hash pair for unlisted videos ("123456789/abcdef1234"). */
+  vimeo: string;
   /** Caption shown under the player. */
   title?: string;
-  /** Optional poster image path (e.g. a /materials/... thumbnail). */
-  poster?: string;
 }
 
-// Map each module to its videos by R2 key. Fill this in once the videos are
-// uploaded to the "biomar-onboarding-media" bucket. Example:
-//   "task-manager": [{ key: "task-manager-walkthrough.mp4", title: "Board walkthrough" }],
+// Map each module to its Vimeo videos. Accepts a bare id ("123456789") or, for
+// unlisted/private videos, the "id/privacyHash" form from the Vimeo URL
+// (e.g. vimeo.com/123456789/abcdef1234 → "123456789/abcdef1234"). Example:
+//   "task-manager": [{ vimeo: "123456789/abcdef1234", title: "Board walkthrough" }],
 export const moduleVideos: Record<string, ModuleVideo[]> = {
-  // (empty until videos are uploaded to R2 and keys are added here)
+  // (empty until Vimeo links are added here)
 };
 
 export const moduleMaterials: Record<string, ModuleMaterial[]> = {
