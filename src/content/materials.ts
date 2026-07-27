@@ -33,7 +33,9 @@ export interface ModuleVideo {
 // (e.g. vimeo.com/123456789/abcdef1234 → "123456789/abcdef1234"). Example:
 //   "task-manager": [{ vimeo: "123456789/abcdef1234", title: "Board walkthrough" }],
 export const moduleVideos: Record<string, ModuleVideo[]> = {
-  // (empty until Vimeo links are added here)
+  "what-is-biomar": [
+    { vimeo: "1213275191/e9194f1235", title: "BioMar — intro" },
+  ],
 };
 
 export const moduleMaterials: Record<string, ModuleMaterial[]> = {
