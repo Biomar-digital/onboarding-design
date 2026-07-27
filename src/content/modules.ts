@@ -1159,6 +1159,118 @@ export const modules: Module[] = [
     ],
   },
   {
+    id: "tools-map",
+    category: "tools",
+    title: "Tools Map — What We Use & What For",
+    summary:
+      "The full toolkit the Design Hub works with, grouped by purpose. (Access & logins live in Loop Link — never in here.)",
+    estMinutes: 15,
+    source: "Design Hub tool list",
+    sections: [
+      {
+        note: "Logins and passwords are never stored here — request access through Loop Link and the tool owner. This map is only about what each tool is and when to reach for it.",
+      },
+      {
+        heading: "Design & creative",
+        facts: [
+          { label: "Figma", value: "UI/UX design, prototyping, collaborative design & design systems." },
+          { label: "Canva", value: "Quick, templated design and self-serve materials." },
+          { label: "Miro", value: "Online whiteboard for brainstorming, mapping and workshops." },
+        ],
+      },
+      {
+        heading: "Stock & visual assets",
+        facts: [
+          { label: "Shutterstock", value: "Stock photos, illustrations and video." },
+          { label: "Adobe Stock · Flaticon", value: "Additional stock imagery and icons (see Platforms)." },
+        ],
+      },
+      {
+        heading: "AI generation",
+        facts: [
+          { label: "ElevenLabs", value: "AI voice-over generation for videos." },
+          { label: "Higgsfield.ai", value: "AI video / image generation for creative content." },
+        ],
+      },
+      {
+        heading: "Copywriting",
+        facts: [
+          { label: "Grammarly", value: "Grammar, spelling and tone checking for copy." },
+        ],
+      },
+      {
+        heading: "Print & production",
+        facts: [
+          { label: "Lasertryk", value: "Online print supplier for producing printed materials." },
+        ],
+      },
+      {
+        heading: "Business cards",
+        facts: [
+          { label: "Add to Wallet", value: "Digital business cards (Apple / Google Wallet passes)." },
+          { label: "Digital business cards admin panel", value: "Back-office to create and manage the digital cards." },
+        ],
+      },
+      {
+        heading: "Product & market data",
+        facts: [
+          { label: "The Box", value: "Baltics product datasheets repository." },
+          { label: "FeedingTool", value: "BioMar feeding recommendation / calculation tool." },
+        ],
+      },
+      {
+        heading: "Web & compliance",
+        facts: [
+          { label: "Cookie Information", value: "Cookie consent & GDPR compliance for the websites." },
+        ],
+      },
+      {
+        heading: "Governance & platform",
+        facts: [
+          { label: "Global Policies Library", value: "Repository of BioMar global policies." },
+          { label: "GitHub", value: "Version control & hosting (this onboarding platform lives here)." },
+        ],
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "single",
+        prompt: "You need an AI voice-over for a video. Which tool?",
+        options: ["Grammarly", "ElevenLabs", "Lasertryk", "Miro"],
+        correct: [1],
+        explanation:
+          "ElevenLabs generates AI voice-overs. Higgsfield.ai is for AI video/image; Grammarly is copy; Lasertryk is print.",
+      },
+      {
+        id: "q2",
+        type: "single",
+        prompt: "Where do the actual logins / passwords for these tools live?",
+        options: [
+          "In this Tools Map",
+          "In Loop Link (request access from the owner)",
+          "In the task manager",
+          "In Grammarly",
+        ],
+        correct: [1],
+        explanation:
+          "Access and credentials are managed via Loop Link and the tool owner — never stored in the onboarding material.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Get your access",
+        prompt:
+          "Go through this map and, via Loop Link, request access to the tools your role needs. Note the owner for any that require approval.",
+        successCriteria: [
+          "Access requested for the tools your role uses",
+          "Owner noted for anything pending",
+        ],
+      },
+    ],
+  },
+  {
     id: "communication",
     category: "tools",
     title: "Ways of Working & Communicating",

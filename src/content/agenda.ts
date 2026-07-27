@@ -48,7 +48,7 @@ export const agenda: AgendaPhase[] = [
     title: "Tools & Ways of Working",
     timeframe: "Week 2–3",
     description: "Get fluent in the platforms and the communication rhythms.",
-    moduleIds: ["incopy-indesign", "platforms", "communication"],
+    moduleIds: ["incopy-indesign", "platforms", "tools-map", "communication"],
     milestones: ["Confirm access to every core platform"],
   },
   {
