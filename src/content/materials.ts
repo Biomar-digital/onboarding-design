@@ -1,88 +1,79 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Presentation materials.
 //
-// The original decks live in /public/materials and deploy as static assets, so
-// each has a public URL on the Cloudflare site. They are shown *exactly* as the
-// original PowerPoint via an embedded viewer (see components/DeckViewer.tsx),
-// mapped here to the module they belong to.
+// Each module shows ONLY its own slides. The source decks are split per module
+// into small .pptx files under /public/materials/slices (media purged so each
+// slice stays light), and shown exactly as the original PowerPoint via the
+// embedded Office viewer (see components/DeckViewer.tsx).
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface Deck {
-  id: string;
+export interface ModuleMaterial {
+  /** Deck name shown as the tab / label. */
   title: string;
   /** Path under the site root (served from /public/materials). */
   file: string;
-  slides: number;
 }
 
-export const decks: Record<string, Deck> = {
-  playbook: {
-    id: "playbook",
-    title: "Design Hub Playbook",
-    file: "/materials/design-hub-playbook.pptx",
-    slides: 27,
-  },
-  strategic: {
-    id: "strategic",
-    title: "Design Hub 2026 — Strategic Presentation",
-    file: "/materials/design-hub-strategic-2026.pptx",
-    slides: 17,
-  },
-  global: {
-    id: "global",
-    title: "Global and Group Marketing",
-    file: "/materials/global-and-group-marketing.pptx",
-    slides: 18,
-  },
-  brief: {
-    id: "brief",
-    title: "Design Hub — Brief Template",
-    file: "/materials/design-hub-brief-template.potx",
-    slides: 1,
-  },
-};
+const SLICE = "/materials/slices";
 
-export interface ModuleMaterial {
-  deckId: keyof typeof decks;
-  /** Human label of the slides relevant to this module (viewer shows full deck). */
-  slides?: string;
-}
+const PLAYBOOK = "Design Hub Playbook";
+const STRATEGIC = "Strategic Presentation";
+const GLOBAL = "Global & Group Marketing";
 
-// Which deck(s) back each module, and the slides worth focusing on.
 export const moduleMaterials: Record<string, ModuleMaterial[]> = {
   // Foundations
-  "what-is-biomar": [{ deckId: "strategic", slides: "Slide 4 — 2028 strategy house" }],
-  "global-marketing": [{ deckId: "global", slides: "Slides 2–6, 15–16" }],
+  "what-is-biomar": [
+    { title: STRATEGIC, file: `${SLICE}/what-is-biomar--strategic.pptx` },
+  ],
+  "global-marketing": [
+    { title: GLOBAL, file: `${SLICE}/global-marketing--global.pptx` },
+  ],
   "what-is-design-hub": [
-    { deckId: "strategic", slides: "Slides 2–8, 11, 16" },
+    { title: STRATEGIC, file: `${SLICE}/what-is-design-hub--strategic.pptx` },
   ],
   // Process
   "process-overview": [
-    { deckId: "playbook", slides: "Slide 3 — overall process" },
-    { deckId: "strategic", slides: "Slides 9–10 — process & workflows" },
+    { title: PLAYBOOK, file: `${SLICE}/process-overview--playbook.pptx` },
+    { title: STRATEGIC, file: `${SLICE}/process-overview--strategic.pptx` },
   ],
   "the-brief": [
-    { deckId: "playbook", slides: "Slides 4–5" },
-    { deckId: "brief", slides: "Brief template" },
+    { title: PLAYBOOK, file: `${SLICE}/the-brief--playbook.pptx` },
+    { title: "Brief Template", file: `/materials/design-hub-brief-template.potx` },
   ],
-  "email-tags-folders": [{ deckId: "playbook", slides: "Slide 6" }],
-  "task-manager": [{ deckId: "playbook", slides: "Slides 7–12" }],
-  "files-naming": [{ deckId: "playbook", slides: "Slides 13–17" }],
-  "versioning-review": [{ deckId: "playbook", slides: "Slides 18–21" }],
-  "export-close": [{ deckId: "playbook", slides: "Slides 22–24" }],
+  "email-tags-folders": [
+    { title: PLAYBOOK, file: `${SLICE}/email-tags-folders--playbook.pptx` },
+  ],
+  "task-manager": [
+    { title: PLAYBOOK, file: `${SLICE}/task-manager--playbook.pptx` },
+  ],
+  "files-naming": [
+    { title: PLAYBOOK, file: `${SLICE}/files-naming--playbook.pptx` },
+  ],
+  "versioning-review": [
+    { title: PLAYBOOK, file: `${SLICE}/versioning-review--playbook.pptx` },
+  ],
+  "export-close": [
+    { title: PLAYBOOK, file: `${SLICE}/export-close--playbook.pptx` },
+  ],
   // Brand
-  "brand-guidelines": [{ deckId: "strategic", slides: "Slides 12–14" }],
-  "material-guide": [{ deckId: "strategic", slides: "Slide 13 — additional guidelines" }],
+  "brand-guidelines": [
+    { title: STRATEGIC, file: `${SLICE}/brand-guidelines--strategic.pptx` },
+  ],
+  "material-guide": [
+    { title: STRATEGIC, file: `${SLICE}/material-guide--strategic.pptx` },
+  ],
   // Tools
   communication: [
-    { deckId: "playbook", slides: "Slide 27 — ways of communicating" },
-    { deckId: "strategic", slides: "Slide 15 — ways of working" },
-    { deckId: "global", slides: "Slides 13–14 — channels" },
+    { title: PLAYBOOK, file: `${SLICE}/communication--playbook.pptx` },
+    { title: STRATEGIC, file: `${SLICE}/communication--strategic.pptx` },
+    { title: GLOBAL, file: `${SLICE}/communication--global.pptx` },
   ],
   // People
   "stakeholder-map": [
-    { deckId: "playbook", slides: "Slides 25–26 — who's in charge" },
-    { deckId: "global", slides: "Slides 7–9 — stakeholders" },
+    { title: PLAYBOOK, file: `${SLICE}/stakeholder-map--playbook.pptx` },
+    { title: GLOBAL, file: `${SLICE}/stakeholder-map--global.pptx` },
   ],
-  "meet-managers": [{ deckId: "global", slides: "Slides 10–12 — meetings" }],
+  "meet-managers": [
+    { title: GLOBAL, file: `${SLICE}/meet-managers--global.pptx` },
+  ],
 };

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { decks, moduleMaterials } from "../content/materials";
+import { moduleMaterials } from "../content/materials";
 
 // Shows a module's presentation material exactly as the original PowerPoint,
-// using Microsoft's Office Online viewer against the self-hosted .pptx files.
+// using Microsoft's Office Online viewer against the self-hosted slice files.
+// Each module only carries its own slides, so the viewer shows just those.
 //
-// The viewer requires the deck to be reachable at a public URL — that's the
+// The viewer requires the file to be reachable at a public URL — that's the
 // deployed Cloudflare site. On localhost it can't render (Microsoft can't fetch
 // localhost), so we show a helpful note and a direct open/download link there.
 export function DeckViewer({ moduleId }: { moduleId: string }) {
@@ -17,12 +18,11 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
     typeof window !== "undefined" &&
     /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(window.location.hostname);
 
-  const current = materials[active];
-  const deck = decks[current.deckId];
+  const current = materials[Math.min(active, materials.length - 1)];
   const fileUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return new URL(deck.file, window.location.origin).toString();
-  }, [deck.file]);
+    return new URL(current.file, window.location.origin).toString();
+  }, [current.file]);
 
   const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
     fileUrl,
@@ -46,20 +46,15 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
                     : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
-                {decks[m.deckId].title.split("—")[0].trim()}
+                {m.title}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-4 py-2 text-xs">
-        <span className="font-semibold text-biomar-navy">{deck.title}</span>
-        {current.slides && (
-          <span className="chip bg-biomar-ice text-biomar-blue">
-            {current.slides}
-          </span>
-        )}
+      <div className="px-4 py-2 text-xs">
+        <span className="font-semibold text-biomar-navy">{current.title}</span>
       </div>
 
       {isLocalhost ? (
@@ -69,11 +64,11 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
           <div className="mt-3">
             <a
               className="btn-accent"
-              href={deck.file}
+              href={current.file}
               target="_blank"
               rel="noreferrer"
             >
-              Open “{deck.title}”
+              Open “{current.title}”
             </a>
           </div>
         </div>
@@ -82,7 +77,7 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
           <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
             <iframe
               key={fileUrl}
-              title={deck.title}
+              title={current.title}
               src={embedUrl}
               className="absolute inset-0 h-full w-full"
               frameBorder={0}
@@ -96,7 +91,7 @@ export function DeckViewer({ moduleId }: { moduleId: string }) {
         <span>Shown exactly as the original PowerPoint.</span>
         <a
           className="font-semibold text-biomar-swoosh hover:underline"
-          href={deck.file}
+          href={current.file}
           target="_blank"
           rel="noreferrer"
         >
