@@ -104,11 +104,21 @@ function ModuleRow({
 // ── By chapter — one section per source document, items in original order ──
 function ChapterView({ person }: { person: Person }) {
   const standalone = modules.filter(
-    (m) => m.chapterId === null && person.assignedModuleIds.includes(m.id),
+    (m) =>
+      m.chapterId === null &&
+      m.id !== "welcome" &&
+      person.assignedModuleIds.includes(m.id),
   );
+  const welcomeAssigned = person.assignedModuleIds.includes("welcome");
 
   return (
     <>
+      {welcomeAssigned && (
+        <section className="card border-2 border-biomar-swoosh/30 p-3">
+          <ModuleRow person={person} moduleId="welcome" />
+        </section>
+      )}
+
       {chapters.map((chapter) => {
         const assigned = modules
           .filter((m) => m.chapterId === chapter.id)

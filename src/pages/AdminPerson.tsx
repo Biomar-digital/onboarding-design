@@ -113,6 +113,11 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
   };
 
   const groups = [
+    {
+      key: "welcome",
+      label: "👋 Welcome",
+      mods: modules.filter((m) => m.id === "welcome"),
+    },
     ...chapters.map((c) => ({
       key: c.id,
       label: `${c.icon} ${c.title}`,
@@ -121,7 +126,7 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
     {
       key: "reference",
       label: "📎 Reference material",
-      mods: modules.filter((m) => m.chapterId === null),
+      mods: modules.filter((m) => m.chapterId === null && m.id !== "welcome"),
     },
   ].filter((g) => g.mods.length > 0);
 

@@ -25,7 +25,7 @@ import { modulesById } from "../content/modules";
 // invalidates ids a browser may have cached (a content restructure, not a
 // content edit). Old cached state under a previous key is simply ignored —
 // the app reloads from the current seed instead of showing stale/broken data.
-const STORAGE_KEY = "biomar-onboarding-state-v2";
+const STORAGE_KEY = "biomar-onboarding-state-v3";
 const SESSION_KEY = "biomar-onboarding-session";
 
 interface StoredState {

@@ -40,6 +40,7 @@ export const profiles: Profile[] = [
     description:
       "Short engagement. A focused core: what the Hub is, the process backbone, brand basics and who to ask.",
     recommendedModuleIds: only(
+      "welcome",
       "strategic-01",
       "strategic-02",
       "dh2026-01",
@@ -56,6 +57,7 @@ export const profiles: Profile[] = [
     description:
       "Works with the Hub from outside. Needs brand rules, file/versioning conventions and the review workflow — not internal org structure.",
     recommendedModuleIds: only(
+      "welcome",
       "strategic-01",
       "playbook-01",
       "playbook-03",

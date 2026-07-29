@@ -19,6 +19,30 @@ const BRIEF_TEMPLATE = {
 
 export const modules: Module[] = [
   // ═══════════════════════════════════════════════════════════════════════════
+  // WELCOME — not sourced from a document; always the very first thing.
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: "welcome",
+    chapterId: null,
+    title: "Welcome to BioMar",
+    summary: "A welcome message from our CEO, Carlos Díaz, to BioMar.",
+    estMinutes: 10,
+    sections: [
+      {
+        heading: "A welcome from our CEO",
+        body: [
+          "Before diving into how the Design Hub works, take a moment to hear from Carlos Díaz, CEO of BioMar, welcoming you to the company.",
+        ],
+      },
+      {
+        note: "Powered by Partnership. Driven by Innovation.",
+      },
+    ],
+    quiz: [],
+    exercises: [],
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // CHAPTER: Design Hub — Strategic Presentation (17 slides)
   // ═══════════════════════════════════════════════════════════════════════════
   {

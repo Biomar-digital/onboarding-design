@@ -14,5 +14,7 @@ export interface ModuleVideo {
 }
 
 export const moduleVideos: Record<string, ModuleVideo[]> = {
-  "strategic-01": [{ vimeo: "1213275191/e9194f1235", title: "BioMar — intro" }],
+  welcome: [
+    { vimeo: "1213275191/e9194f1235", title: "Welcome to BioMar — Carlos Díaz, CEO" },
+  ],
 };
