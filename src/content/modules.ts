@@ -931,9 +931,9 @@ export const modules: Module[] = [
   {
     id: "dh2026-06",
     chapterId: "dh2026",
-    title: "Larval Research Facilities",
+    title: "Brief Template — A Worked Example",
     summary:
-      "The ATC Hirtshals larval research facilities — and the signage work the Design Hub supports there.",
+      "A real, filled-out brief the Hub received right after the template — see what good specificity looks like.",
     estMinutes: 15,
     material: {
       file: `${SLICE}/dh2026--06-larval-research-facilities.pptx`,
@@ -942,52 +942,62 @@ export const modules: Module[] = [
     },
     sections: [
       {
-        heading: "ATC Hirtshals",
+        heading: "Reading a real example",
         body: [
-          "BioMar has invested in advanced larval research facilities at ATC Hirtshals, capable of performing trials in semi-industrial conditions. The trial facilities serve as a hub for research and development, product consolidation and validation.",
+          "Right after the Brief Template comes a real brief the Design Hub received: a request for signage at BioMar's larval research facility at ATC Hirtshals. It's included here as a worked example — notice how concrete it is compared to a vague request.",
         ],
       },
       {
-        heading: "Trial facilities layout",
+        heading: "What the requester wrote",
+        body: [
+          "\"BioMar has invested in advanced larval research facilities at ATC Hirtshals, capable of performing trials in semi-industrial conditions. The trial facilities serve as a hub for research and development, product consolidation and validation.\" — this is the purpose/context, stated clearly.",
+        ],
+      },
+      {
+        heading: "The specs included",
         bullets: [
           "Signage: 60×40cm",
           "Wall space for design/canvas at the end of the hallway",
           "Wall dimensions approx. 1.2m × 2.5m",
         ],
-        note: "This is real design work the Hub supports — wayfinding and signage for the facility.",
+        note: "Compare this against the four minimum-info items from earlier: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
       },
     ],
     quiz: [
       {
         id: "q1",
         type: "single",
-        prompt: "What is ATC Hirtshals?",
+        prompt: "What makes this example brief strong?",
         options: [
-          "A marketing office",
-          "BioMar's advanced larval research facility",
-          "A print supplier",
-          "A stock photography agency",
+          "It's very short",
+          "It gives exact, concrete specifications (sizes, location)",
+          "It has no deadline",
+          "It was submitted verbally",
         ],
         correct: [1],
         explanation:
-          "ATC Hirtshals is BioMar's advanced larval research facility for semi-industrial trials.",
+          "Exact specs (60×40cm signage, ~1.2×2.5m wall) are exactly the kind of concrete detail a good brief includes.",
       },
       {
         id: "q2",
-        type: "single",
-        prompt: "What size is the facility signage?",
-        options: ["30×20cm", "60×40cm", "100×100cm", "A4"],
+        type: "boolean",
+        prompt: "This example is meant to be memorised as general BioMar facility information, not as a brief-writing example.",
+        options: ["True", "False"],
         correct: [1],
-        explanation: "The signage spec is 60×40cm.",
+        explanation:
+          "False — it's a worked example attached to the Brief Template, illustrating good specificity, not standalone facility trivia.",
       },
     ],
     exercises: [
       {
         id: "e1",
-        title: "Signage concept",
+        title: "Spot the good brief habits",
         prompt:
-          "Sketch a signage concept for the hallway wall space (approx. 1.2m × 2.5m) at the end of the hallway, following brand guidelines.",
-        successCriteria: ["Concept fits the stated dimensions", "On-brand (logo, colour, typography)"],
+          "Go back to this example and mark which of the four minimum-info items (purpose, timeline, specifications, copy/assets) it covers well — and which, if any, are missing.",
+        successCriteria: [
+          "All four minimum-info items checked against the example",
+          "Any gap identified",
+        ],
       },
     ],
   },
