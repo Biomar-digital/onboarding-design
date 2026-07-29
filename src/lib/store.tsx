@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { Person } from "../content/types";
 import { seedPeople } from "../content/people";
+import { modulesById } from "../content/modules";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App state.
@@ -20,12 +21,35 @@ import { seedPeople } from "../content/people";
 // the same browser sees the working copy.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "biomar-onboarding-state-v1";
+// Bump this whenever the module/chapter structure changes in a way that
+// invalidates ids a browser may have cached (a content restructure, not a
+// content edit). Old cached state under a previous key is simply ignored —
+// the app reloads from the current seed instead of showing stale/broken data.
+const STORAGE_KEY = "biomar-onboarding-state-v2";
 const SESSION_KEY = "biomar-onboarding-session";
 
 interface StoredState {
   people: Person[];
   dirty: boolean;
+}
+
+// Defends against a subtler version of the same problem: content edits that
+// remove or rename individual module ids without a full restructure. Strips
+// any assignment/progress/schedule entries that no longer resolve to a real
+// module, so a stale id degrades gracefully instead of rendering nothing.
+function reconcilePerson(person: Person): Person {
+  const assignedModuleIds = person.assignedModuleIds.filter(
+    (id) => modulesById[id],
+  );
+  const progress = Object.fromEntries(
+    Object.entries(person.progress).filter(([id]) => modulesById[id]),
+  );
+  const schedule = person.schedule
+    ? Object.fromEntries(
+        Object.entries(person.schedule).filter(([id]) => modulesById[id]),
+      )
+    : person.schedule;
+  return { ...person, assignedModuleIds, progress, schedule };
 }
 
 interface StoreValue {
@@ -53,11 +77,14 @@ const StoreContext = createContext<StoreValue | null>(null);
 function load(): StoredState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as StoredState;
+    if (raw) {
+      const parsed = JSON.parse(raw) as StoredState;
+      return { ...parsed, people: parsed.people.map(reconcilePerson) };
+    }
   } catch {
     /* ignore */
   }
-  return { people: seedPeople, dirty: false };
+  return { people: seedPeople.map(reconcilePerson), dirty: false };
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
