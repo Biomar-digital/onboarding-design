@@ -17,6 +17,18 @@ export interface ToolGroup {
 
 export const toolGroups: ToolGroup[] = [
   {
+    title: "Internal systems",
+    accent: "biomar-navy",
+    icon: "🔑",
+    tools: [
+      { name: "Loop Link", purpose: "Start here: request access & find owners", icon: "🔗" },
+      { name: "The Pond (Kontainer)", purpose: "Brand asset DAM: guidelines, logos, photos", icon: "🌊" },
+      { name: "Umbraco Content Library", purpose: "Website content management", icon: "🧱" },
+      { name: "Internal Design Library", purpose: "Internal templates (Global Marketing only)", icon: "🗃️" },
+      { name: "QR Code Generator", purpose: "Generate QR codes for campaigns", icon: "🔳" },
+    ],
+  },
+  {
     title: "Design & creative",
     accent: "biomar-swoosh",
     icon: "🎨",

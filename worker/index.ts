@@ -102,7 +102,7 @@ async function handlePublish(request: Request, env: Env): Promise<Response> {
 interface SuggestBody {
   profileId?: string | null;
   notes?: string;
-  catalog?: { id: string; title: string; category: string; summary: string }[];
+  catalog?: { id: string; title: string; chapterId: string | null; summary: string }[];
 }
 
 async function handleSuggest(request: Request, env: Env): Promise<Response> {

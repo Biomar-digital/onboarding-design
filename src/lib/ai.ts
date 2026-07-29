@@ -16,10 +16,10 @@ export function recommendByProfile(
   if (!profileId) {
     return {
       moduleIds: modules
-        .filter((m) => m.category === "foundations")
+        .filter((m) => m.chapterId === modules[0].chapterId)
         .map((m) => m.id),
       rationale:
-        "No profile selected — starting with the Foundations modules everyone needs.",
+        "No profile selected — starting with the first chapter everyone needs.",
       source: "rules",
     };
   }
@@ -31,12 +31,16 @@ export function recommendByProfile(
   const add = (id: string) => {
     if (modulesById[id] && !ids.includes(id)) ids.push(id);
   };
-  if (/(video|motion|animation)/.test(n)) add("versioning-review");
+  if (/(video|motion|animation)/.test(n)) add("dh2026-03");
   if (/(print|packaging|production)/.test(n)) {
-    add("material-guide");
-    add("export-close");
+    add("playbook-04");
   }
-  if (/(brand|guideline)/.test(n)) add("brand-guidelines");
+  if (/(brand|guideline)/.test(n)) {
+    add("brand-guidelines-01");
+    add("brand-guidelines-02");
+    add("brand-guidelines-03");
+    add("brand-guidelines-04");
+  }
 
   // Keep canonical module order.
   const order = modules.map((m) => m.id);
@@ -68,7 +72,7 @@ export async function suggestWithAI(
         catalog: modules.map((m) => ({
           id: m.id,
           title: m.title,
-          category: m.category,
+          chapterId: m.chapterId,
           summary: m.summary,
         })),
       }),

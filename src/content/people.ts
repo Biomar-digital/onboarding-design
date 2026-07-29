@@ -33,9 +33,9 @@ export const seedPeople: Person[] = [
       includeWeekends: false,
     }),
     progress: {
-      "what-is-biomar": { completed: true, quizScore: 100 },
-      "global-marketing": { completed: true, quizScore: 50 },
-      "what-is-design-hub": { completed: false, quizScore: null },
+      "strategic-01": { completed: true, quizScore: 100 },
+      "strategic-02": { completed: true, quizScore: 50 },
+      "strategic-03": { completed: false, quizScore: null },
     },
   },
   {
@@ -47,7 +47,7 @@ export const seedPeople: Person[] = [
     startDate: "2026-07-22",
     assignedModuleIds: profilesById["motion"].recommendedModuleIds,
     progress: {
-      "what-is-biomar": { completed: true, quizScore: 100 },
+      "strategic-01": { completed: true, quizScore: 100 },
     },
   },
 ];

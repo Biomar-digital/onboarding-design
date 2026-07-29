@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { modulesById } from "../content/modules";
+import { chaptersById } from "../content/chapters";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
 import { DeckViewer } from "../components/DeckViewer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ToolsMap } from "../components/ToolsMap";
-import { moduleMaterials } from "../content/materials";
 import type { LessonSection, QuizQuestion } from "../content/types";
 
 export function ModuleView() {
@@ -27,6 +27,7 @@ export function ModuleView() {
   }
 
   const alreadyDone = currentUser.progress[module.id]?.completed;
+  const chapter = module.chapterId ? chaptersById[module.chapterId] : null;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -40,10 +41,11 @@ export function ModuleView() {
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="chip bg-biomar-ice text-biomar-blue uppercase">
-              {module.category}
+              {chapter ? chapter.icon + " " + chapter.title : "Reference"}
             </span>
             <span className="text-xs text-slate-400">
-              {module.estMinutes} min · Source: {module.source}
+              {module.estMinutes} min
+              {chapter ? ` · Source: ${chapter.source}` : ""}
             </span>
           </div>
           <h1 className="mt-2 text-2xl font-bold text-biomar-navy">
@@ -52,18 +54,18 @@ export function ModuleView() {
           <p className="mt-1 text-slate-500">{module.summary}</p>
         </div>
 
-        <DeckViewer moduleId={module.id} />
+        <DeckViewer material={module.material} resources={module.resources} />
         <VideoPlayer moduleId={module.id} />
 
         {module.id === "tools-map" ? (
           <ToolsMap />
         ) : (
           <section className="card space-y-5 p-6">
-            {moduleMaterials[module.id]?.length ? (
+            {module.material && (
               <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
                 Key points
               </h2>
-            ) : null}
+            )}
             {module.sections.map((s, i) => (
               <Section key={i} section={s} />
             ))}
@@ -101,14 +103,31 @@ export function ModuleView() {
           </section>
         )}
 
-        <Quiz
-          questions={module.quiz}
-          alreadyDone={!!alreadyDone}
-          onPass={(score) => {
-            markModuleComplete(currentUser.id, module.id, score);
-            navigate("/");
-          }}
-        />
+        {module.quiz.length > 0 ? (
+          <Quiz
+            questions={module.quiz}
+            alreadyDone={!!alreadyDone}
+            onPass={(score) => {
+              markModuleComplete(currentUser.id, module.id, score);
+              navigate("/");
+            }}
+          />
+        ) : (
+          !alreadyDone && (
+            <section className="card flex items-center justify-between p-6">
+              <p className="text-sm text-slate-500">No quiz for this module.</p>
+              <button
+                className="btn-accent"
+                onClick={() => {
+                  markModuleComplete(currentUser.id, module.id, 100);
+                  navigate("/");
+                }}
+              >
+                Mark complete & continue
+              </button>
+            </section>
+          )
+        )}
       </article>
 
       <InfoPanel />

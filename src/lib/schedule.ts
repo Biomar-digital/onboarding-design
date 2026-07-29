@@ -1,27 +1,11 @@
 import type { Person } from "../content/types";
 import { modules, modulesById } from "../content/modules";
-import { agenda } from "../content/agenda";
 
-// Canonical learning order: agenda phase order, then module order within each
-// phase, with any leftover assigned modules appended in catalog order.
+// Canonical learning order = the modules array order: chapters in their
+// confirmed order, and within a chapter, items in the source document's own
+// slide/page order. No separate ordering source needed.
 export function orderedAssigned(assignedIds: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const phase of agenda) {
-    for (const id of phase.moduleIds) {
-      if (assignedIds.includes(id) && !seen.has(id)) {
-        seen.add(id);
-        out.push(id);
-      }
-    }
-  }
-  for (const m of modules) {
-    if (assignedIds.includes(m.id) && !seen.has(m.id)) {
-      seen.add(m.id);
-      out.push(m.id);
-    }
-  }
-  return out;
+  return modules.filter((m) => assignedIds.includes(m.id)).map((m) => m.id);
 }
 
 // ── date helpers ────────────────────────────────────────────────────────────
@@ -98,6 +82,7 @@ export function groupByDay(person: Person): {
   unscheduled: string[];
 } {
   const schedule = person.schedule ?? {};
+  const order = orderedAssigned(person.assignedModuleIds);
   const byDate: Record<string, string[]> = {};
   const unscheduled: string[] = [];
   for (const id of person.assignedModuleIds) {
@@ -108,11 +93,7 @@ export function groupByDay(person: Person): {
   const days: DayGroup[] = Object.entries(byDate)
     .map(([date, ids]) => ({
       date,
-      moduleIds: ids.sort(
-        (a, b) =>
-          orderedAssigned(person.assignedModuleIds).indexOf(a) -
-          orderedAssigned(person.assignedModuleIds).indexOf(b),
-      ),
+      moduleIds: ids.sort((a, b) => order.indexOf(a) - order.indexOf(b)),
       totalMin: ids.reduce((s, id) => s + (modulesById[id]?.estMinutes ?? 0), 0),
     }))
     .sort((a, b) => a.date.localeCompare(b.date));

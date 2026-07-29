@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../lib/store";
-import { modules } from "../content/modules";
+import { modules, modulesById } from "../content/modules";
+import { chapters } from "../content/chapters";
 import { profiles, profilesById } from "../content/profiles";
 import { suggestWithAI, recommendByProfile, type Suggestion } from "../lib/ai";
 import { completionStats } from "../lib/progress";
@@ -11,16 +12,7 @@ import {
   formatDay,
   formatLoad,
 } from "../lib/schedule";
-import { modulesById } from "../content/modules";
 import type { Person, ProfileId } from "../content/types";
-
-const CATEGORY_LABEL: Record<string, string> = {
-  foundations: "Foundations",
-  process: "The Process",
-  brand: "Brand & Guidelines",
-  tools: "Tools & Ways of Working",
-  people: "People & Integration",
-};
 
 // Handles both editing an existing person (/admin/person/:id) and creating a
 // new one (/admin/new).
@@ -120,13 +112,18 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
     navigate("/admin");
   };
 
-  const byCategory = modules.reduce<Record<string, typeof modules>>(
-    (acc, m) => {
-      (acc[m.category] ??= []).push(m);
-      return acc;
+  const groups = [
+    ...chapters.map((c) => ({
+      key: c.id,
+      label: `${c.icon} ${c.title}`,
+      mods: modules.filter((m) => m.chapterId === c.id),
+    })),
+    {
+      key: "reference",
+      label: "📎 Reference material",
+      mods: modules.filter((m) => m.chapterId === null),
     },
-    {},
-  );
+  ].filter((g) => g.mods.length > 0);
 
   return (
     <div className="space-y-6">
@@ -263,11 +260,11 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
           </div>
 
           <div className="space-y-5">
-            {Object.entries(byCategory).map(([cat, mods]) => (
-              <div key={cat}>
+            {groups.map(({ key, label, mods }) => (
+              <div key={key}>
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                    {CATEGORY_LABEL[cat] ?? cat}
+                    {label}
                   </h3>
                   <button
                     className="text-[11px] text-biomar-swoosh hover:underline"

@@ -4,6 +4,13 @@
 // Everything a learner sees is defined as data here and committed to GitHub —
 // the repository is the source of truth ("GitHub as backend"). The Cloudflare
 // Pages frontend reads this content; admin edits are published back as commits.
+//
+// Structure: each source document (a deck or PDF) is a Chapter. A Chapter is
+// split into Modules ("items") that follow the document's original order and
+// together cover it end to end — no reordering across topics, no skipping.
+// A few reference modules aren't sourced from a single document (e.g. the
+// tools map, curated from a list) — those have chapterId: null and render as
+// standalone reference material rather than inside a chapter.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** A predefined onboarding profile (role + seniority) used to seed a route. */
@@ -14,12 +21,15 @@ export type ProfileId =
   | "intern"
   | "external";
 
-export type ModuleCategory =
-  | "foundations"
-  | "process"
-  | "brand"
-  | "tools"
-  | "people";
+export interface Chapter {
+  id: string;
+  /** Display title. */
+  title: string;
+  /** The original document this chapter is sourced from. */
+  source: string;
+  icon: string;
+  description: string;
+}
 
 export interface QuizQuestion {
   id: string;
@@ -54,30 +64,37 @@ export interface LessonSection {
   note?: string;
 }
 
+/** The original-document material shown for a module — exact, unedited. */
+export interface ModuleMaterial {
+  /** Path under the site root (served from /public/materials). */
+  file: string;
+  /** "pptx" → embedded Office viewer; "pdf" → native in-browser viewer. */
+  type: "pptx" | "pdf";
+  /** Human label, e.g. "Slides 1–3" or "Pages 9–14". */
+  range: string;
+}
+
+/** A supplementary downloadable file attached to a module (e.g. a template). */
+export interface ModuleResource {
+  title: string;
+  file: string;
+}
+
 export interface Module {
   id: string;
-  category: ModuleCategory;
+  /** The chapter (source document) this belongs to, in original order. Null = standalone reference, not tied to one document. */
+  chapterId: string | null;
   title: string;
   /** One-line summary shown in cards and the agenda. */
   summary: string;
   estMinutes: number;
-  /** Where this material comes from, so admins can trace it to source decks. */
-  source: string;
+  /** The exact original material for this module (slides/pages, unedited). */
+  material?: ModuleMaterial;
+  /** Supplementary files (e.g. a template) referenced alongside the material. */
+  resources?: ModuleResource[];
   sections: LessonSection[];
   quiz: QuizQuestion[];
   exercises: Exercise[];
-}
-
-export interface AgendaPhase {
-  id: string;
-  title: string;
-  /** e.g. "Week 1" / "Days 1–3". */
-  timeframe: string;
-  description: string;
-  /** Ordered module ids that belong to this phase. */
-  moduleIds: string[];
-  /** Non-module milestones (meet people, first tasks). */
-  milestones?: string[];
 }
 
 export interface Profile {

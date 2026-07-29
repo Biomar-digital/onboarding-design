@@ -2,8 +2,8 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
-import { agenda } from "../content/agenda";
-import { modulesById } from "../content/modules";
+import { chapters } from "../content/chapters";
+import { modules, modulesById } from "../content/modules";
 import { profilesById } from "../content/profiles";
 import { completionStats, moduleStatus } from "../lib/progress";
 import { groupByDay, formatDay, formatLoad } from "../lib/schedule";
@@ -13,8 +13,8 @@ export function Employee() {
   const { currentUser } = useStore();
   const hasSchedule =
     !!currentUser && Object.keys(currentUser.schedule ?? {}).length > 0;
-  const [view, setView] = useState<"phase" | "date">(
-    hasSchedule ? "date" : "phase",
+  const [view, setView] = useState<"chapter" | "date">(
+    hasSchedule ? "date" : "chapter",
   );
   if (!currentUser) return null;
   const stats = completionStats(currentUser);
@@ -25,8 +25,8 @@ export function Employee() {
         <Header person={currentUser} pct={stats.pct} stats={stats} />
 
         <div className="inline-flex items-center gap-1 rounded-xl bg-white p-1 shadow-card ring-1 ring-slate-100">
-          <ViewTab active={view === "phase"} onClick={() => setView("phase")}>
-            By phase
+          <ViewTab active={view === "chapter"} onClick={() => setView("chapter")}>
+            By chapter
           </ViewTab>
           <ViewTab active={view === "date"} onClick={() => setView("date")}>
             📅 By date
@@ -36,7 +36,7 @@ export function Employee() {
         {view === "date" ? (
           <ScheduleView person={currentUser} />
         ) : (
-          <PhaseView person={currentUser} />
+          <ChapterView person={currentUser} />
         )}
       </div>
 
@@ -101,27 +101,31 @@ function ModuleRow({
   );
 }
 
-// ── By phase ─────────────────────────────────────────────────────────────────
-function PhaseView({ person }: { person: Person }) {
+// ── By chapter — one section per source document, items in original order ──
+function ChapterView({ person }: { person: Person }) {
+  const standalone = modules.filter(
+    (m) => m.chapterId === null && person.assignedModuleIds.includes(m.id),
+  );
+
   return (
     <>
-      {agenda.map((phase) => {
-        const assigned = phase.moduleIds.filter((id) =>
-          person.assignedModuleIds.includes(id),
-        );
-        if (assigned.length === 0 && (phase.milestones?.length ?? 0) === 0)
-          return null;
+      {chapters.map((chapter) => {
+        const assigned = modules
+          .filter((m) => m.chapterId === chapter.id)
+          .map((m) => m.id)
+          .filter((id) => person.assignedModuleIds.includes(id));
+        if (assigned.length === 0) return null;
         return (
-          <section key={phase.id} className="card p-5">
-            <div className="mb-3 flex items-baseline justify-between">
+          <section key={chapter.id} className="card p-5">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-biomar-navy">
-                  {phase.title}
+                <h2 className="flex items-center gap-2 text-base font-bold text-biomar-navy">
+                  <span aria-hidden>{chapter.icon}</span> {chapter.title}
                 </h2>
-                <p className="text-sm text-slate-500">{phase.description}</p>
+                <p className="text-sm text-slate-500">{chapter.description}</p>
               </div>
-              <span className="chip bg-biomar-ice text-biomar-blue">
-                {phase.timeframe}
+              <span className="chip shrink-0 bg-biomar-ice text-biomar-blue">
+                {chapter.source}
               </span>
             </div>
 
@@ -130,22 +134,25 @@ function PhaseView({ person }: { person: Person }) {
                 <ModuleRow key={id} person={person} moduleId={id} />
               ))}
             </div>
-
-            {phase.milestones && phase.milestones.length > 0 && (
-              <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3">
-                {phase.milestones.map((ms, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-2 text-sm text-slate-500"
-                  >
-                    <span className="text-biomar-swoosh">◦</span> {ms}
-                  </li>
-                ))}
-              </ul>
-            )}
           </section>
         );
       })}
+
+      {standalone.length > 0 && (
+        <section className="card p-5">
+          <h2 className="mb-1 text-base font-bold text-biomar-navy">
+            Reference material
+          </h2>
+          <p className="mb-3 text-sm text-slate-500">
+            Not tied to a single document — always here to check back on.
+          </p>
+          <div className="space-y-2">
+            {standalone.map((m) => (
+              <ModuleRow key={m.id} person={person} moduleId={m.id} />
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }
@@ -160,7 +167,7 @@ function ScheduleView({ person }: { person: Person }) {
         <p className="text-sm text-slate-500">
           No calendar dates set yet. Your onboarding lead will schedule your
           modules — meanwhile, switch to{" "}
-          <span className="font-semibold text-biomar-navy">By phase</span> to
+          <span className="font-semibold text-biomar-navy">By chapter</span> to
           start.
         </p>
       </section>
