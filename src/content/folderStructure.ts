@@ -111,7 +111,115 @@ export const folderTree: FolderNode[] = [
           }
         ]
       },
-      { name: "0. Design Assets" },
+      { name: "0. Design Assets",
+        children: [
+          { name: "¤ BioMar Logos", note: "All approved BioMar logos.",
+            children: [
+              { name: "1. BioMar Primary - Corporate Logo" },
+              { name: "BioMar Logo - Social Media Circle" },
+              { name: "BioMar Logo Animation" },
+              { name: "BioMar Logo Element - without Wordmark" },
+              { name: "BioMar Logo with Tagline" },
+              { name: "BioMar Logo without box" },
+              { name: "BioMar Solid Blue Logo" },
+              { name: "BioMar Solid White Logo" },
+              { name: "BioMar Tagline" },
+              { name: "Black & White Logo" },
+              { name: "EXT BioMar Brand Package - Web" },
+              { name: "EXT BioMar Logo Package" },
+              { name: "Old BioMar logo" }
+            ]
+          },
+          { name: "0. Product Logos", note: "Product and sub-product logos. Sub-products can be found on the specific product folder. E.g. EFICO Alpha logo inside EFICO Logo folder",
+            children: [
+              { name: "¤Archive" },
+              { name: "AquaVet Logo" },
+              { name: "BioFarm Logo" },
+              { name: "BioSustain Logo" },
+              { name: "BioSustain MASTERCLASS L..." },
+              { name: "Blue Impact Logo" },
+              { name: "CPK Logo" },
+              { name: "DAN-EX Logo" },
+              { name: "ECOLIFE Logo" },
+              { name: "EFICO Logo" },
+              { name: "ENERGY Logo" },
+              { name: "EXIA Logo" },
+              { name: "GOLDEN REPRODUCTOR L..." },
+              { name: "INICIO Logos" },
+              { name: "INICIO Shrimp Logo" },
+              { name: "INTRO Logo" },
+              { name: "LARVIVA Logos" }
+            ]
+          },
+          { name: "01. Photo Library", note: "All photos are used or have been done by BioMar. Only Global Marketing has access to this folder.",
+            children: [
+              { name: "BioMar Facilities", note: "Photos of Production Facilities around the globe" },
+              { name: "BioMar Photoshoots", note: "Photoshoot folders organized by location, year and project" },
+              { name: "BioMar Staff", note: "Portrait images of Staff around the world, organized by name" },
+              { name: "BioMar Transport", note: "Trucks, vessels, etc" },
+              { name: "Carlos diaz pictures", note: "Some Carlos images, refer to the most current ones on the \"BioMar Staff\" folder" },
+              { name: "Feed - SPECIFIC" },
+              { name: "Stock Photo Sites", note: "Links to other stock photo sites in case something more specific is needed" },
+              { name: "TO EDIT" },
+              { name: "To Organise", note: "Duplicated images or images that need to be localized into a new place" }
+            ]
+          },
+          { name: "02. Video Library", note: "Stock videos and BioMar videos",
+            children: [
+              { name: "BioMar Videos", note: "Corporate and Product Videos" },
+              { name: "2025-10 AQ1 video", note: "AQ1 Corporate video (should be stored in the AQ1 folder though)" },
+              { name: "2025-10 Biomar corporate video", note: "BioMar Corporate video (should be stored in CORPORATE folder though)" },
+              { name: "R&D Footage - Elisabeth", note: "Fish 101 Videos (should be stored in GLOBAL folder though)" }
+            ]
+          },
+          { name: "03. Audio Library", note: "Sound and music for videos" },
+          { name: "04. Asset Library", note: "Various useful assets",
+            children: [
+              { name: "¤ Life Stages", note: "Salmon life stages illustrations (also available in icon library - all species)" },
+              { name: "Flags - Rounded corners", note: "All countries flags we use for presentations, posters, etc." },
+              { name: "gems", note: "Used for CN tags." },
+              { name: "Hatchery Infographic", note: "Life cycle used in LARVIVA and other communications" },
+              { name: "UN SDG Icons", note: "UN Sustainable Development Goals icons in most languages" }
+            ]
+          },
+          { name: "05. JV Logos + Assets", note: "JV Logos + other material (email signature banners, big logos, etc)  Material can also be found in their own folders",
+            children: [
+              { name: "BioMar Sagun", note: "Can also be found in EMEA > BioMar Sagun." },
+              { name: "BioMar Tongwei Logo", note: "Can also be found in ASIA > China." },
+              { name: "BioMar Viet Uc Logo", note: "Can also be found in ASIA > Vietnam." }
+            ]
+          },
+          { name: "06. Icon Library",
+            children: [
+              { name: "2025 Above and Beyond.ai", note: "File to edit the Above and Beyond graph." },
+              { name: "All icons.ai", note: "All the BioMar icons we use and make available for people in The Pond later. They're grouped in different categories to find them easily inside the file." },
+              { name: "All Icons SVG" },
+              { name: "BioMar factories.ai", note: "All BioMar Production Facilities icons." },
+              { name: "Factory Icons" },
+              { name: "BioMar Detailed Fish Icons_FINAL.ai", note: "All species fed by BioMar + some life stages." },
+              { name: "Detailed Fish" },
+              { name: "Farming methods_icons.ai", note: "Most farming methods." },
+              { name: "Farming Methods" },
+              { name: "Fish Life Cycle.ai", note: "Used for LARVIVA communications." },
+              { name: "Scopes Icons.ai", note: "Used mostly on QSR or GRI booklets to report on emissions." },
+              { name: "Scope 1 2 and 3" },
+              { name: "Swoosh Circle.ai", note: "Different swoosh compositions for graphs." },
+              { name: "Impact Parameters", note: "BioSustain Impact Parameters" },
+              { name: "Manufacturing Icons", note: "Manufacturing process icons" }
+            ]
+          },
+          { name: "BioMar Brand Guidelines",
+            children: [
+              { name: "BioMar Brand Guidelines 2026" },
+              { name: "BioMar Brand Voice Guideline 2026" },
+              { name: "BioMar Product Brand Guidelines..." },
+              { name: "BioMar Service Guidelines 2025" },
+              { name: "Photoshoot Guidelines 2024" },
+              { name: "Portrait Photo Guidelines 2024" }
+            ]
+          }
+        ]
+      },
       { name: "1. SmartCare",
         children: [
           { name: "¤ 1. SmartCare Logos", note: "Product and sub-product logos. Print and digital logos." },
