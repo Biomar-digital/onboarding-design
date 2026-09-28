@@ -1749,6 +1749,56 @@ export const modules: Module[] = [
       },
     ],
   },
+  {
+    id: "folder-structure",
+    chapterId: null,
+    title: "Folder Structure — The Pond, Mapped",
+    summary:
+      "The real folder tree of The Pond (Kontainer), explorable and searchable, plus an interactive wizard for where a new file belongs.",
+    estMinutes: 15,
+    sections: [
+      {
+        note: "This is a live map of the real structure — not a simplified example. Use the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "single",
+        prompt: "You need to save a roll-up banner for a specific LARVIVA sub-product campaign. What's the first question to ask yourself?",
+        options: [
+          "Is it an asset?",
+          "Is it a product?",
+          "Is it for a specific market?",
+          "Does that category have a folder?",
+        ],
+        correct: [1],
+        explanation:
+          "The wizard always starts by asking whether the file is for a product — that's what routes you into the Product folders (LARVIVA, INICIO, SmartCare, etc.) in the first place.",
+      },
+      {
+        id: "q2",
+        type: "single",
+        prompt: "A brand logo or template isn't tied to any one product or market. Where does it belong?",
+        options: ["Design Assets", "Global", "Corporate", "Create a new top-level folder"],
+        correct: [0],
+        explanation:
+          "Anything that isn't a product and isn't market/org-specific but is an asset (logo, template, guideline) goes into Design Assets.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Find it yourself",
+        prompt:
+          "Using the search, find where BioMar's brand guidelines live, and separately, where you'd save a new roll-up banner for a SmartCare campaign. Write down both paths.",
+        successCriteria: [
+          "Correct path found for the brand guidelines",
+          "Correct path found (or created, per the wizard) for the SmartCare roll-up banner",
+        ],
+      },
+    ],
+  },
 ];
 
 export const modulesById = Object.fromEntries(modules.map((m) => [m.id, m]));

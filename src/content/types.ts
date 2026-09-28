@@ -113,6 +113,38 @@ export interface InfoPanelGroup {
   rows: { label: string; value: string; hint?: string }[];
 }
 
+/** A node in the real Design Hub folder tree (The Pond / Kontainer), used by the
+ * interactive folder-structure explorer and search. */
+export interface FolderNode {
+  name: string;
+  /** A short explanatory note for this folder, sourced from an annotation on the source diagram. */
+  note?: string;
+  children?: FolderNode[];
+}
+
+/** One step of the "where does this go?" decision wizard. */
+export interface WizardStep {
+  type: "question" | "action";
+  prompt: string;
+  /** Next step id when the answer is "yes" (question steps only). */
+  yes?: string;
+  /** Next step id when the answer is "no" (question steps only). */
+  no?: string;
+  /** Next step id (action steps that aren't a dead end). */
+  next?: string;
+  /** Selectable options shown to the user at this step (action steps only). */
+  options?: string[];
+  /** True when this step ends the flow with a resolved answer. */
+  final?: boolean;
+  /** True when this step should loop back to the start. */
+  restart?: boolean;
+}
+
+export interface WizardFlow {
+  start: string;
+  nodes: Record<string, WizardStep>;
+}
+
 export type Role = "admin" | "employee";
 
 export interface Person {

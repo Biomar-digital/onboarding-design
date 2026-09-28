@@ -7,6 +7,7 @@ import { InfoPanel } from "../components/InfoPanel";
 import { DeckViewer } from "../components/DeckViewer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ToolsMap } from "../components/ToolsMap";
+import { FolderStructureExplorer } from "../components/FolderStructureExplorer";
 import type { LessonSection, QuizQuestion } from "../content/types";
 
 export function ModuleView() {
@@ -59,6 +60,8 @@ export function ModuleView() {
 
         {module.id === "tools-map" ? (
           <ToolsMap />
+        ) : module.id === "folder-structure" ? (
+          <FolderStructureExplorer />
         ) : (
           <section className="card space-y-5 p-6">
             {module.material && (
