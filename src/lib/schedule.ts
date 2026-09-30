@@ -1,11 +1,10 @@
 import type { Person } from "../content/types";
-import { modules, modulesById } from "../content/modules";
+import { modulesById } from "../content/modules";
+import { journeyOrder } from "../content/journey";
 
-// Canonical learning order = the modules array order: chapters in their
-// confirmed order, and within a chapter, items in the source document's own
-// slide/page order. No separate ordering source needed.
+// Canonical learning order = the didactic journey (content/journey.ts).
 export function orderedAssigned(assignedIds: string[]): string[] {
-  return modules.filter((m) => assignedIds.includes(m.id)).map((m) => m.id);
+  return journeyOrder.filter((id) => assignedIds.includes(id));
 }
 
 // ── date helpers ────────────────────────────────────────────────────────────

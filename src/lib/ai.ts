@@ -1,6 +1,7 @@
 import type { ProfileId } from "../content/types";
 import { profilesById } from "../content/profiles";
 import { modules, modulesById } from "../content/modules";
+import { journeyOrder } from "../content/journey";
 
 export interface Suggestion {
   moduleIds: string[];
@@ -43,7 +44,7 @@ export function recommendByProfile(
   }
 
   // Keep canonical module order.
-  const order = modules.map((m) => m.id);
+  const order = journeyOrder;
   ids = ids.sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
   return {
@@ -84,7 +85,7 @@ export async function suggestWithAI(
     };
     if (!data.moduleIds?.length) return baseline;
     const valid = data.moduleIds.filter((id) => modulesById[id]);
-    const order = modules.map((m) => m.id);
+    const order = journeyOrder;
     return {
       moduleIds: valid.sort((a, b) => order.indexOf(a) - order.indexOf(b)),
       rationale: data.rationale ?? baseline.rationale,

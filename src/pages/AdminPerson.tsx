@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { modules, modulesById } from "../content/modules";
-import { chapters } from "../content/chapters";
+import { journey } from "../content/journey";
 import { profiles, profilesById } from "../content/profiles";
 import { suggestWithAI, recommendByProfile, type Suggestion } from "../lib/ai";
 import { completionStats } from "../lib/progress";
@@ -112,23 +112,11 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
     navigate("/admin");
   };
 
-  const groups = [
-    {
-      key: "welcome",
-      label: "👋 Welcome",
-      mods: modules.filter((m) => m.id === "welcome"),
-    },
-    ...chapters.map((c) => ({
-      key: c.id,
-      label: `${c.icon} ${c.title}`,
-      mods: modules.filter((m) => m.chapterId === c.id),
-    })),
-    {
-      key: "reference",
-      label: "📎 Reference material",
-      mods: modules.filter((m) => m.chapterId === null && m.id !== "welcome"),
-    },
-  ].filter((g) => g.mods.length > 0);
+  const groups = journey.map((sec) => ({
+    key: sec.key,
+    label: `${sec.icon} ${sec.title}`,
+    mods: sec.moduleIds.map((id) => modulesById[id]),
+  }));
 
   return (
     <div className="space-y-6">

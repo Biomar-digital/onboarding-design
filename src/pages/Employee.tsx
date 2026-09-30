@@ -2,8 +2,8 @@ import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
-import { chapters } from "../content/chapters";
-import { modules, modulesById } from "../content/modules";
+import { journey } from "../content/journey";
+import { modulesById } from "../content/modules";
 import { profilesById } from "../content/profiles";
 import { completionStats, moduleStatus } from "../lib/progress";
 import { groupByDay, formatDay, formatLoad } from "../lib/schedule";
@@ -132,42 +132,45 @@ function ModuleRow({
   );
 }
 
-// ── By chapter — one section per source document, items in original order ──
+// ── By chapter — the didactic journey (content/journey.ts), in order ──
 function ChapterView({ person, base }: { person: Person; base: string }) {
-  const standalone = modules.filter(
-    (m) =>
-      m.chapterId === null &&
-      m.id !== "welcome" &&
-      person.assignedModuleIds.includes(m.id),
-  );
-  const welcomeAssigned = person.assignedModuleIds.includes("welcome");
-
   return (
     <>
-      {welcomeAssigned && (
-        <section className="card border-2 border-biomar-swoosh/30 p-3">
-          <ModuleRow person={person} moduleId="welcome" base={base} />
-        </section>
-      )}
-
-      {chapters.map((chapter) => {
-        const assigned = modules
-          .filter((m) => m.chapterId === chapter.id)
-          .map((m) => m.id)
-          .filter((id) => person.assignedModuleIds.includes(id));
+      {journey.map((sec) => {
+        const assigned = sec.moduleIds.filter((id) =>
+          person.assignedModuleIds.includes(id),
+        );
         if (assigned.length === 0) return null;
+
+        if (sec.highlight) {
+          return (
+            <section
+              key={sec.key}
+              className="card border-2 border-biomar-swoosh/30 p-3"
+            >
+              {assigned.map((id) => (
+                <ModuleRow key={id} person={person} moduleId={id} base={base} />
+              ))}
+            </section>
+          );
+        }
+
         return (
-          <section key={chapter.id} className="card p-5">
+          <section key={sec.key} className="card p-5">
             <div className="mb-3 flex items-baseline justify-between gap-3">
               <div>
                 <h2 className="flex items-center gap-2 text-base font-bold text-biomar-navy">
-                  <span aria-hidden>{chapter.icon}</span> {chapter.title}
+                  <span aria-hidden>{sec.icon}</span> {sec.title}
                 </h2>
-                <p className="text-sm text-slate-500">{chapter.description}</p>
+                {sec.description && (
+                  <p className="text-sm text-slate-500">{sec.description}</p>
+                )}
               </div>
-              <span className="chip shrink-0 bg-biomar-ice text-biomar-blue">
-                {chapter.source}
-              </span>
+              {sec.source && (
+                <span className="chip shrink-0 bg-biomar-ice text-biomar-blue">
+                  {sec.source}
+                </span>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -178,22 +181,6 @@ function ChapterView({ person, base }: { person: Person; base: string }) {
           </section>
         );
       })}
-
-      {standalone.length > 0 && (
-        <section className="card p-5">
-          <h2 className="mb-1 text-base font-bold text-biomar-navy">
-            Reference material
-          </h2>
-          <p className="mb-3 text-sm text-slate-500">
-            Not tied to a single document — always here to check back on.
-          </p>
-          <div className="space-y-2">
-            {standalone.map((m) => (
-              <ModuleRow key={m.id} person={person} moduleId={m.id} base={base} />
-            ))}
-          </div>
-        </section>
-      )}
     </>
   );
 }
