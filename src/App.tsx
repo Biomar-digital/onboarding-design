@@ -8,6 +8,7 @@ import { ModuleView } from "./pages/ModuleView";
 import { Admin } from "./pages/Admin";
 import { AdminPerson } from "./pages/AdminPerson";
 import { AdminSignupRequests } from "./pages/AdminSignupRequests";
+import { Account } from "./pages/Account";
 import type { ReactNode } from "react";
 
 function Require({
@@ -79,6 +80,16 @@ export default function App() {
           <Require role="employee">
             <Layout>
               <ModuleView />
+            </Layout>
+          </Require>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <Require>
+            <Layout>
+              <Account />
             </Layout>
           </Require>
         }

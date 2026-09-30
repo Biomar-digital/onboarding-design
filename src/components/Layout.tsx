@@ -35,14 +35,14 @@ export function Layout({ children }: { children: ReactNode }) {
                 </NavLink>
               )}
               <div className="ml-3 flex items-center gap-2 border-l border-slate-200 pl-3">
-                <div className="text-right leading-tight">
+                <Link to="/account" className="text-right leading-tight hover:opacity-70">
                   <div className="text-xs font-semibold text-biomar-navy">
                     {currentUser.name}
                   </div>
                   <div className="text-[10px] uppercase tracking-wide text-slate-400">
                     {currentUser.role}
                   </div>
-                </div>
+                </Link>
                 <button
                   className="btn-ghost px-3 py-1.5 text-xs"
                   onClick={() => {

@@ -10,8 +10,8 @@ import { autoSchedule } from "../lib/schedule";
 export const seedPeople: Person[] = [
   {
     id: "admin",
-    name: "Andres Bernadou",
-    email: "andresbernadou@gmail.com",
+    name: "BioMar Marketing",
+    email: "marketing@biomar.com",
     role: "admin",
     profile: null,
     startDate: "2024-01-15",
