@@ -12,18 +12,18 @@ export function FolderStructureExplorer() {
   return (
     <div className="space-y-4">
       <p className="rounded-xl border-l-4 border-biomar-swoosh bg-biomar-ice/50 px-4 py-3 text-sm text-biomar-navy">
-        🗺️ Este es el árbol real de carpetas de The Pond (Kontainer), tal como
-        está hoy. Usá el wizard cuando tengas que guardar algo nuevo y no
-        sepas dónde va, o explorá/buscá directamente si ya sabés qué estás
-        buscando.
+        🗺️ This is the real folder tree of The Pond (Kontainer), as it stands
+        today. Use the wizard when you have something new to save and aren't
+        sure where it goes, or explore/search directly if you already know
+        what you're looking for.
       </p>
 
       <div className="inline-flex items-center gap-1 rounded-xl bg-white p-1 shadow-card ring-1 ring-slate-100">
         <TabButton active={tab === "wizard"} onClick={() => setTab("wizard")}>
-          🧭 ¿Dónde guardo esto?
+          🧭 Where does this go?
         </TabButton>
         <TabButton active={tab === "explore"} onClick={() => setTab("explore")}>
-          🗂️ Explorar / buscar
+          🗂️ Explore / search
         </TabButton>
       </div>
 

@@ -23,16 +23,32 @@ function flatten(nodes: FolderNode[], names: string[] = [], idxPath: number[] = 
   return out;
 }
 
+function nodeAt(idxPath: number[]): FolderNode {
+  let level = folderTree;
+  let node: FolderNode = folderTree[0];
+  for (const i of idxPath) {
+    node = level[i];
+    level = node.children ?? [];
+  }
+  return node;
+}
+
 const keyOf = (idxPath: number[]) => idxPath.join(".");
 
-// Interactive explorer of the real Design Hub folder tree (The Pond /
-// Kontainer), with a type-ahead search across every folder at every depth.
+// Drill-down explorer of the real Design Hub folder tree (The Pond /
+// Kontainer): click into a folder to see what's inside it, use the
+// breadcrumb to step back out, or search across every folder at every depth.
 export function FolderExplorer() {
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [navPath, setNavPath] = useState<number[]>([0]); // start inside the root ("Design Hub 2.0")
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
 
   const flat = useMemo(() => flatten(folderTree), []);
+  const currentNode = useMemo(() => nodeAt(navPath), [navPath]);
+  const breadcrumb = useMemo(
+    () => navPath.map((_, i) => nodeAt(navPath.slice(0, i + 1))),
+    [navPath],
+  );
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -50,16 +66,23 @@ export function FolderExplorer() {
       .slice(0, 40);
   }, [query, flat]);
 
+  const enter = (idxPath: number[]) => {
+    setNavPath(idxPath);
+    setHighlightKey(null);
+    setQuery("");
+  };
+
   const openResult = (entry: FlatEntry) => {
-    // expand every ancestor along the index-path so the tree renders it visible
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      for (let i = 1; i < entry.idxPath.length; i++) {
-        next.add(keyOf(entry.idxPath.slice(0, i)));
-      }
-      return next;
-    });
-    setFocusKey(keyOf(entry.idxPath));
+    const hasChildren = !!entry.node.children?.length;
+    if (hasChildren) {
+      // step inside the folder itself
+      setNavPath(entry.idxPath);
+      setHighlightKey(null);
+    } else {
+      // it's a file — land in its parent folder and point it out
+      setNavPath(entry.idxPath.slice(0, -1));
+      setHighlightKey(keyOf(entry.idxPath));
+    }
     setQuery("");
   };
 
@@ -67,12 +90,12 @@ export function FolderExplorer() {
     <section className="card overflow-hidden">
       <div className="border-b border-slate-100 p-4">
         <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-          🗂️ Buscar una carpeta
+          🗂️ Search a folder
         </h2>
         <div className="relative mt-2">
           <input
             className="input"
-            placeholder="Escribí un nombre… ej. “LARVIVA”, “brand guidelines”, “roll-up”"
+            placeholder="Type a name… e.g. “LARVIVA”, “brand guidelines”, “roll-up”"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -89,9 +112,7 @@ export function FolderExplorer() {
         {query && (
           <div className="mt-3 max-h-80 space-y-1 overflow-y-auto">
             {results.length === 0 && (
-              <p className="px-1 py-2 text-sm text-slate-400">
-                Sin resultados para “{query}”.
-              </p>
+              <p className="px-1 py-2 text-sm text-slate-400">No results for “{query}”.</p>
             )}
             {results.map((r) => (
               <button
@@ -99,9 +120,11 @@ export function FolderExplorer() {
                 onClick={() => openResult(r)}
                 className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-biomar-ice/50"
               >
-                <span className="font-semibold text-biomar-navy">{r.node.name}</span>
+                <span className="font-semibold text-biomar-navy">
+                  {r.node.children?.length ? "📁" : "📄"} {r.node.name}
+                </span>
                 <span className="block truncate text-xs text-slate-400">
-                  {r.names.slice(0, -1).join(" › ") || "raíz"}
+                  {r.names.slice(0, -1).join(" › ") || "root"}
                 </span>
               </button>
             ))}
@@ -110,85 +133,90 @@ export function FolderExplorer() {
       </div>
 
       {!query && (
-        <div className="max-h-[32rem] overflow-y-auto p-3">
-          <Tree
-            nodes={folderTree}
-            parentIdx={[]}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            focusKey={focusKey}
-          />
+        <div>
+          {/* breadcrumb */}
+          <div className="flex flex-wrap items-center gap-1 border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs">
+            {breadcrumb.map((n, i) => {
+              const isLast = i === breadcrumb.length - 1;
+              return (
+                <span key={i} className="flex items-center gap-1">
+                  <button
+                    onClick={() => enter(navPath.slice(0, i + 1))}
+                    disabled={isLast}
+                    className={
+                      isLast
+                        ? "font-semibold text-biomar-navy"
+                        : "text-slate-500 hover:text-biomar-swoosh hover:underline"
+                    }
+                  >
+                    {n.name}
+                  </button>
+                  {!isLast && <span className="text-slate-300">›</span>}
+                </span>
+              );
+            })}
+            {navPath.length > 1 && (
+              <button
+                onClick={() => enter(navPath.slice(0, -1))}
+                className="btn-ghost ml-auto px-2 py-1 text-[11px]"
+              >
+                ← Up one level
+              </button>
+            )}
+          </div>
+
+          {currentNode.note && (
+            <p className="border-b border-slate-100 bg-biomar-ice/30 px-4 py-2 text-xs text-slate-500">
+              {currentNode.note}
+            </p>
+          )}
+
+          {/* contents of the current folder */}
+          <div className="max-h-[28rem] overflow-y-auto p-2">
+            {(currentNode.children ?? []).length === 0 ? (
+              <p className="px-3 py-6 text-center text-sm text-slate-400">
+                This folder has nothing inside it on the map.
+              </p>
+            ) : (
+              <ul className="space-y-0.5">
+                {currentNode.children!.map((n, i) => {
+                  const idxPath = [...navPath, i];
+                  const key = keyOf(idxPath);
+                  const hasChildren = !!n.children?.length;
+                  const isHighlighted = highlightKey === key;
+                  return (
+                    <li key={key}>
+                      <button
+                        onClick={() => hasChildren && enter(idxPath)}
+                        className={`flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left transition ${
+                          isHighlighted
+                            ? "bg-biomar-swoosh/15 ring-1 ring-biomar-swoosh/40"
+                            : hasChildren
+                              ? "hover:bg-biomar-ice/50"
+                              : "cursor-default"
+                        }`}
+                      >
+                        <span className="mt-0.5 shrink-0">{hasChildren ? "📁" : "📄"}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm text-biomar-navy">{n.name}</span>
+                          {n.note && (
+                            <span className="block text-xs text-slate-400">{n.note}</span>
+                          )}
+                        </span>
+                        {hasChildren && (
+                          <span className="shrink-0 text-xs text-slate-300">
+                            {n.children!.length} ›
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </section>
-  );
-}
-
-function Tree({
-  nodes,
-  parentIdx,
-  expanded,
-  setExpanded,
-  focusKey,
-}: {
-  nodes: FolderNode[];
-  parentIdx: number[];
-  expanded: Set<string>;
-  setExpanded: React.Dispatch<React.SetStateAction<Set<string>>>;
-  focusKey: string | null;
-}) {
-  const depth = parentIdx.length;
-  return (
-    <ul className={depth === 0 ? "space-y-0.5" : "ml-4 space-y-0.5 border-l border-slate-100 pl-3"}>
-      {nodes.map((n, i) => {
-        const idxPath = [...parentIdx, i];
-        const key = keyOf(idxPath);
-        const hasChildren = !!n.children?.length;
-        const isFocused = focusKey === key;
-        const isOpen = expanded.has(key) || isFocused;
-        return (
-          <li key={key}>
-            <div
-              className={`flex items-start gap-1.5 rounded-lg px-1.5 py-1 ${
-                isFocused ? "bg-biomar-swoosh/15 ring-1 ring-biomar-swoosh/40" : ""
-              }`}
-            >
-              {hasChildren ? (
-                <button
-                  className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center text-[10px] text-slate-400"
-                  onClick={() =>
-                    setExpanded((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(key)) next.delete(key);
-                      else next.add(key);
-                      return next;
-                    })
-                  }
-                >
-                  {isOpen ? "▾" : "▸"}
-                </button>
-              ) : (
-                <span className="mt-0.5 w-4 shrink-0 text-center text-[10px] text-slate-300">•</span>
-              )}
-              <div className="min-w-0">
-                <span className="text-sm text-biomar-navy">
-                  {hasChildren ? "📁" : "📄"} {n.name}
-                </span>
-                {n.note && <span className="block text-xs text-slate-400">{n.note}</span>}
-              </div>
-            </div>
-            {hasChildren && isOpen && (
-              <Tree
-                nodes={n.children!}
-                parentIdx={idxPath}
-                expanded={expanded}
-                setExpanded={setExpanded}
-                focusKey={focusKey}
-              />
-            )}
-          </li>
-        );
-      })}
-    </ul>
   );
 }

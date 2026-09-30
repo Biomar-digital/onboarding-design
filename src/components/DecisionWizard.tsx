@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { folderWizard } from "../content/folderWizard";
 
-// Step-through "¿Dónde guardo esto?" wizard. Walks the WizardFlow one step at
+// Step-through "Where does this go?" wizard. Walks the WizardFlow one step at
 // a time, keeping a breadcrumb trail so the user can go back or restart.
 export function DecisionWizard() {
   const [path, setPath] = useState<string[]>([folderWizard.start]);
@@ -16,11 +16,11 @@ export function DecisionWizard() {
     <section className="card p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-          ¿Dónde guardo esto?
+          Where does this go?
         </h2>
         {path.length > 1 && (
           <button className="text-xs text-slate-400 hover:text-biomar-swoosh" onClick={restart}>
-            ↺ Empezar de nuevo
+            ↺ Start over
           </button>
         )}
       </div>
@@ -53,7 +53,7 @@ export function DecisionWizard() {
 
       {path.length > 1 && (
         <button className="btn-ghost mt-4 text-xs" onClick={back}>
-          ← Volver
+          ← Back
         </button>
       )}
     </section>
@@ -74,7 +74,7 @@ function QuestionStep({
       <p className="text-base font-semibold text-biomar-navy">{prompt}</p>
       <div className="mt-4 flex justify-center gap-3">
         <button className="btn-primary min-w-24" onClick={onYes}>
-          Sí
+          Yes
         </button>
         <button className="btn-ghost min-w-24" onClick={onNo}>
           No
@@ -107,7 +107,7 @@ function ActionStep({
     >
       {isFinal && (
         <p className="mb-1 text-xs font-bold uppercase tracking-widest text-biomar-green">
-          📁 Ahí va
+          📁 That's the spot
         </p>
       )}
       <p className="text-base font-semibold text-biomar-navy">{prompt}</p>
@@ -125,12 +125,12 @@ function ActionStep({
       <div className="mt-4 flex justify-center gap-3">
         {onContinue && (
           <button className="btn-primary" onClick={onContinue}>
-            Listo, seguir →
+            Got it, continue →
           </button>
         )}
         {onRestart && (
           <button className="btn-primary" onClick={onRestart}>
-            Empezar de nuevo
+            Start over
           </button>
         )}
       </div>
