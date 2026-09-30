@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
 import { chapters } from "../content/chapters";
@@ -9,20 +9,48 @@ import { completionStats, moduleStatus } from "../lib/progress";
 import { groupByDay, formatDay, formatLoad } from "../lib/schedule";
 import type { Person } from "../content/types";
 
+// Admin-only banner shown while previewing a designer's panel.
+export function ViewingBanner({ person }: { person: Person }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+      <span>
+        👁 Viewing <span className="font-semibold">{person.name}</span>'s
+        panel as admin — read only.
+      </span>
+      <Link
+        to={`/admin/person/${person.id}`}
+        className="font-semibold text-biomar-swoosh hover:underline"
+      >
+        ← Back to manage
+      </Link>
+    </div>
+  );
+}
+
 export function Employee() {
-  const { currentUser } = useStore();
+  const { currentUser, people } = useStore();
+  const { personId } = useParams();
+  // Admins can open any designer's panel via /admin/view/:personId.
+  const viewingAs =
+    personId && currentUser?.role === "admin"
+      ? people.find((p) => p.id === personId) ?? null
+      : null;
+  const subject = personId ? viewingAs : currentUser;
+  const base = viewingAs ? `/admin/view/${viewingAs.id}` : "";
   const hasSchedule =
-    !!currentUser && Object.keys(currentUser.schedule ?? {}).length > 0;
+    !!subject && Object.keys(subject.schedule ?? {}).length > 0;
   const [view, setView] = useState<"chapter" | "date">(
     hasSchedule ? "date" : "chapter",
   );
-  if (!currentUser) return null;
-  const stats = completionStats(currentUser);
+  if (!subject) return null;
+  const stats = completionStats(subject);
 
   return (
+    <div>
+    {viewingAs && <ViewingBanner person={viewingAs} />}
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
-        <Header person={currentUser} pct={stats.pct} stats={stats} />
+        <Header person={subject} pct={stats.pct} stats={stats} viewing={!!viewingAs} />
 
         <div className="inline-flex items-center gap-1 rounded-xl bg-white p-1 shadow-card ring-1 ring-slate-100">
           <ViewTab active={view === "chapter"} onClick={() => setView("chapter")}>
@@ -34,13 +62,14 @@ export function Employee() {
         </div>
 
         {view === "date" ? (
-          <ScheduleView person={currentUser} />
+          <ScheduleView person={subject} base={base} />
         ) : (
-          <ChapterView person={currentUser} />
+          <ChapterView person={subject} base={base} />
         )}
       </div>
 
       <InfoPanel />
+    </div>
     </div>
   );
 }
@@ -72,16 +101,18 @@ function ViewTab({
 function ModuleRow({
   person,
   moduleId,
+  base,
 }: {
   person: Person;
   moduleId: string;
+  base: string;
 }) {
   const m = modulesById[moduleId];
   const status = moduleStatus(person, moduleId);
   const score = person.progress[moduleId]?.quizScore;
   return (
     <Link
-      to={`/module/${moduleId}`}
+      to={`${base}/module/${moduleId}`}
       className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5 transition hover:border-biomar-swoosh hover:bg-biomar-ice/40"
     >
       <StatusDot done={status === "done"} />
@@ -102,7 +133,7 @@ function ModuleRow({
 }
 
 // ── By chapter — one section per source document, items in original order ──
-function ChapterView({ person }: { person: Person }) {
+function ChapterView({ person, base }: { person: Person; base: string }) {
   const standalone = modules.filter(
     (m) =>
       m.chapterId === null &&
@@ -115,7 +146,7 @@ function ChapterView({ person }: { person: Person }) {
     <>
       {welcomeAssigned && (
         <section className="card border-2 border-biomar-swoosh/30 p-3">
-          <ModuleRow person={person} moduleId="welcome" />
+          <ModuleRow person={person} moduleId="welcome" base={base} />
         </section>
       )}
 
@@ -141,7 +172,7 @@ function ChapterView({ person }: { person: Person }) {
 
             <div className="space-y-2">
               {assigned.map((id) => (
-                <ModuleRow key={id} person={person} moduleId={id} />
+                <ModuleRow key={id} person={person} moduleId={id} base={base} />
               ))}
             </div>
           </section>
@@ -158,7 +189,7 @@ function ChapterView({ person }: { person: Person }) {
           </p>
           <div className="space-y-2">
             {standalone.map((m) => (
-              <ModuleRow key={m.id} person={person} moduleId={m.id} />
+              <ModuleRow key={m.id} person={person} moduleId={m.id} base={base} />
             ))}
           </div>
         </section>
@@ -168,7 +199,7 @@ function ChapterView({ person }: { person: Person }) {
 }
 
 // ── By date (calendar) ───────────────────────────────────────────────────────
-function ScheduleView({ person }: { person: Person }) {
+function ScheduleView({ person, base }: { person: Person; base: string }) {
   const { days, unscheduled } = groupByDay(person);
 
   if (days.length === 0) {
@@ -207,7 +238,7 @@ function ScheduleView({ person }: { person: Person }) {
             </div>
             <div className="space-y-2 p-4">
               {day.moduleIds.map((id) => (
-                <ModuleRow key={id} person={person} moduleId={id} />
+                <ModuleRow key={id} person={person} moduleId={id} base={base} />
               ))}
             </div>
           </section>
@@ -221,7 +252,7 @@ function ScheduleView({ person }: { person: Person }) {
           </h2>
           <div className="space-y-2">
             {unscheduled.map((id) => (
-              <ModuleRow key={id} person={person} moduleId={id} />
+              <ModuleRow key={id} person={person} moduleId={id} base={base} />
             ))}
           </div>
         </section>
@@ -234,19 +265,23 @@ function Header({
   person,
   pct,
   stats,
+  viewing,
 }: {
   person: Person;
   pct: number;
   stats: ReturnType<typeof completionStats>;
+  viewing: boolean;
 }) {
   const profile = person.profile ? profilesById[person.profile] : null;
   return (
     <section className="card overflow-hidden">
       <div className="bg-gradient-to-r from-biomar-navy to-biomar-blue p-6 text-white">
         <p className="text-xs uppercase tracking-widest text-white/60">
-          Your onboarding
+          {viewing ? `${person.name}'s onboarding` : "Your onboarding"}
         </p>
-        <h1 className="mt-1 text-2xl font-bold">Hi, {person.name.split(" ")[0]}</h1>
+        <h1 className="mt-1 text-2xl font-bold">
+          {viewing ? person.name : `Hi, ${person.name.split(" ")[0]}`}
+        </h1>
         {profile && (
           <p className="mt-1 text-sm text-white/80">
             Track: <span className="font-semibold">{profile.label}</span>

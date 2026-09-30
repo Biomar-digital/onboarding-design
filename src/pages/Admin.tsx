@@ -135,12 +135,20 @@ function Row({ person }: { person: Person }) {
         </div>
       </td>
       <td className="px-4 py-3 text-right">
-        <Link
-          to={`/admin/person/${person.id}`}
-          className="text-sm font-semibold text-biomar-swoosh hover:underline"
-        >
-          Manage →
-        </Link>
+        <div className="flex items-center justify-end gap-4">
+          <Link
+            to={`/admin/view/${person.id}`}
+            className="text-sm font-semibold text-slate-500 hover:text-biomar-swoosh hover:underline"
+          >
+            View panel
+          </Link>
+          <Link
+            to={`/admin/person/${person.id}`}
+            className="text-sm font-semibold text-biomar-swoosh hover:underline"
+          >
+            Manage →
+          </Link>
+        </div>
       </td>
     </tr>
   );

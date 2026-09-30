@@ -126,6 +126,26 @@ export default function App() {
         }
       />
       <Route
+        path="/admin/view/:personId"
+        element={
+          <Require role="admin">
+            <Layout>
+              <Employee />
+            </Layout>
+          </Require>
+        }
+      />
+      <Route
+        path="/admin/view/:personId/module/:moduleId"
+        element={
+          <Require role="admin">
+            <Layout>
+              <ModuleView />
+            </Layout>
+          </Require>
+        }
+      />
+      <Route
         path="/admin/signup-requests"
         element={
           <Require role="admin">

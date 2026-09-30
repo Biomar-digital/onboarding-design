@@ -4,6 +4,7 @@ import { modulesById } from "../content/modules";
 import { chaptersById } from "../content/chapters";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
+import { ViewingBanner } from "./Employee";
 import { DeckViewer } from "../components/DeckViewer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ToolsMap } from "../components/ToolsMap";
@@ -11,34 +12,43 @@ import { FolderStructureExplorer } from "../components/FolderStructureExplorer";
 import type { LessonSection, QuizQuestion } from "../content/types";
 
 export function ModuleView() {
-  const { moduleId } = useParams();
-  const { currentUser, markModuleComplete } = useStore();
+  const { moduleId, personId } = useParams();
+  const { currentUser, people, markModuleComplete } = useStore();
   const navigate = useNavigate();
   const module = moduleId ? modulesById[moduleId] : undefined;
+  // Admins can preview any designer's module via /admin/view/:personId/module/:moduleId (read only).
+  const viewingAs =
+    personId && currentUser?.role === "admin"
+      ? people.find((p) => p.id === personId) ?? null
+      : null;
+  const subject = personId ? viewingAs : currentUser;
+  const base = viewingAs ? `/admin/view/${viewingAs.id}` : "";
 
-  if (!module || !currentUser) {
+  if (!module || !subject) {
     return (
       <div className="card p-8 text-center text-slate-500">
         Module not found.{" "}
-        <Link to="/" className="text-biomar-swoosh">
+        <Link to={base || "/"} className="text-biomar-swoosh">
           Back
         </Link>
       </div>
     );
   }
 
-  const alreadyDone = currentUser.progress[module.id]?.completed;
+  const alreadyDone = subject.progress[module.id]?.completed;
   const chapter = module.chapterId ? chaptersById[module.chapterId] : null;
 
   return (
+    <div>
+    {viewingAs && <ViewingBanner person={viewingAs} />}
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <article className="space-y-6">
         <div>
           <Link
-            to="/"
+            to={base || "/"}
             className="text-sm text-slate-400 hover:text-biomar-swoosh"
           >
-            ← Back to my onboarding
+            ← {viewingAs ? `Back to ${viewingAs.name}'s onboarding` : "Back to my onboarding"}
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="chip bg-biomar-ice text-biomar-blue uppercase">
@@ -106,12 +116,22 @@ export function ModuleView() {
           </section>
         )}
 
-        {module.quiz.length > 0 ? (
+        {viewingAs ? (
+          <section className="card p-6 text-sm text-slate-500">
+            {alreadyDone
+              ? `${viewingAs.name} completed this module${
+                  subject.progress[module.id]?.quizScore != null
+                    ? ` (quiz ${subject.progress[module.id]?.quizScore}%)`
+                    : ""
+                }.`
+              : `${viewingAs.name} hasn't completed this module yet.`}
+          </section>
+        ) : module.quiz.length > 0 ? (
           <Quiz
             questions={module.quiz}
             alreadyDone={!!alreadyDone}
             onPass={(score) => {
-              markModuleComplete(currentUser.id, module.id, score);
+              markModuleComplete(subject.id, module.id, score);
               navigate("/");
             }}
           />
@@ -122,7 +142,7 @@ export function ModuleView() {
               <button
                 className="btn-accent"
                 onClick={() => {
-                  markModuleComplete(currentUser.id, module.id, 100);
+                  markModuleComplete(subject.id, module.id, 100);
                   navigate("/");
                 }}
               >
@@ -134,6 +154,7 @@ export function ModuleView() {
       </article>
 
       <InfoPanel />
+    </div>
     </div>
   );
 }
