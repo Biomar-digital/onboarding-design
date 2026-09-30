@@ -13,7 +13,7 @@ export const profiles: Profile[] = [
     label: "Graphic Designer — Junior",
     description:
       "New graphic designer. Needs every chapter, start to finish — strategy, marketing org, process, playbook and brand guidelines.",
-    recommendedModuleIds: allIds,
+    recommendedModuleIds: without("global-strategy-2025"),
   },
   {
     id: "graphic-senior",
@@ -25,6 +25,7 @@ export const profiles: Profile[] = [
       "strategic-04",
       "global-01",
       "dh2026-06",
+      "global-strategy-2025",
     ),
   },
   {
@@ -32,7 +33,7 @@ export const profiles: Profile[] = [
     label: "Multimedia / Motion Designer",
     description:
       "Video & motion focus. Emphasizes process, feedback formats (incl. video), brand and people; still needs the full strategic/organisational picture.",
-    recommendedModuleIds: without("dh2026-06"),
+    recommendedModuleIds: without("dh2026-06", "global-strategy-2025"),
   },
   {
     id: "intern",

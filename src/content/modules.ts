@@ -386,12 +386,12 @@ export const modules: Module[] = [
     chapterId: "global",
     title: "Team & Organisation",
     summary:
-      "What Global Marketing is, its three working areas, the org structure and the team.",
+      "What Global Marketing is, how Global / Divisional / Local marketing split responsibilities, the org chart, and how the team collaborates.",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/global--01-team-organisation.pptx`,
-      type: "pptx",
-      range: "Slides 1–6",
+      file: `${SLICE}/global--01-team-organisation-2025.pdf`,
+      type: "pdf",
+      range: "One BioMar Marketing, org chart & collaboration (5 pages)",
     },
     sections: [
       {
@@ -403,9 +403,33 @@ export const modules: Module[] = [
       {
         heading: "Our three working areas",
         bullets: [
-          "BioMar Marketing (brand, positioning, shared services)",
-          "Product Marketing Management (manages a segment, develops the product range)",
-          "Local Marketing (launches the range and runs local initiatives)",
+          "Global Marketing (brand, positioning, shared services — this is the Design Hub's home)",
+          "Divisional Marketing (develops the product range for its product portfolio and manages its businesses)",
+          "Local Marketing (launches the product range and runs local initiatives)",
+        ],
+      },
+      {
+        heading: "One BioMar Marketing",
+        body: [
+          "Global Marketing sits above four global product/service lines (Global Product Concepts, Trademarks, Marketing Agency, Digital Marketing), which in turn cover five product segments (Salmon, FW, MS, Hatchery, Shrimp) delivered locally by 12 business units — Chile, Norway, Greece, Turkey, Costa Rica, Ecuador, UK, Australia, Baltics, West MED, China, Vietnam.",
+        ],
+      },
+      {
+        heading: "The Global Marketing team",
+        bullets: [
+          "Katherine Bryar — Global Marketing Director",
+          "Olivia Andrews — Graphic Designer",
+          "Elizabeth Jørgensen — Graphic Designer",
+          "Steffan Kyhe — Digital Marketing Lead",
+          "Nerea Palacios — Student Assistant",
+        ],
+        note: "Creative Direction is provided externally by Bitsch & Bitsch. Videographers, photographers and additional creative designers are brought in as needed.",
+      },
+      {
+        heading: "Marketing Forum & collaboration cadence",
+        body: [
+          "Global Marketing is guided by the Marketing Forum (Salmon · FW & MS · Shrimp & Hatchery · Product Strategist), which sets positioning for product concepts and services and runs the shared Design and Digital agency.",
+          "Below the Forum, a regular Global Marketing Meeting brings together the local marketing managers across every business unit to stay aligned.",
         ],
       },
       {
@@ -417,15 +441,6 @@ export const modules: Module[] = [
           { label: "Salmon", value: "Australia, UK, Norway, Chile" },
           { label: "Hatchery", value: "LARVIVA" },
         ],
-        note: "See the Marketing Organisation chart in the slides above.",
-      },
-      {
-        heading: "The Global Marketing team",
-        bullets: [
-          "Isidora Silva Chiros — Graphic Designer",
-          "Nerea Palacios — Content Creator",
-          "Matt Evans — Digital Marketing Platforms Specialist",
-        ],
       },
     ],
     quiz: [
@@ -433,19 +448,19 @@ export const modules: Module[] = [
         id: "q1",
         type: "multi",
         prompt: "Which are the three working areas of Marketing? (select all)",
-        options: ["BioMar Marketing", "Product Marketing Management", "Local Marketing", "Fleet Operations"],
+        options: ["Global Marketing", "Divisional Marketing", "Local Marketing", "Fleet Operations"],
         correct: [0, 1, 2],
         explanation:
-          "The three areas are BioMar Marketing, Product Marketing Management and Local Marketing.",
+          "The three areas are Global Marketing, Divisional Marketing and Local Marketing.",
       },
       {
         id: "q2",
         type: "single",
-        prompt: "Which markets belong to the Salmon division?",
-        options: ["Vietnam & China", "Baltics & WestMed", "Australia, UK, Norway, Chile", "Costa Rica & Ecuador"],
-        correct: [2],
+        prompt: "Who leads Global Marketing, the Design Hub's home team?",
+        options: ["Carlos Díaz", "Katherine Bryar", "Bitsch & Bitsch", "Marcel Huijsmans"],
+        correct: [1],
         explanation:
-          "Salmon covers Australia, UK, Norway and Chile.",
+          "Katherine Bryar is the Global Marketing Director. Bitsch & Bitsch provides external Creative Direction; Marcel Huijsmans directs Salmon Marketing.",
       },
     ],
     exercises: [
@@ -594,6 +609,102 @@ export const modules: Module[] = [
         prompt:
           "Take one past project and note whether it was a Group-level or Global-level initiative, and why.",
         successCriteria: ["Project classified", "Reasoning given"],
+      },
+    ],
+  },
+  {
+    id: "global-04",
+    chapterId: "global",
+    title: "Product & Brand Glossary",
+    summary:
+      "What LARVIVA, ORBIT, SmartCare, EXIA and the rest of BioMar's product brands actually are — the names you'll see on every brief.",
+    estMinutes: 20,
+    material: {
+      file: `${SLICE}/global--04-product-brand-glossary.pdf`,
+      type: "pdf",
+      range: "Product Offering section (18 pages)",
+    },
+    sections: [
+      {
+        heading: "Why this matters",
+        note: "Every product name below is also a real folder branch on The Pond (see the Folder Structure module) and shows up constantly in briefs. Knowing what each one is for makes both far easier to navigate.",
+      },
+      {
+        heading: "BioMar's brand archetype",
+        body: [
+          "BioMar's brand archetype is the Enabler: in collaboration with industry partners, the BioMar brand acts as a catalyst for change, developing practical solutions that keep transforming aquaculture. \"The collaborative way we do business is our competitive difference.\"",
+        ],
+      },
+      {
+        heading: "Global brands (cut across products)",
+        facts: [
+          { label: "Blue Impact", value: "Sustainability-focused feed range — lower-impact, circular & restorative ingredients" },
+          { label: "ORBIT", value: "Feed for advanced farming tech (RAS) — maximises fish and biofilter performance" },
+          { label: "SmartCare", value: "\"You care. We care.\" — preventative health feed programme, biofunctional ingredients" },
+          { label: "VetCare", value: "Veterinary / medicated feed line" },
+        ],
+      },
+      {
+        heading: "Product segments & their brands",
+        facts: [
+          { label: "Salmon", value: "POWER · Symbio (cleaner fish) · intro" },
+          { label: "FW (Fresh Water)", value: "Efico · Inicio · Salvea" },
+          { label: "MS (Marine/Sea Water)", value: "Efico · Maxio" },
+          { label: "Hatchery", value: "LARVIVA — \"Start Strong. Stay Strong.\" Complete hatchery feed range for fish and shrimp." },
+          { label: "Shrimp", value: "EXIA — performance-driven feed from larval stage to harvest" },
+        ],
+      },
+      {
+        heading: "A few name combinations worth knowing",
+        bullets: [
+          "LARVIVA ORBIT — the ORBIT concept applied to marine nurseries running on RAS",
+          "Symbio — nutrition specifically for cleaner fish (the fish that de-louse salmon)",
+        ],
+      },
+      {
+        heading: "Quality & growth concepts",
+        facts: [
+          { label: "P 3.0 Concept", value: "Feeds optimised for different fish products and market situations, whatever fish prices or costs do" },
+          { label: "BioRhythmic Nutrition", value: "Feed matched to the fish's needs at each growth stage — pellet size and nutrients adjusted as fish grow" },
+          { label: "Best Total Economic Performance", value: "The outcome all of the above is aimed at: the best result for the farmer's conditions and objectives" },
+        ],
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "single",
+        prompt: "A brief mentions a RAS (recirculating aquaculture system) hatchery project. Which brand is it most likely for?",
+        options: ["SmartCare", "ORBIT / LARVIVA ORBIT", "VetCare", "Blue Impact"],
+        correct: [1],
+        explanation:
+          "ORBIT is BioMar's feed range for advanced farming tech like RAS; LARVIVA ORBIT applies that specifically to marine nurseries.",
+      },
+      {
+        id: "q2",
+        type: "single",
+        prompt: "What is BioMar's brand archetype?",
+        options: ["The Ruler", "The Innocent", "The Enabler", "The Jester"],
+        correct: [2],
+        explanation:
+          "BioMar is positioned as the Enabler — a catalyst for change through collaboration with industry partners.",
+      },
+      {
+        id: "q3",
+        type: "single",
+        prompt: "Which brand is BioMar's preventative health feed programme?",
+        options: ["SmartCare", "LARVIVA", "EXIA", "P 3.0"],
+        correct: [0],
+        explanation: "SmartCare — \"You care. We care.\" — is the preventative health feed range.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Match the brand",
+        prompt:
+          "Pick three product folders from the Folder Structure explorer you don't recognise and, using this glossary, write one line on what each brand actually is.",
+        successCriteria: ["Three folders picked", "Correct brand explained for each"],
       },
     ],
   },
@@ -1703,6 +1814,88 @@ export const modules: Module[] = [
       },
     ],
   },
+  {
+    id: "brand-guidelines-05",
+    chapterId: "brand-guidelines",
+    title: "Complementary Guidelines",
+    summary:
+      "Practical tips, best practices and edge cases that come up in real projects — a complement to the official Brand Book, not a replacement.",
+    estMinutes: 20,
+    material: {
+      file: `${SLICE}/brand-guidelines--05-complementary-guidelines.pdf`,
+      type: "pdf",
+      range: "All 17 pages",
+    },
+    sections: [
+      {
+        heading: "What this document is",
+        note: "These are additional recommendations, tips and best practices developed over time working with the BioMar brand — not official guidelines. Use them alongside the Brand Book and existing templates, and use your own judgment: every project is different.",
+      },
+      {
+        heading: "Colour & gradients",
+        bullets: [
+          "Alternative BioMar colours exist beyond the core palette (used in GSRs, packaging, and other materials) — the Product Brand Guidelines remain the primary reference",
+          "Avoid gradients: they break brand consistency and are hard to reproduce in print. Use solid colours, colour blocks or overlays instead",
+          "Exception: a black-to-transparent gradient with a Multiply effect can be used to improve text legibility over images — as a supporting tool only, never the main design element",
+        ],
+      },
+      {
+        heading: "Packaging",
+        bullets: [
+          "Website bags are digital-only and follow their own structure (colour coding + life-stage wheel) — they're not a 1:1 copy of the real bag",
+          "Keep BioMar Blue as the dominant colour and the top of the bag; avoid red (reserved for a competitor, except where medical feed regulations require it)",
+          "Before starting a new packaging concept, always review existing bags for consistency across the portfolio",
+        ],
+      },
+      {
+        heading: "Icon style",
+        note: "Not yet formalised in the official Brand Guidelines, but keep icons one-coloured and filled (not stroke icons) for a consistent, clean look.",
+      },
+      {
+        heading: "Typography",
+        facts: [
+          { label: "Chinese", value: "Noto Sans CJK SC" },
+          { label: "Vietnamese / Greek / Russian", value: "Arial" },
+          { label: "Turkish", value: "Avenir Next" },
+          { label: "Website titles", value: "Montserrat (licensing)" },
+        ],
+        note: "Alternative fonts (e.g. Coastline for a warmer, human touch) are allowed only with clear design justification and approval from Global Marketing.",
+      },
+      {
+        heading: "Product bags in social media",
+        note: "Don't default to bag mockups. Lead with the concept — the benefit, value and story — and use the bag only when it adds value. Ask: \"Could this post work without showing the bag?\"",
+      },
+    ],
+    quiz: [
+      {
+        id: "q1",
+        type: "boolean",
+        prompt: "Gradients are the preferred way to add depth to BioMar design concepts.",
+        options: ["True", "False"],
+        correct: [1],
+        explanation:
+          "False — avoid gradients (they hurt brand consistency and print reproduction). Use solid colours, colour blocks or overlays instead.",
+      },
+      {
+        id: "q2",
+        type: "single",
+        prompt: "What colour is generally avoided on BioMar packaging, except for medical feed?",
+        options: ["Blue", "Green", "Red", "White"],
+        correct: [2],
+        explanation:
+          "Red is a prohibited colour — it's strongly associated with a main competitor. Medical feed is the only exception, where local regulations may require it.",
+      },
+    ],
+    exercises: [
+      {
+        id: "e1",
+        title: "Spot the fix",
+        prompt:
+          "Find an existing piece of BioMar marketing material (real or a mockup) that breaks one of these guidelines and note what you'd change.",
+        successCriteria: ["A concrete example found", "The specific guideline it breaks identified"],
+      },
+    ],
+  },
 
   // ═══════════════════════════════════════════════════════════════════════════
   // STANDALONE REFERENCE (not sourced from a single document)
@@ -1798,6 +1991,51 @@ export const modules: Module[] = [
         ],
       },
     ],
+  },
+  {
+    id: "global-strategy-2025",
+    chapterId: null,
+    title: "Global Marketing Strategy — Q2 2025 Update",
+    summary:
+      "How Global Marketing segments products and customers, and where that thinking is heading. Optional deep-dive, not required day-to-day.",
+    estMinutes: 25,
+    material: {
+      file: "/materials/global-marketing-strategy-house-q2-2025.pdf",
+      type: "pdf",
+      range: "Full deck (32 pages)",
+    },
+    sections: [
+      {
+        heading: "Why this is here",
+        note: "This is internal Global Marketing strategy work, not something you need to do your day-to-day design tasks. It's here for context, for anyone who wants to understand how Marketing thinks about products and customers.",
+      },
+      {
+        heading: "Product segmentation",
+        body: [
+          "Products are segmented by life stage (Hatchery → Starter/Fresh Water → Grower/Sea Water) and by performance tier (Standard, High, Top), with optional attributes like Medicated or Premium. This segmentation now feeds a gross profit report, reconciled monthly with finance data.",
+        ],
+      },
+      {
+        heading: "Needs-based customer segmentation",
+        body: [
+          "Based on 23 in-depth interviews, four customer clusters were identified along two axes — Innovation & Risk Appetite (Conservative ↔ Progressive) and Business Mindset (Market Differentiation ↔ Operational Efficiency): Future Shapers, Scalable Performers, Solid Executors and Cautious Builders.",
+        ],
+        facts: [
+          { label: "Future Shapers", value: "Ambitious innovators — differentiation as their edge" },
+          { label: "Scalable Performers", value: "Operational minds — push for volume & efficiency" },
+          { label: "Solid Executors", value: "Reliable — stability, consistency, doing what works" },
+          { label: "Cautious Builders", value: "Risk-averse — differentiation through safe, proven steps" },
+        ],
+      },
+      {
+        heading: "Where this is heading",
+        body: [
+          "Next steps layer a BCG-style matrix (market growth vs. market share) onto the customer clusters, using 2022–2024 data on products/services used or needed, to define clear value propositions, a change-management matrix and KPIs per cluster.",
+        ],
+      },
+    ],
+    quiz: [],
+    exercises: [],
   },
 ];
 
