@@ -37,11 +37,8 @@ export function Employee() {
       : null;
   const subject = personId ? viewingAs : currentUser;
   const base = viewingAs ? `/admin/view/${viewingAs.id}` : "";
-  const hasSchedule =
-    !!subject && Object.keys(subject.schedule ?? {}).length > 0;
-  const [view, setView] = useState<"chapter" | "date">(
-    hasSchedule ? "date" : "chapter",
-  );
+  // By chapter is the default; "By date" is one click away.
+  const [view, setView] = useState<"chapter" | "date">("chapter");
   if (!subject) return null;
   const stats = completionStats(subject);
 
