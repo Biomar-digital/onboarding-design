@@ -113,7 +113,7 @@ export interface InfoPanelGroup {
   rows: { label: string; value: string; hint?: string }[];
 }
 
-/** A node in the real Design Hub folder tree (The Pond / Kontainer), used by the
+/** A node in the real Design Hub shared-drive folder tree, used by the
  * interactive folder-structure explorer and search. */
 export interface FolderNode {
   name: string;

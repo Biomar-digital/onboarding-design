@@ -12,8 +12,8 @@ export function FolderStructureExplorer() {
   return (
     <div className="space-y-4">
       <p className="rounded-xl border-l-4 border-biomar-swoosh bg-biomar-ice/50 px-4 py-3 text-sm text-biomar-navy">
-        🗺️ This is the real folder tree of The Pond (Kontainer), as it stands
-        today. Use the wizard when you have something new to save and aren't
+        🗺️ This is the real folder tree of the Design Hub's shared drive, as
+        it stands today. Use the wizard when you have something new to save and aren't
         sure where it goes, or explore/search directly if you already know
         what you're looking for.
       </p>

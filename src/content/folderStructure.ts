@@ -1,7 +1,7 @@
 import type { FolderNode } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The real Design Hub folder tree (The Pond / Kontainer), transcribed from the
+// The real Design Hub shared-drive folder tree, transcribed from the
 // "Folder Map" Figma board (a top-down org-chart diagram of the shared drive).
 // Powers the interactive folder explorer + search (see FolderExplorer.tsx).
 // Every folder carries a `note`: some are the original annotation callouts from
@@ -14,7 +14,7 @@ import type { FolderNode } from "./types";
 export const folderTree: FolderNode[] = [
   {
     name: "Design Hub 2.0",
-    note: "The Design Hub's shared drive (The Pond / Kontainer), root of everything below.",
+    note: "The Design Hub's shared drive, root of everything below.",
     children: [
       { name: "00. Digital Hub (SoMe)", note: "Illustrative projects we collaborate with Digital Hub (Website, SoMe, customer portal, etc.)",
         children: [
@@ -195,7 +195,7 @@ export const folderTree: FolderNode[] = [
           { name: "06. Icon Library", note: "Source icon files and their exported formats, used across BioMar communications",
             children: [
               { name: "2025 Above and Beyond.ai", note: "File to edit the Above and Beyond graph." },
-              { name: "All icons.ai", note: "All the BioMar icons we use and make available for people in The Pond later. They're grouped in different categories to find them easily inside the file." },
+              { name: "All icons.ai", note: "All the BioMar icons we use and make available for people on the shared drive later. They're grouped in different categories to find them easily inside the file." },
               { name: "All Icons SVG", note: "SVG exports of all the BioMar icons" },
               { name: "BioMar factories.ai", note: "All BioMar Production Facilities icons." },
               { name: "Factory Icons", note: "Exported factory icon files" },

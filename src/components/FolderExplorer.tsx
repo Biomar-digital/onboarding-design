@@ -35,9 +35,9 @@ function nodeAt(idxPath: number[]): FolderNode {
 
 const keyOf = (idxPath: number[]) => idxPath.join(".");
 
-// Drill-down explorer of the real Design Hub folder tree (The Pond /
-// Kontainer): click into a folder to see what's inside it, use the
-// breadcrumb to step back out, or search across every folder at every depth.
+// Drill-down explorer of the real Design Hub shared-drive folder tree:
+// click into a folder to see what's inside it, use the breadcrumb to step
+// back out, or search across every folder at every depth.
 export function FolderExplorer() {
   const [query, setQuery] = useState("");
   const [navPath, setNavPath] = useState<number[]>([0]); // start inside the root ("Design Hub 2.0")

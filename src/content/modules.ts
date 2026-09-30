@@ -627,7 +627,7 @@ export const modules: Module[] = [
     sections: [
       {
         heading: "Why this matters",
-        note: "Every product name below is also a real folder branch on The Pond (see the Folder Structure module) and shows up constantly in briefs. Knowing what each one is for makes both far easier to navigate.",
+        note: "Every product name below is also a real folder branch on the shared drive (see the Folder Structure module) and shows up constantly in briefs. Knowing what each one is for makes both far easier to navigate.",
       },
       {
         heading: "BioMar's brand archetype",
@@ -1945,9 +1945,9 @@ export const modules: Module[] = [
   {
     id: "folder-structure",
     chapterId: null,
-    title: "Folder Structure — The Pond, Mapped",
+    title: "Folder Structure — The Shared Drive, Mapped",
     summary:
-      "The real folder tree of The Pond (Kontainer), explorable and searchable, plus an interactive wizard for where a new file belongs.",
+      "The real folder tree of the Design Hub's shared drive, explorable and searchable, plus an interactive wizard for where a new file belongs.",
     estMinutes: 15,
     sections: [
       {
