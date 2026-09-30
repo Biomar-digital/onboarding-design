@@ -1937,7 +1937,7 @@ export const modules: Module[] = [
         id: "e1",
         title: "Get your access",
         prompt:
-          "Go through this map and, via Loop Link, request access to the tools your role needs. Note the owner for any that require approval.",
+          "Open the Platforms & Accesses page in Loop Link (linked at the top of this map and in the Always-on info panel), then request access to the tools your role needs. Note the owner for any that require approval.",
         successCriteria: ["Access requested for the tools your role uses", "Owner noted for anything pending"],
       },
     ],

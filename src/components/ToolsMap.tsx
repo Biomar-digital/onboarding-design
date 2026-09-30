@@ -1,4 +1,4 @@
-import { toolGroups } from "../content/tools";
+import { toolGroups, PLATFORMS_ACCESSES_URL } from "../content/tools";
 
 // Visual, on-brand map of the Design Hub toolkit — a grid of category cards,
 // each with its tools and a one-line purpose. No credentials (those live in
@@ -18,7 +18,15 @@ export function ToolsMap() {
     <div className="space-y-4">
       <p className="rounded-xl border-l-4 border-biomar-swoosh bg-biomar-ice/50 px-4 py-3 text-sm text-biomar-navy">
         🔐 Logins & passwords are never stored here — request access through{" "}
-        <span className="font-semibold">Loop Link</span> and the tool owner.
+        <a
+          href={PLATFORMS_ACCESSES_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-biomar-swoosh underline"
+        >
+          Loop Link — Platforms & Accesses ↗
+        </a>{" "}
+        and the tool owner.
         This map is only about <em>what each tool is for</em>.
       </p>
 
@@ -40,10 +48,17 @@ export function ToolsMap() {
                 <h3 className="text-sm font-bold">{group.title}</h3>
               </header>
               <div className="flex-1 divide-y divide-slate-100">
-                {group.tools.map((tool) => (
-                  <div
+                {group.tools.map((tool) => {
+                  const Row = tool.url ? "a" : "div";
+                  return (
+                  <Row
                     key={tool.name}
-                    className="flex items-start gap-3 px-4 py-2.5"
+                    {...(tool.url
+                      ? { href: tool.url, target: "_blank", rel: "noreferrer" }
+                      : {})}
+                    className={`flex items-start gap-3 px-4 py-2.5 ${
+                      tool.url ? "hover:bg-biomar-ice/40" : ""
+                    }`}
                   >
                     <span
                       aria-hidden
@@ -55,13 +70,15 @@ export function ToolsMap() {
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-biomar-navy">
                         {tool.name}
+                        {tool.url && <span className="ml-1 text-biomar-swoosh">↗</span>}
                       </div>
                       <div className="text-xs leading-snug text-slate-500">
                         {tool.purpose}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </Row>
+                  );
+                })}
               </div>
             </section>
           );

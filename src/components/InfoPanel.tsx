@@ -38,7 +38,18 @@ export function InfoPanel() {
                       {row.label}
                     </dt>
                     <dd className="text-sm text-slate-700">
-                      {row.value}
+                      {row.url ? (
+                        <a
+                          href={row.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-biomar-swoosh hover:underline"
+                        >
+                          {row.value} ↗
+                        </a>
+                      ) : (
+                        row.value
+                      )}
                       {row.hint && (
                         <span className="ml-1 text-xs text-biomar-swoosh">
                           {row.hint}

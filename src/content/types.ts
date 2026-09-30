@@ -110,7 +110,7 @@ export interface InfoPanelGroup {
   title: string;
   icon: string;
   /** Reference rows always visible in the persistent info panel. */
-  rows: { label: string; value: string; hint?: string }[];
+  rows: { label: string; value: string; hint?: string; url?: string }[];
 }
 
 /** A node in the real Design Hub shared-drive folder tree, used by the

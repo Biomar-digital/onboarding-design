@@ -1,4 +1,5 @@
 import type { InfoPanelGroup } from "./types";
+import { PLATFORMS_ACCESSES_URL } from "./tools";
 
 // The persistent reference panel — always available on the employee side so a
 // new designer never has to dig for the essentials mid-task.
@@ -61,7 +62,7 @@ export const infoPanel: InfoPanelGroup[] = [
     title: "Platforms",
     icon: "🧰",
     rows: [
-      { label: "Accesses & lists", value: "Loop Link" },
+      { label: "Accesses & lists", value: "Loop Link", url: PLATFORMS_ACCESSES_URL },
       { label: "Brand assets (DAM)", value: "The Pond (Kontainer)" },
       { label: "Website content", value: "Umbraco" },
       { label: "Stock", value: "Adobe Stock · Shutterstock · Flaticon" },
