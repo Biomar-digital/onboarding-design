@@ -1,0 +1,17 @@
+{
+  // Editor-only type-checking for the Worker (Cloudflare's runtime, not the
+  // browser DOM) — not part of `npm run build`, which only compiles `src/`.
+  // Check it directly with: npx tsc -p tsconfig.worker.json --noEmit
+  "compilerOptions": {
+    "target": "ES2021",
+    "lib": ["ES2021"],
+    "types": ["@cloudflare/workers-types"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["worker"]
+}

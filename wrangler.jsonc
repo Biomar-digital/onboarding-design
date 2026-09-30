@@ -14,5 +14,14 @@
     "binding": "ASSETS",
     // Serve index.html for unknown paths so client-side routing works.
     "not_found_handling": "single-page-application"
-  }
+  },
+  // Login credentials store (per-person accounts + signup requests). Create a
+  // KV namespace (Workers & Pages → KV → Create) and paste its id below, or
+  // run `wrangler kv namespace create AUTH_KV` — see DEPLOYMENT.md § Login.
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV",
+      "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+    }
+  ]
 }

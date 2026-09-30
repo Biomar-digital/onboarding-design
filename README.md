@@ -37,9 +37,13 @@ published back to the repo via a Cloudflare Pages Function (see below).
 ## Tech
 
 - **React + Vite + TypeScript + Tailwind** frontend → deploys to **Cloudflare Pages**.
-- **Cloudflare Pages Functions** ([`functions/api/`](functions/api/)) for the
-  write path (commit to GitHub) and optional AI suggestions (Anthropic).
-- No database to run: the repo is the backend.
+- **Cloudflare Worker** ([`worker/index.ts`](worker/index.ts)) for the write
+  path (commit to GitHub), optional AI suggestions (Anthropic), and login.
+- The repo is the backend for all learning content and people data — no
+  database to run. The one exception is login credentials (password hashes,
+  sessions, pending signup requests), which live in a small Cloudflare KV
+  store (`AUTH_KV`) since they can't round-trip through a public repo. See
+  [DEPLOYMENT.md](DEPLOYMENT.md) § Login.
 
 ## Local development
 
@@ -50,15 +54,19 @@ npm run build    # typecheck + production build to dist/
 npm run preview  # serve the production build
 ```
 
-### Demo sign-in
+### Sign-in
 
-The login screen lets you pick a user (no password) so you can walk both sides:
+Each person has their own account: email + password, checked server-side by
+the Worker. There's no shared password and no admin-created accounts —
+someone without one uses **Request access** on the login screen, and an admin
+approves the request (sets the password) from **Admin → Signup requests**.
+See [DEPLOYMENT.md](DEPLOYMENT.md) § Login for how to provision the first
+(bootstrap) admin account and the `AUTH_KV` store this needs.
 
-- **Andres Bernadou** — admin
-- **Lucía Fernández / Marco Rossi** — employees with sample progress
-
-In production this screen is replaced by BioMar SSO via **Cloudflare Access**
-(see [DEPLOYMENT.md](DEPLOYMENT.md)).
+Running `npm run dev` or a static preview with no Worker behind it (no
+`/api/*` routes answering) falls back to a **demo sign-in** — pick any seeded
+user, no password — purely so the UI stays explorable without a backend. A
+real deployment never shows this fallback once `AUTH_KV` is configured.
 
 ## Deployment
 

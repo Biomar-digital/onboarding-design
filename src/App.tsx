@@ -2,10 +2,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useStore } from "./lib/store";
 import { Layout } from "./components/Layout";
 import { Login } from "./pages/Login";
+import { SignupRequest } from "./pages/SignupRequest";
 import { Employee } from "./pages/Employee";
 import { ModuleView } from "./pages/ModuleView";
 import { Admin } from "./pages/Admin";
 import { AdminPerson } from "./pages/AdminPerson";
+import { AdminSignupRequests } from "./pages/AdminSignupRequests";
 import type { ReactNode } from "react";
 
 function Require({
@@ -23,7 +25,15 @@ function Require({
 }
 
 export default function App() {
-  const { currentUser } = useStore();
+  const { currentUser, authLoading } = useStore();
+
+  if (authLoading) {
+    return (
+      <div className="grid min-h-full place-items-center bg-gradient-to-b from-biomar-navy to-biomar-blue">
+        <p className="text-sm text-white/70">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <Routes>
@@ -34,6 +44,16 @@ export default function App() {
             <Navigate to={currentUser.role === "admin" ? "/admin" : "/"} replace />
           ) : (
             <Login />
+          )
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          currentUser ? (
+            <Navigate to={currentUser.role === "admin" ? "/admin" : "/"} replace />
+          ) : (
+            <SignupRequest />
           )
         }
       />
@@ -90,6 +110,16 @@ export default function App() {
           <Require role="admin">
             <Layout>
               <AdminPerson mode="edit" />
+            </Layout>
+          </Require>
+        }
+      />
+      <Route
+        path="/admin/signup-requests"
+        element={
+          <Require role="admin">
+            <Layout>
+              <AdminSignupRequests />
             </Layout>
           </Require>
         }

@@ -33,6 +33,9 @@ export function Admin() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link to="/admin/signup-requests" className="btn-ghost">
+            📥 Signup requests
+          </Link>
           <Link to="/admin/new" className="btn-ghost">
             + Add designer
           </Link>

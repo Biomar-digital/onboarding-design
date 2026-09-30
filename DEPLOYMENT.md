@@ -30,20 +30,57 @@ together; the repo stores the content and the published people/assignment data.
    serves them at `/api/*`. The `public/_redirects` file keeps client-side
    routing working (all paths fall back to `index.html`).
 
-## 2. Authentication — Cloudflare Access (Zero Trust)
+## 2. Login — per-person accounts + admin-approved signup
 
-The built-in login screen is a **demo** (pick-a-user, no password). For real
-use, gate the whole site with **Cloudflare Access** so only BioMar identities
-get in:
+Each person signs in with their own email and password, checked server-side
+by the Worker (`/api/auth/*` routes in [`worker/auth.ts`](worker/auth.ts) and
+[`worker/index.ts`](worker/index.ts)). New accounts are never created
+directly — someone without one uses **Request access** on the login screen,
+and an admin approves the request (choosing/creating their designer record
+and setting a password) from **Admin → Signup requests**.
 
-1. Zero Trust dashboard → **Access** → **Applications** → **Add a
-   self-hosted application**, pointed at your Pages domain.
-2. Add a policy: allow emails ending in `@biomar.com` (or your Entra/Google
-   IdP group).
-3. Access injects the signed-in user's email in the `Cf-Access-Authenticated-User-Email`
-   header. Map that to a person record (extend the Worker with a
-   `/api/me` route that returns the matching person) to drop the demo
-   picker entirely.
+Credentials are the one piece of data that can't live in the GitHub-backed
+content model (they must never round-trip through a public repo), so they're
+kept in a small Cloudflare KV store instead.
+
+### 2.1 Create the KV namespace
+
+1. Cloudflare dashboard → **Workers & Pages** → **KV** → **Create a
+   namespace** → name it e.g. `onboarding-auth`.
+2. Copy its id and paste it into `wrangler.jsonc` → `kv_namespaces[0].id`
+   (replacing `REPLACE_WITH_YOUR_KV_NAMESPACE_ID`), **or** bind it from the
+   dashboard: your Worker's **Settings → Bindings → Add → KV Namespace**,
+   with variable name `AUTH_KV`.
+
+### 2.2 Bootstrap the first admin account
+
+There's no account yet to approve the first one, so the first admin is
+provisioned from two Worker secrets instead of the UI:
+
+1. **Settings → Variables and Secrets** on the Worker → add
+   `ADMIN_BOOTSTRAP_EMAIL` (e.g. `you@biomar.com`) and
+   `ADMIN_BOOTSTRAP_PASSWORD` (a real password — encrypt this one as a
+   **secret**, not a plaintext variable).
+2. Sign in once with that email/password. The account is created
+   automatically on that first login and works exactly like any other admin
+   account from then on (you can change the password afterwards from the
+   app). The bootstrap secrets only matter until that first sign-in.
+3. Every other account — admin or employee — is created by an admin
+   approving a signup request, never by editing secrets again.
+
+### 2.3 How day-to-day accounts get created
+
+1. A new hire opens the app → **Request access** → submits name + email.
+2. An admin opens **Admin → Signup requests**, reviews it, picks (or leaves
+   as "create a new designer record") who it maps to, sets an initial
+   password (or generates one), and approves.
+3. The admin shares that password with the new hire directly (Slack, in
+   person, etc.) — there's no email-sending step. They can change it after
+   signing in.
+
+Until `AUTH_KV` is bound, `/api/auth/*` returns a clear "not configured"
+error and the frontend falls back to the old pick-a-user demo sign-in so the
+site stays explorable.
 
 ## Presentation materials & the embedded viewer
 
@@ -75,6 +112,8 @@ Set these in **Pages → Settings → Environment variables** (Production).
 | `GITHUB_REPO` | `/api/publish` | `biomar-digital/onboarding-design` |
 | `GITHUB_BRANCH` | `/api/publish` | The deploy branch, e.g. `main`. |
 | `ANTHROPIC_API_KEY` | `/api/suggest` | Enables the AI route suggestion. Without it, the admin still gets the deterministic rules-based suggestion. |
+| `AUTH_KV` (binding, not a var) | `/api/auth/*` | KV namespace for login credentials, sessions and signup requests. See § Login above. |
+| `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` | `/api/auth/login` | One-time bootstrap for the very first admin account. Set as **secrets**. Safe to remove once that account exists. |
 
 Until `GITHUB_TOKEN`/`GITHUB_REPO` are set, **Publish** returns a clear message
 and admin changes stay saved in the browser (localStorage) — nothing is lost,
@@ -107,5 +146,10 @@ degrades gracefully if the key is missing or the call fails.
   shipped to the browser. All GitHub writes happen server-side in the Worker.
 - Scope the PAT to **this repository only** with the minimum
   **Contents: Read and write** permission.
-- Put the publish/admin routes behind an Access policy that only allows the
-  admin identity, so employees can't reach the write endpoints.
+- Passwords are never stored in plaintext: the Worker hashes them
+  (PBKDF2-SHA256, 100k iterations, random salt per account) before writing to
+  `AUTH_KV`. Sessions are an opaque random token in an `HttpOnly`, `Secure`
+  cookie — the token itself is the KV lookup key, so there's nothing to forge.
+- `/api/auth/signup-requests*`, the approve/reject routes, and
+  `/api/admin/reset-password` all check the session's role is `admin`
+  server-side — a non-admin session gets a 403 even if it guesses the URL.

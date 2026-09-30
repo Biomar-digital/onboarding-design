@@ -9,6 +9,7 @@ import {
 import type { Person } from "../content/types";
 import { seedPeople } from "../content/people";
 import { modulesById } from "../content/modules";
+import * as authApi from "./authApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App state.
@@ -26,7 +27,10 @@ import { modulesById } from "../content/modules";
 // content edit). Old cached state under a previous key is simply ignored —
 // the app reloads from the current seed instead of showing stale/broken data.
 const STORAGE_KEY = "biomar-onboarding-state-v3";
-const SESSION_KEY = "biomar-onboarding-session";
+// Only used as a fallback when there's no live Worker behind this URL (e.g. a
+// static preview) — real deployments authenticate via the server session
+// cookie instead. See `login` vs. `demoLogin` below.
+const DEMO_SESSION_KEY = "biomar-onboarding-demo-session";
 
 interface StoredState {
   people: Person[];
@@ -57,7 +61,15 @@ interface StoreValue {
   currentUserId: string | null;
   currentUser: Person | null;
   dirty: boolean;
-  login: (id: string) => void;
+  /** True until the initial session check (`/api/auth/me`) has resolved. */
+  authLoading: boolean;
+  /** null while unknown, then whether a real Worker/AUTH_KV backend answered. */
+  backendAvailable: boolean | null;
+  /** Real sign-in against the Worker's session-cookie auth. */
+  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  /** Fallback used only when `backendAvailable` is false (no live Worker) — picks
+   * a seeded person with no password, purely so a static preview stays clickable. */
+  demoLogin: (id: string) => void;
   logout: () => void;
   upsertPerson: (person: Person) => void;
   removePerson: (id: string) => void;
@@ -89,18 +101,42 @@ function load(): StoredState {
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<StoredState>(load);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() =>
-    localStorage.getItem(SESSION_KEY),
-  );
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  // On load, ask the Worker who (if anyone) the session cookie belongs to. If
+  // there's no Worker at this URL at all (a static preview), fall back to the
+  // old browser-local demo session so the preview stays explorable.
   useEffect(() => {
-    if (currentUserId) localStorage.setItem(SESSION_KEY, currentUserId);
-    else localStorage.removeItem(SESSION_KEY);
-  }, [currentUserId]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const session = await authApi.fetchMe();
+        if (cancelled) return;
+        setBackendAvailable(true);
+        if (session.ok && session.personId) setCurrentUserId(session.personId);
+      } catch (err) {
+        if (cancelled) return;
+        if (authApi.isBackendUnavailable(err)) {
+          setBackendAvailable(false);
+          const demoId = localStorage.getItem(DEMO_SESSION_KEY);
+          if (demoId) setCurrentUserId(demoId);
+        } else {
+          setBackendAvailable(true);
+        }
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo<StoreValue>(() => {
     const setPeople = (
@@ -118,8 +154,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       currentUserId,
       currentUser:
         state.people.find((p) => p.id === currentUserId) ?? null,
-      login: (id) => setCurrentUserId(id),
-      logout: () => setCurrentUserId(null),
+      authLoading,
+      backendAvailable,
+      login: async (email, password) => {
+        const result = await authApi.login(email, password);
+        if (!result.ok) return { ok: false, message: result.error };
+        setCurrentUserId(result.personId);
+        return { ok: true };
+      },
+      demoLogin: (id) => {
+        localStorage.setItem(DEMO_SESSION_KEY, id);
+        setCurrentUserId(id);
+      },
+      logout: () => {
+        localStorage.removeItem(DEMO_SESSION_KEY);
+        setCurrentUserId(null);
+        if (backendAvailable) authApi.logout().catch(() => {});
+      },
       upsertPerson: (person) =>
         setPeople((people) => {
           const idx = people.findIndex((p) => p.id === person.id);
@@ -195,7 +246,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setCurrentUserId(null);
       },
     };
-  }, [state, currentUserId]);
+  }, [state, currentUserId, authLoading, backendAvailable]);
 
   return (
     <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
