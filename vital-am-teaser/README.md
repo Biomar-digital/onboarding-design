@@ -9,6 +9,12 @@ Brief: *VN Brief Vital AM video teaser*, dirección 1 ("No one skips breakfast. 
 - `tools/make_texture.py`: genera el mapa de sombreado suave a partir del mockup original.
 - `tools/build_bag.py`: deforma la malla, recalcula las normales, ajusta el arte sin deformarlo y escribe el GLB.
 
+## Previs y animatic (v1)
+- `edit/VitalAM_teaser_animatic_v1.mp4`: animatic de 10 s en 16:9 con S1 (reloj a las 6:30 y pitido), S2 y S3 (previs), textos en VN y EN, subtítulos de la voz en off y cierre con "Vital AM – Sắp ra mắt".
+- `previs/scene_r5.blend` y `previs/scene_r5.glb`: escena de Blender del proyecto de 3D Jutsu (revisión 5) con la cámara y la animación (8 s, 192 fotogramas a 24 fps).
+- `previs/previs_local.mp4`: render del previs con la bolsa real (three.js en local, `previs.html` y `previs.mjs`).
+- `edit/compose.py`: montaje del animatic (`python3 compose.py previs_local.mp4 salida.mp4`).
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
