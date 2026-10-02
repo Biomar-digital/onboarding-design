@@ -15,6 +15,19 @@ Brief: *VN Brief Vital AM video teaser*, dirección 1 ("No one skips breakfast. 
 - `previs/previs_local.mp4`: render del previs con la bolsa real (three.js en local, `previs.html` y `previs.mjs`).
 - `edit/compose.py`: montaje del animatic (`python3 compose.py previs_local.mp4 salida.mp4`).
 
+## Previs v2 (storyboard nuevo, sin textos)
+`previs-v2/VitalAM_previs_v2.mp4`: 10 s a 24 fps en 5 planos, con un sonido de referencia (no es el audio final).
+
+| Plano | Tiempo | Contenido |
+|---|---|---|
+| 1 | 0–1,5 s | Camarones en ayunas, quietos en el fondo; la alarma suena apagada bajo el agua |
+| 2 | 1,5–3 s | Celular con la alarma de las 6:30 en la mesa de luz; la mano lo apaga (sin cara) |
+| 3 | 3–5,5 s | Dron sobre el estanque al amanecer; de lejos, el granjero lanza los pellets con la pala azul |
+| 4 | 5,5–8 s | Bajo el agua seguimos los pellets que se hunden; los camarones llegan a comer |
+| 5 | 8–10 s | La bolsa en el muelle a contraluz; el sol sale por detrás y la revela |
+
+Para renderizar: `node v2.mjs 0 239 1280 frames` (desde una carpeta con three.js, playwright-core y `SmartCare_Vital_AM_Bag.glb`). El sonido sale de `python3 sfx.py`.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
