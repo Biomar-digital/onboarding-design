@@ -3,7 +3,7 @@
 Brief: *VN Brief Vital AM video teaser*, dirección 1 ("No one skips breakfast. Why would your shrimp?"). 10 s, 16:9 y 9:16.
 
 ## Mockup 3D del pack
-- `mockup/SmartCare_Vital_AM_Bag.glb`: bolsa de 10 kg llena (≈49 × 65 × 22 cm) con el arte de Vital AM en frente y dorso. Usa la malla del mockup de SmartCare Assist Skin, más ancha, más baja y bastante más gruesa.
+- `mockup/SmartCare_Vital_AM_Bag.glb`: bolsa de 10 kg llena (≈41 × 72 × 22 cm) con el arte de Vital AM en frente y dorso. Usa la malla del mockup de SmartCare Assist Skin con el mismo ratio ancho/alto y más volumen.
 - `mockup/vital_am_turntable.mp4`: vídeo giratorio de 360° (6 s).
 - `mockup/vital_front.jpg`: textura 2048×2048. `mockup/vital_am_mockup_preview.jpg`: vista frontal.
 - `tools/make_texture.py`: genera el mapa de sombreado suave a partir del mockup original.

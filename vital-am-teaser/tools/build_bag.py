@@ -5,7 +5,7 @@ import json, struct, sys
 import numpy as np
 from PIL import Image
 SRC, ART, TEXSHADE, OUT, FLIPBACK = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] == '1'
-SX, SY, SZ = 1.20, 0.90, 1.90          # width, height, fullness
+SX, SY, SZ = 1.0, 1.0, 1.90            # keep the real width/height ratio; only add fullness
 b = open(SRC, 'rb').read(); l = struct.unpack('<I', b[12:16])[0]
 j = json.loads(b[20:20+l]); binb = bytearray(b[20+l+8:])
 def view(ai):
@@ -21,7 +21,7 @@ for p in j['meshes'][0]['primitives']:
     y0, y1 = 0.0073, 0.731; t = (P[:, 1]-y0)/(y1-y0)
     f = smooth(-0.02, 0.06, t) * (1 - smooth(0.80, 0.95, t))      # fullness profile: flat seal on top
     P[:, 2] *= 1 + (SZ-1)*f
-    P[:, 0] *= SX * (1 + 0.05*f)
+    P[:, 0] *= SX
     P[:, 1] = y0 + (P[:, 1]-y0)*SY
     I, _ = view(p['indices']); I = I.reshape(-1, 3).astype(np.int64)
     fn = np.cross(P[I[:, 1]]-P[I[:, 0]], P[I[:, 2]]-P[I[:, 0]])
@@ -34,20 +34,23 @@ for p in j['meshes'][0]['primitives']:
     a = j['accessors'][p['attributes']['POSITION']]; a['min'] = P.min(0).tolist(); a['max'] = P.max(0).tolist()
 # --- texture: art undistorted on the new face (UV rect -> metres)
 u0, u1, v0, v1 = 600, 1467, 254, 1735
-faceW, faceH = 0.41*SX*1.03, 0.724*SY
+faceW, faceH = 0.41*SX, 0.724*SY
 pxm_x, pxm_y = (u1-u0)/faceW, (v1-v0)/faceH
 art = Image.open(ART).convert('RGB').crop((335, 0, 2107, 2560))
-seal_m, bottom_m = 0.035, 0.012
-artH_m = faceH - seal_m - bottom_m                          # whole design fits the height ("10 Kg" stays visible)
-artW_m = min(faceW, artH_m*1772/2560*1.07)                  # at most 7% horizontal stretch
+artW_m = faceW                                              # design fills the width, no stretch
+artH_m = artW_m*2560/1772
+top_m = (faceH - artH_m)*0.45                               # spare height: navy under the seal ...
 aw, ah = round(artW_m*pxm_x), round(artH_m*pxm_y)
 art = art.resize((aw, ah), Image.LANCZOS)
 canvas = Image.new('RGB', (2048, 2048), (38, 67, 125))
-ax0 = u0 + ((u1-u0)-aw)//2; ay0 = v0 + round(seal_m*pxm_y)
+ax0 = u0; ay0 = v0 + round(top_m*pxm_y)
 canvas.paste(art, (ax0, ay0))
+full = Image.open(ART).convert('RGB')                       # ... and the light-blue pattern below
+strip = full.crop((0, 1200, 335, 2560)); sc = aw/1772
+strip = strip.resize((round(335*sc), round(1360*sc)), Image.LANCZOS)
+for x in range(0, 2048, strip.width): canvas.paste(strip, (x, ay0+ah))
 a = np.asarray(canvas).astype(np.float32)
-a[:, :ax0] = a[:, ax0:ax0+1]; a[:, ax0+aw:] = a[:, ax0+aw-1:ax0+aw]   # extend art sideways
-a[ay0+ah:, :] = a[ay0+ah-1:ay0+ah, :]                                    # and below
+a[:, :ax0] = a[:, ax0:ax0+1]; a[:, ax0+aw:] = a[:, ax0+aw-1:ax0+aw]
 canvas = Image.fromarray(a.astype(np.uint8))
 print('art on bag (m):', round(artW_m, 3), 'x', round(artH_m, 3), 'face', round(faceW, 3), 'x', round(faceH, 3))
 c = np.asarray(canvas).astype(np.float32)/255
