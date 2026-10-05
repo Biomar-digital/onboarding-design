@@ -69,6 +69,21 @@ Renderizar: `node v4.mjs 1 360 1280 frames`, con `scene_v4.glb` (revisión 12) y
 - **Planos 4 y 5:** un solo movimiento de cámara, sin corte, del fondo del estanque a la superficie y hasta la bolsa.
 - **Celular:** la vibración es más suave y la pantalla ya no titila.
 
+## Previs v8 (mano nueva, un solo tiro y cámara que sigue al feed bajo el agua)
+`previs-v8/VitalAM_previs_v8.mp4`: la escena es la revisión 27 del proyecto de 3D Jutsu.
+- **Plano 2, la mano:** se rehízo desde cero (`hand_tap_v3.py`).
+  - El índice va extendido y la yema cae justo sobre el botón STOP en el fotograma 84.
+  - Los otros tres dedos van recogidos bajo la palma, con el pulgar apoyado sobre ellos.
+  - La muñeca va elevada unos 26° y el dorso no tiene abolladuras.
+- **Plano 3, un solo tiro:** el farmer tira una sola vez con la pala (suelta en el fotograma 160) y la pala se vacía una sola vez (`single_throw.py`).
+- **Planos 3 y 4, un solo movimiento de cámara** (`camera_follow_feed_dive.py`):
+  1. el drone baja por detrás del hombro del farmer;
+  2. sigue la nube de pellets a unos 30 cm durante todo el arco;
+  3. entra al agua donde caen (fotograma 196) y baja junto a los pellets que se hunden;
+  4. gira bajo el agua hasta empalmar sin corte con la toma del camarón comiendo (fotograma 236).
+- **Lente:** pasa de 24 a 32 mm durante la bajada.
+- **Sonido de referencia:** un solo barrido de pala, la lluvia de pellets sobre el agua, el golpe de la cámara al entrar y burbujeo apagado (`sfx_v8.py`).
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
