@@ -48,6 +48,18 @@ Cambios según la investigación (L. vannamei) y el video de referencia:
 
 Renderizar: `node v3.mjs 1 360 1280 frames`, con `scene_v3_r9.glb` y `SmartCare_Vital_AM_Bag.glb` al lado. El sonido sale de `python3 sfx_v3.py`.
 
+## Previs v4 (correcciones sobre la v3)
+`previs-v4/VitalAM_previs_v4.mp4`: la escena es la revisión 12 del mismo proyecto de 3D Jutsu.
+- **Titileo resuelto:** los pellets se agrandaban en cada fotograma y se veían desde el principio. Ahora aparecen y desaparecen según sus propios tiempos.
+- **Pellets de tamaño real:** 2 a 4 mm; en el aire, al doble para que se lean.
+- **Pala de mano azul y lanzamiento de costado con un brazo**, como en la foto de referencia. Son 4 tandas de 90 pellets que forman un arco en abanico.
+- **Partículas del agua:** ahora son un polvillo claro y fino, no bolas grises.
+- **Plano 5:** el horizonte queda abierto detrás de la bolsa y el sol sale desde atrás de ella.
+- **Plano 3:** el dron termina más cerca, por detrás del granjero.
+- **Agua y mano:** el agua del dron es verde lechosa y la mano del plano 2 ya no se ve negra.
+
+Renderizar: `node v4.mjs 1 360 1280 frames`, con `scene_v4.glb` (revisión 12) y `SmartCare_Vital_AM_Bag.glb` al lado. El sonido sale de `python3 sfx_v4.py`.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|

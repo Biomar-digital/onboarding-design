@@ -1,0 +1,91 @@
+<!doctype html><html><body style="margin:0">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+// Vital AM teaser – previs v3 animatic renderer. Source of truth: Higgsfield 3D Jutsu scene (scene_v4.glb):
+// cameras, farmer, feed, shrimp positions, sun and phone all come from the Blender scene. This page adds per-shot
+// look (water fog, dawn sky, bedroom), swaps the bag proxy for the real Vital AM bag, and resolves visibility windows.
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+const P=new URLSearchParams(location.search), W=+P.get('w')||1280, H=Math.round(W*9/16), FPS=24;
+const SH=[[1,48,'s1','CAM_S1_Fasting'],[49,96,'s2','CAM_S2_Phone'],[97,180,'s3','CAM_S3_Drone'],[181,300,'s4','CAM_S4_Follow_Feed'],[301,360,'s5','CAM_S5_Reveal']];
+const r=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,logarithmicDepthBuffer:true}); r.setSize(W,H); r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.0;
+document.body.appendChild(r.domElement);
+const s=new THREE.Scene(); const L=new GLTFLoader();
+const [G,BAG]=await Promise.all([L.loadAsync('scene_v4.glb'),L.loadAsync('SmartCare_Vital_AM_Bag.glb')]);
+s.add(G.scene); const get=n=>G.scene.getObjectByName(n);
+// ---- sky dome (dawn), used for air shots
+const sky=new THREE.Mesh(new THREE.SphereGeometry(500,48,24),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:new THREE.Vector3(0,0.07,-1)}},
+ vertexShader:'varying vec3 p; void main(){p=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:`uniform vec3 sun; varying vec3 p; void main(){ float h=p.y; vec3 hor=vec3(1.,.55,.25), mid=vec3(.96,.72,.52), top=vec3(.3,.42,.62);
+  vec3 c=mix(hor,mid,smoothstep(0.,.1,h)); c=mix(c,top,smoothstep(.1,.55,h)); c+=vec3(1.,.62,.3)*pow(max(dot(p,normalize(sun)),0.),24.)*1.3;
+  if(h<0.) c=vec3(.25,.2,.15); gl_FragColor=vec4(c,1.);}`})); s.add(sky);
+const pm=new THREE.PMREMGenerator(r); const skyS=new THREE.Scene(); skyS.add(sky.clone()); const envAir=pm.fromScene(skyS,0.02).texture;
+// ---- lights (our own; GLB punctual lights are disabled)
+const hemi=new THREE.HemisphereLight(0xffffff,0x202020,1); s.add(hemi);
+const key=new THREE.DirectionalLight(0xffb070,2.4); key.position.set(0,20,-300); s.add(key);
+const fill=new THREE.DirectionalLight(0xffe0c0,0.5); fill.position.set(-30,40,60); s.add(fill);
+const bagFill=new THREE.SpotLight(0xffd0a0,0,8,0.6,0.6); s.add(bagFill); s.add(bagFill.target);
+const phoneL=new THREE.PointLight(0xa8c4ff,0,2.0,1.2); s.add(phoneL);
+const winL=new THREE.DirectionalLight(0x8fb0ff,0); s.add(winL); s.add(winL.target);
+const uwKey=new THREE.DirectionalLight(0xfff0d8,0); uwKey.position.set(0.3,10,-5); s.add(uwKey);
+// ---- underwater light shafts near the feeding zone
+const rays=new THREE.Group(); const rayM=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{a:{value:0.1}},
+ vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'uniform float a; varying vec2 vUv; void main(){ float e=sin(vUv.x*25.)*.5+.5; gl_FragColor=vec4(vec3(1.,.95,.85)*a*pow(vUv.y,1.4)*(1.-smoothstep(.85,1.,vUv.y))*(.35+.65*e),1.);}'});
+for(let i=0;i<10;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.18+Math.random()*0.2,0.04,1.6,24,1,true),rayM); c.position.set(-1+i*0.32,-0.8,-(4.4+Math.random()*2.6)); c.rotation.set(0.08,0,0.22); rays.add(c);} s.add(rays);
+// ---- glow sprite for the sun
+const gc=document.createElement('canvas'); gc.width=gc.height=256; {const g=gc.getContext('2d'),q=g.createRadialGradient(128,128,0,128,128,128); q.addColorStop(0,'rgba(255,245,220,1)'); q.addColorStop(.15,'rgba(255,205,140,.7)'); q.addColorStop(.45,'rgba(255,150,70,.2)'); q.addColorStop(1,'rgba(255,120,40,0)'); g.fillStyle=q; g.fillRect(0,0,256,256);}
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(gc),blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); s.add(glow);
+// ---- material passes + visibility windows from each object's own animation range
+const water=get('POND_Water_Surface'); const sunDisc=get('ENV_Sun_Disc');
+const airWater=new THREE.MeshPhysicalMaterial({color:0x7d8a66,roughness:0.06,metalness:0.0,envMapIntensity:1.6,clearcoat:1,clearcoatRoughness:0.04,specularIntensity:1,transparent:true,opacity:0.97});
+const underWater=new THREE.MeshBasicMaterial({color:0xdfeef0,side:THREE.DoubleSide});
+let scr=null; const win={}; const mixer=new THREE.AnimationMixer(G.scene);
+for(const c of G.animations){ const ac=mixer.clipAction(c); ac.setLoop(THREE.LoopOnce); ac.clampWhenFinished=true; ac.play(); let lo=1e9,hi=-1; for(const t of c.tracks){lo=Math.min(lo,t.times[0]); hi=Math.max(hi,t.times[t.times.length-1]);} win[c.name]=[lo*FPS+1,hi*FPS+1]; }
+G.scene.traverse(o=>{ if(o.isLight) o.visible=false;
+  if(o.isMesh){ const m=o.material; if(m&&m.name==='MAT_Pond_Water_Volume_Plankton') o.visible=false;
+    if(m&&m.name&&m.name.startsWith('MAT_Sun_Disc')) o.material=new THREE.MeshBasicMaterial({color:new THREE.Color(1,.88,.62).multiplyScalar(4),fog:false});
+    if(m&&m.name==='MAT_Mosquito_Net'){ m.transparent=true; m.opacity=0.18; m.depthWrite=false; }
+    if(m&&m.name==='MAT_Glass_Water'){ m.transparent=true; m.opacity=0.3; }
+    if(m&&m.name==='MAT_Plankton_Speck'){ o.material=new THREE.MeshBasicMaterial({color:0xd8d2bc,transparent:true,opacity:0.35,depthWrite:false}); }
+    const fix={MAT_Farmer_Skin:0x9a6444,MAT_Farmer_Sleeve_Cotton:0x2e3d52,MAT_Phone_Body:0x0b0b0d,MAT_Room_Dark_Wood:0x3a2416};
+    if(m&&fix[m.name]!==undefined){ o.material=new THREE.MeshStandardMaterial({color:fix[m.name],roughness:0.6,emissive:m.name==='MAT_Farmer_Skin'?0x24140c:0x000000}); }
+    if(m&&m.name==='MAT_Phone_Screen'){ o.material=new THREE.MeshStandardMaterial({color:0x000000,emissive:0x2a4a9a,emissiveIntensity:1.6,roughness:0.2}); }
+  }});
+water.material=airWater; scr=get('PHONE_Screen');
+// rigged shrimp bodies come out of the exporter double-transformed: reuse the clean shrimp mesh from the swarm
+const clean=get('SHRIMP_Swarm_0_0'); G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Body$/.test(o.name)&&o.isMesh&&clean){ o.geometry=clean.geometry; o.material=clean.material; o.position.set(0,0,0); o.quaternion.identity(); o.scale.set(1,1,1);} });
+// flat liner at -1.5 m in the feeding pond (matches the shrimp / pellet contact height)
+G.scene.traverse(o=>{ if(o.isMesh&&o.parent&&o.parent.name==='POND_Basin_Lined_3x3'||o.name==='POND_Basin_Lined_3x3'&&o.isMesh){ const p=o.geometry.attributes.position; for(let i=0;i<p.count;i++){ if(p.getY(i)<-1.5) p.setY(i,-1.5);} p.needsUpdate=true; o.geometry.computeVertexNormals(); } });
+const nodeOf=n=>{let o=get(n); return o;};
+const proxy=get('HERO_VitalAM_Bag_10kg'); proxy.visible=false;
+const bag=BAG.scene; bag.position.set(proxy.position.x,proxy.position.y-0.36-0.007,proxy.position.z); s.add(bag);
+const farmer=get('FARMER_Root'), hand=get('HAND_Root');
+const phoneUI=['PHONE_Time_Text','PHONE_Stop_Button','PHONE_Ring_Pulse'].map(get).filter(Boolean);
+
+const timed=[];
+const fogUW=new THREE.FogExp2(0x9fb2b8,1.15), fogAir=new THREE.FogExp2(0xf0b080,0.006);
+const cams={}; G.scene.traverse(o=>{ if(o.isCamera){ const n=(o.parent&&o.parent.name.startsWith('CAM_'))?o.parent.name:o.name; cams[n]=o; }});
+const camOf=n=>cams[n]||Object.values(cams).find(c=>c.name.includes(n));
+const ramp=(f,a,b)=>Math.min(1,Math.max(0,(f-a)/(b-a)));
+window.shot=f=>{ mixer.setTime((f-1)/FPS); G.scene.updateMatrixWorld(true);
+  const S=SH.find(x=>f>=x[0]&&f<=x[1]); const cam=camOf(S[3]); cam.aspect=W/H; cam.updateProjectionMatrix();
+  const cp=new THREE.Vector3(); cam.getWorldPosition(cp); const under=cp.y<0, room=S[2]==='s2'; cam.near=room?0.01:(under?0.02:0.05); cam.far=room?50:700; cam.updateProjectionMatrix();
+  farmer.visible=f<300; bag.visible=f>=301; hand.visible=f>=59;
+  phoneUI.forEach(o=>o.visible=f<85); if(scr&&scr.material){ scr.material.emissiveIntensity=f<85?(1.6+0.5*Math.sin(f*0.6)):0.08; }
+  sky.visible=!under&&!room; s.environment=(!under&&!room)?envAir:null; glow.visible=!under&&!room; sunDisc.visible=!under&&!room;
+  const sp=new THREE.Vector3(); sunDisc.getWorldPosition(sp); glow.position.copy(sp); glow.scale.setScalar(sp.length()*0.14); sky.material.uniforms.sun.value.copy(sp).normalize(); key.position.copy(sp);
+  rays.visible=under; water.material=under?underWater:airWater;
+  if(room){ s.fog=null; s.background=new THREE.Color(0x05070c); hemi.color.set(0x6070a0); hemi.groundColor.set(0x403848); hemi.intensity=1.1; key.intensity=0; fill.intensity=0;
+    winL.intensity=0.9; winL.position.set(100.75,2.4,-3); winL.target.position.set(100.9,0.5,-0.7); phoneL.intensity=f<85?(0.9+0.3*Math.sin(f*0.9)):0.05; phoneL.position.set(100.92,0.62,-0.7); uwKey.intensity=0; bagFill.intensity=0; }
+  else if(under){ s.fog=fogUW; s.background=new THREE.Color(0x9fb2b8); fogUW.density=S[2]==='s1'?0.55:0.5; hemi.color.set(0xd8e6ea); hemi.groundColor.set(0x3a4448); hemi.intensity=S[2]==='s1'?0.9:1.35;
+    key.intensity=0; fill.intensity=0; winL.intensity=0; phoneL.intensity=0; uwKey.intensity=S[2]==='s1'?0.5:1.3; rayM.uniforms.a.value=S[2]==='s1'?0.04:0.12; bagFill.intensity=0; }
+  else { s.fog=fogAir; s.background=null; hemi.color.set(0xffc8a0); hemi.groundColor.set(0x2a2018); hemi.intensity=0.75; key.intensity=2.4; fill.intensity=0.45; winL.intensity=0; phoneL.intensity=0; uwKey.intensity=0;
+    if(S[2]==='s5'){ const k=ramp(f,318,350); hemi.intensity=0.35+0.45*k; fill.intensity=0.1+0.5*k; bagFill.intensity=12*k; bagFill.position.set(bag.position.x+0.3,bag.position.y+0.7,bag.position.z+1.8); bagFill.target.position.copy(bag.position).add(new THREE.Vector3(0,0.36,0)); }
+    else bagFill.intensity=0; }
+  r.render(s,cam); return r.domElement.toDataURL('image/jpeg',0.9);};
+window.__dbg=f=>{ window.shot(f); const out=[]; const cam=camOf(SH.find(x=>f>=x[0]&&f<=x[1])[3]); const cp=new THREE.Vector3(); cam.getWorldPosition(cp);
+  G.scene.traverse(o=>{ if(/^SHRIMP_(0[0-5]_Body|Swarm_0_0)$/.test(o.name)||o.name==='POND_Basin_Lined_3x3'||o.name==='SHRIMP_00_Rig'){ const p=new THREE.Vector3(); o.getWorldPosition(p); const bb=new THREE.Box3().setFromObject(o); out.push([o.name,o.type,o.visible,p.toArray().map(v=>+v.toFixed(2)),bb.min.toArray().map(v=>+v.toFixed(2)),bb.max.toArray().map(v=>+v.toFixed(2))]); }});
+  return {cam:cp.toArray().map(v=>+v.toFixed(2)),out}; };
+window.ready=true;
+</script></body></html>
