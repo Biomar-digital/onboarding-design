@@ -28,6 +28,26 @@ Brief: *VN Brief Vital AM video teaser*, dirección 1 ("No one skips breakfast. 
 
 Para renderizar: `node v2.mjs 0 239 1280 frames` (desde una carpeta con three.js, playwright-core y `SmartCare_Vital_AM_Bag.glb`). El sonido sale de `python3 sfx.py`.
 
+## Previs v3 (hecha en Higgsfield 3D Jutsu)
+`previs-v3/VitalAM_previs_v3.mp4`: 15 s a 24 fps (360 fotogramas), sin textos, con un sonido de referencia. La escena es el proyecto de 3D Jutsu `ea6989d5-d5b5-4049-80fc-fbf854d815c7` (revisión 10). El render se hace en local con three.js a partir del GLB que exporta Higgsfield.
+
+| Plano | Fotogramas | Contenido |
+|---|---|---|
+| 1 | 1–48 | Camarones en ayunas en el fondo del estanque (agua lechosa gris azulada); la alarma se oye apagada |
+| 2 | 49–96 | Alarma real de las 6:30 en el celular; solo se ve la mano que la apaga |
+| 3 | 97–180 | Dron sobre el estanque al amanecer (aireadores de paletas, palmeras, pasarela); de lejos, el granjero lanza el alimento con la pala azul |
+| 4 | 181–300 | Seguimos los pellets mientras se hunden (unos 3–5 s); los camarones los buscan con las antenas, los agarran con las patas y comen en el fondo |
+| 5 | 301–360 | Salimos del agua: la bolsa a contraluz y el sol que sale por detrás y la revela |
+
+Cambios según la investigación (L. vannamei) y el video de referencia:
+- Pellets de 2 mm que se hunden despacio.
+- Camarones que descansan en el fondo y escapan con un coletazo.
+- Búsqueda en zigzag hasta agarrar el pellet.
+- Cardúmenes densos a media agua.
+- Estanque con liner de HDPE de 1,5 m de profundidad y transparencia baja.
+
+Renderizar: `node v3.mjs 1 360 1280 frames`, con `scene_v3_r9.glb` y `SmartCare_Vital_AM_Bag.glb` al lado. El sonido sale de `python3 sfx_v3.py`.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
