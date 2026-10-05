@@ -60,6 +60,15 @@ Renderizar: `node v3.mjs 1 360 1280 frames`, con `scene_v3_r9.glb` y `SmartCare_
 
 Renderizar: `node v4.mjs 1 360 1280 frames`, con `scene_v4.glb` (revisión 12) y `SmartCare_Vital_AM_Bag.glb` al lado. El sonido sale de `python3 sfx_v4.py`.
 
+## Previs v7 (modelo de camarón del cliente)
+`previs-v7/VitalAM_previs_v7.mp4`: la escena es la revisión 22 del proyecto de 3D Jutsu.
+- **Camarones:** el modelo riggeado del cliente (`Shrimp_Anim_01_AE.glb`, con ciclo de nado "ShrimpSwim") reemplaza a los 98 camarones. Se escala a 13,7 cm, sigue las trayectorias de la escena y la velocidad del nado depende de la velocidad real de cada camarón.
+  - Higgsfield no deja importar modelos propios, así que el modelo se compone en el render local (`v7.html`).
+- **Sin superposiciones:** cada cuerpo es una cápsula (del rostro al telson) y las colisiones se resuelven en cada fotograma (`collision_pass.py`). La auditoría independiente sobre el GLB exportado (`overlap.mjs`) da 0 pares en 360 fotogramas.
+- **Plano 4:** el camarón protagonista llega al pellet desde atrás y come de frente a la cámara. Hay un cono despejado entre la cámara y el pellet (fotogramas 262 a 300) y un acercamiento de 32 a 56 mm.
+- **Planos 4 y 5:** un solo movimiento de cámara, sin corte, del fondo del estanque a la superficie y hasta la bolsa.
+- **Celular:** la vibración es más suave y la pantalla ya no titila.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
