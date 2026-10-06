@@ -1819,8 +1819,8 @@ export const modules: Module[] = [
     chapterId: "brand-guidelines",
     title: "Complementary Guidelines",
     summary:
-      "Practical tips, best practices and edge cases that come up in real projects — a complement to the official Brand Book, not a replacement.",
-    estMinutes: 20,
+      "Practical tips and best practices from real projects — colours & gradients, packaging (website vs real bags, custom bags), icons, fonts, Our Blue Journey and social media. A complement to the Brand Book, not a replacement.",
+    estMinutes: 30,
     material: {
       file: `${SLICE}/brand-guidelines--05-complementary-guidelines.pdf`,
       type: "pdf",
@@ -1832,38 +1832,114 @@ export const modules: Module[] = [
         note: "These are additional recommendations, tips and best practices developed over time working with the BioMar brand — not official guidelines. Use them alongside the Brand Book and existing templates, and use your own judgment: every project is different.",
       },
       {
-        heading: "Colour & gradients",
+        heading: "Alternative colours",
         bullets: [
-          "Alternative BioMar colours exist beyond the core palette (used in GSRs, packaging, and other materials) — the Product Brand Guidelines remain the primary reference",
-          "Avoid gradients: they break brand consistency and are hard to reproduce in print. Use solid colours, colour blocks or overlays instead",
-          "Exception: a black-to-transparent gradient with a Multiply effect can be used to improve text legibility over images — as a supporting tool only, never the main design element",
+          "All approved colours are in the BioMar Product Brand Guidelines — always the primary reference",
+          "A few extra colours were approved for specific projects: ones used in GSRs / Our Blue Journey, ones used in packaging, and ones used in other material",
+          "They're not part of the core palette — use them when they complement the brand colours and stay consistent with the BioMar identity",
         ],
       },
       {
-        heading: "Packaging",
+        heading: "Capitalization",
         bullets: [
-          "Website bags are digital-only and follow their own structure (colour coding + life-stage wheel) — they're not a 1:1 copy of the real bag",
-          "Keep BioMar Blue as the dominant colour and the top of the bag; avoid red (reserved for a competitor, except where medical feed regulations require it)",
-          "Before starting a new packaging concept, always review existing bags for consistency across the portfolio",
+          "Title Case for titles, headings and short elements: graph titles, chart labels, infographic headings",
+          "Sentence case for longer copy, body text, captions and paragraphs — unless there's a reason to follow another style (official product names, trademarks)",
+          "In doubt, check the Brand Voice Guidelines",
+        ],
+      },
+      {
+        heading: "Avoid gradients",
+        bullets: [
+          "Brand consistency: BioMar's identity is clean, simple and Scandinavian-inspired — solid colours reinforce it, gradients look decorative",
+          "Print production: gradients are hard to reproduce, especially on packaging — they need specialised equipment or suppliers, add cost and risk inconsistent results",
+          "Use solid colours, colour blocks or overlays for depth and hierarchy instead",
+        ],
+        note: "Exception: a black-to-transparent gradient with a Multiply effect can improve text legibility over images or busy backgrounds — as a supporting tool only, never the main design element or a style on its own.",
+      },
+      {
+        heading: "The BioMar Wave",
+        bullets: [
+          "A visual element that adds movement, depth and visual interest across materials",
+          "Especially in communication materials, it reinforces a friendlier, more organic and approachable look and connects the brand to the natural environment",
+          "Keep it simple and balanced — it supports the content, it isn't the main focus",
+        ],
+      },
+      {
+        heading: "Packaging — website bags vs. real bags",
+        bullets: [
+          "Website bags are digital-only and follow a specific structure for consistency across the website. They are not a direct representation of physical packaging",
+          "Each website bag has two elements: colour coding (the product category / segmentation) and the life stage wheel (target species stage, easier navigation of the portfolio)",
+          "When creating or updating website bags, follow the established digital structure — don't adapt physical bag designs directly",
+          "Real bags are the physical packaging used in the market: BioMar standard bags (global packaging structure and visual identity) and custom-made bags (for specific markets or customer requests)",
+          "Custom designs can have adaptations but must stay aligned with the BioMar identity and existing packaging principles",
+          "When creating or reviewing physical packaging, always consider previous bag developments",
+        ],
+      },
+      {
+        heading: "Packaging — consistency (BioMar Blue top)",
+        bullets: [
+          "In recent developments the top area of the bag is BioMar Blue with the secondary white BioMar logo, so the brand is the first thing people recognise",
+          "Exceptions exist depending on market requirements, product positioning or project needs — the goal stays consistency across the portfolio and stronger brand recognition",
+          "Known exceptions: BioMar Blue requested on the bottom; a bag that must be differentiated from EXIA packaging; a different visual from the general EFICO bag because it is Functional Feed",
+          "Before creating a new design, review existing bags and packaging examples to understand the current direction",
+        ],
+      },
+      {
+        heading: "Packaging — custom bag considerations",
+        bullets: [
+          "Stay aligned with existing packaging: follow the current BioMar direction and review existing bags before starting a concept",
+          "Use approved colours whenever possible. If none suit, any new colour must be approved by Global Marketing and the Product Manager before implementation",
+          "Keep BioMar Blue as the dominant colour on the bag",
+          "Avoid red: it's strongly associated with a main competitor. Only exception: medical feed, where some markets require it by local regulation or industry standard",
+          "Keep the design clean and timeless: Scandinavian-inspired, no unnecessary decoration, prioritise clarity, simplicity and longevity over trends",
         ],
       },
       {
         heading: "Icon style",
-        note: "Not yet formalised in the official Brand Guidelines, but keep icons one-coloured and filled (not stroke icons) for a consistent, clean look.",
+        note: "Not yet formally defined in the Brand Guidelines. To stay consistent: simple and clean, one-coloured filled icons preferred; avoid stroke icons, which feel lighter and less consistent with the brand expression.",
       },
       {
-        heading: "Typography",
+        heading: "Our Blue Journey booklet",
+        bullets: [
+          "Showcases BioMar's milestones and progress towards the Our Promise sustainability goals. It has allowed more creative exploration than other corporate material — each edition can develop its own visual direction while staying connected to the brand",
+          "Root the design in the corporate colour palette, with room for complementary colours when relevant",
+          "Previous directions are in the folder Sustainability > 1. Sustainability Report",
+          "Start a new edition by identifying a guiding theme from that year's key topics, achievements or focus areas — it becomes the foundation of the visual concept and story",
+        ],
+        facts: [
+          { label: "2025 — Partnership", value: "“The Impact Line”: a continuous line as a metaphor for collaboration, connecting actions, people and initiatives across the value chain" },
+          { label: "2024 — Better Nutrition", value: "“The Bigger the Better”: large-scale numbers, impactful data visualisation and prominent graphs to make achievements easy to grasp" },
+        ],
+        note: "Each edition should feel unique and relevant to its year while keeping a clear connection to BioMar's visual identity and sustainability story.",
+      },
+      {
+        heading: "Fonts for non-Latin languages",
         facts: [
           { label: "Chinese", value: "Noto Sans CJK SC" },
-          { label: "Vietnamese / Greek / Russian", value: "Arial" },
+          { label: "Vietnamese", value: "Arial" },
+          { label: "Greek", value: "Arial" },
           { label: "Turkish", value: "Avenir Next" },
-          { label: "Website titles", value: "Montserrat (licensing)" },
+          { label: "Russian", value: "Arial" },
         ],
-        note: "Alternative fonts (e.g. Coastline for a warmer, human touch) are allowed only with clear design justification and approval from Global Marketing.",
+        note: "Always make sure the chosen font supports all required characters and keeps a clean, professional look across applications and formats.",
+      },
+      {
+        heading: "Other fonts we've used",
+        bullets: [
+          "Alternative fonts are allowed with a clear design justification (e.g. a festive typeface for seasonal material, complementary fonts for the Sustainability Report or Our Blue Journey)",
+          "Any alternative font must be selected intentionally and approved by Global Marketing",
+          "Coastline is one of the few still in use — first introduced in a campaign, now in selected campaigns and social posts for a warmer, more human touch. Use it sparingly, for short headlines or accent text; it complements the primary typography, never replaces it",
+          "Website: due to licensing, titles use Montserrat — see the Website Font Guidelines",
+        ],
       },
       {
         heading: "Product bags in social media",
-        note: "Don't default to bag mockups. Lead with the concept — the benefit, value and story — and use the bag only when it adds value. Ask: \"Could this post work without showing the bag?\"",
+        bullets: [
+          "Don't rely too heavily on bag mockups. They're useful when introducing a new product, but shouldn't be the default visual",
+          "Communicate the benefits, value and story behind the product — use imagery, illustrations or concepts that explain its purpose, application or impact",
+          "Product bags should support the message, not be the message",
+        ],
+        note: "Tip — ask yourself: “Could this post work without showing the bag?” If yes, lead with the concept and use the bag only when it adds value.",
       },
     ],
     quiz: [
@@ -1885,6 +1961,57 @@ export const modules: Module[] = [
         explanation:
           "Red is a prohibited colour — it's strongly associated with a main competitor. Medical feed is the only exception, where local regulations may require it.",
       },
+      {
+        id: "q3",
+        type: "single",
+        prompt: "A custom bag needs a colour that isn't in the approved palette. What do you do?",
+        options: [
+          "Pick the closest shade yourself",
+          "Get it approved by Global Marketing and the Product Manager before implementing",
+          "Copy the colour from a competitor's bag",
+          "Use a gradient to blend two approved colours",
+        ],
+        correct: [1],
+        explanation:
+          "Any new colour must be approved by Global Marketing and the Product Manager before implementation. Competitor colours and gradients are both to be avoided.",
+      },
+      {
+        id: "q4",
+        type: "single",
+        prompt: "What are the two main elements of a website bag?",
+        options: [
+          "Wave and icon set",
+          "Colour coding and life stage wheel",
+          "Blue top and white logo",
+          "Gradient and mockup",
+        ],
+        correct: [1],
+        explanation:
+          "Website bags are digital-only: colour coding shows the product category, the life stage wheel shows the target species stage. They're not a direct copy of the physical bag.",
+      },
+      {
+        id: "q5",
+        type: "single",
+        prompt: "How should the top area of a recent BioMar bag look?",
+        options: [
+          "BioMar Blue with the secondary white BioMar logo",
+          "White with a gradient",
+          "Red for medical feed, blue for everything else",
+          "Whatever the market prefers, no reference needed",
+        ],
+        correct: [0],
+        explanation:
+          "Recent bags keep the top in BioMar Blue with the secondary white logo so the brand is recognised first. Exceptions exist, but always review existing bags first.",
+      },
+      {
+        id: "q6",
+        type: "single",
+        prompt: "Which casing do you use for chart titles and short headings?",
+        options: ["Title Case", "Sentence case", "ALL CAPS", "lowercase"],
+        correct: [0],
+        explanation:
+          "Title Case for titles, headings and short elements; sentence case for longer copy, body text and captions.",
+      },
     ],
     exercises: [
       {
@@ -1893,6 +2020,17 @@ export const modules: Module[] = [
         prompt:
           "Find an existing piece of BioMar marketing material (real or a mockup) that breaks one of these guidelines and note what you'd change.",
         successCriteria: ["A concrete example found", "The specific guideline it breaks identified"],
+      },
+      {
+        id: "e2",
+        title: "Packaging review",
+        prompt:
+          "Open three existing BioMar bags from different ranges. For each, note whether it follows the BioMar Blue top, whether it avoids red, and any approved exception that applies.",
+        successCriteria: [
+          "Three bags reviewed",
+          "Blue top / red check done for each",
+          "Any exception identified and explained",
+        ],
       },
     ],
   },
