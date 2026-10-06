@@ -160,6 +160,17 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Comen a media agua:** entre los cuadros 200 y 262 todo el grupo sube 50 cm desde el fondo hacia el alimento que cae. Es un mismo desplazamiento vertical para todos, así que la auditoría sigue dando 0 superposiciones.
 - **Subida a la bolsa:** la cámara pasa por debajo del grupo hacia el muelle antes de subir, sin atravesar camarones.
 
+## Previs v16 (final con camarones legibles, sin choques de cámara)
+`previs-v16/VitalAM_previs_v16.mp4`: unos 19,5 s, sin sonido. Renderer `v15.html`.
+- **Camarones translúcidos:** gris verdosos, con segmentos, ojos y patas visibles. Bajo el agua hay una luz frontal suave y las sombras se aclararon; antes eran siluetas negras.
+- **El grupo aparece debajo del pellet** mientras sube hacia el alimento. El protagonista entra de perfil y atrapa el pellet con el resto del grupo alrededor, a tamaño medio, como en el video de referencia.
+- **Cámara de la atrapada:** se elige automáticamente el lado alrededor del protagonista que queda libre de cuerpos, tanto en la bajada como en la atrapada y la salida. La cámara converge a esa posición desde la bajada, sin giros a último momento.
+- **Anticolisión de cámara:** la trayectoria submarina se precalcula y se corre suavemente si algún camarón queda a menos de 17 cm. La distancia mínima a un cuerpo es de 12,5 cm y no hay ningún cuadro con un camarón atravesando la cámara.
+- **Menos pellets a la deriva** (520): antes parecían polvo.
+- **Salida:** la cámara sube frente al cardumen, sale a la superficie y vuela rasante sobre el agua hasta la bolsa a contraluz.
+- **Ritmo:** la bajada del pellet se aceleró para que el grupo entre antes.
+- 0 superposiciones entre camarones en todos los cuadros.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
