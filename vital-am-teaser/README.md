@@ -103,6 +103,27 @@ Renderizar: `node v4.mjs 1 360 1280 frames`, con `scene_v4.glb` (revisión 12) y
 
 Renderizar: `node v10.mjs 1 360 1280 frames` (desde una carpeta con `scene_v10.glb`, `user_shrimp.glb`, `user_pellet_lod.glb` y `SmartCare_Vital_AM_Bag.glb`).
 
+## Previs v11 (pellets que se comen, cámara pegada al pellet y match cut limpio)
+`previs-v11/VitalAM_previs_v11.mp4`: sin sonido. Usa la escena de la revisión 34 y el renderer `v11.html`.
+- **Un solo sistema de pellets** (1.173 por palada):
+  - Cada pellet sale de la pala con una trayectoria balística y cae en abanico.
+  - Deja un anillo de salpicadura en la superficie y se hunde frenando, sin llegar nunca al fondo.
+  - Los pellets aparecen recién cuando salen de la pala; ya no aparecen de la nada.
+- **Los camarones comen:** 72 camarones reciben un pellet que llega exactamente a su boca.
+  - Lo comen en 6 mordiscos, con migas que caen.
+  - El protagonista (`SHRIMP_05`) come en primer plano de perfil, con el pellet entre las patas delanteras.
+- **Cámara:**
+  - Sigue al pellet protagonista desde que sale de la pala: centrado, a unos 7,5 cm y con lente de 50 mm.
+  - Lo ve contra el cielo mientras sube y contra el agua mientras cae.
+  - Entra al agua con él, entre burbujas, y lo acompaña mientras se hunde hasta la boca del camarón.
+- **Match cut:** el celular apagado es un rectángulo negro sobre la mesa, iluminada por la luz del amanecer. La cámara baja hacia él y, en el corte, el dron sigue bajando hacia el estanque, que ocupa el mismo lugar del cuadro y tiene la misma orientación. Ya no está el punto de luz sobre la pantalla.
+- **Agua:** bajo la superficie es verde grisácea y turbia, igual que el estanque visto desde arriba.
+- **Camarones:**
+  - Nadan casi horizontales, con una inclinación máxima de unos 34°.
+  - La auditoría (`v11audit.mjs`) da 0 cuadros con superposición en los 360.
+
+Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, con los mismos GLB).
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
