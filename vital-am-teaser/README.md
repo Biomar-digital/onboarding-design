@@ -144,6 +144,15 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Pellets:** 4 mm. Bajo el agua tienen un brillo cálido sutil para leerse contra los camarones, sin perder el marrón.
 - **Final:** después de que el protagonista atrapa el pellet, la cámara se abre a un plano del grupo comiendo. Los camarones se ven a tamaño medio, no gigantes, y se entiende que comen pellets.
 
+## Previs v14 (final como plano secuencia, escala como el video de referencia)
+`previs-v14/VitalAM_previs_v14.mp4`: unos 21 s (502 cuadros), sin sonido. Renderer `v13.html`.
+- **El camarón atrapa el pellet** con la cámara a unos 25 cm. Antes era un primer plano macro donde el camarón se veía gigante.
+- **El grupo comiendo**, como el video de referencia (`Shrimp_Grower_Water`):
+  - La cámara queda a unos 70 cm, a la altura del grupo y mirando apenas hacia arriba.
+  - El agua es lechosa y gris azulada, con la luz detrás, así que camarones y pellets se leen como siluetas.
+  - Cada camarón ocupa más o menos 1/5 del ancho del cuadro.
+- **Subida sin corte hasta la bolsa:** la cámara sube en diagonal hacia el muelle, cuyos postes se ven bajo el agua. Sale a la superficie frente al muelle y encuadra la bolsa a contraluz con el sol saliendo. Se eliminó el viaje gris vacío del final anterior.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
