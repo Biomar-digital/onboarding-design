@@ -124,6 +124,16 @@ Renderizar: `node v10.mjs 1 360 1280 frames` (desde una carpeta con `scene_v10.g
 
 Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, con los mismos GLB).
 
+## Previs v12 (más tiempo y más claro)
+`previs-v12/VitalAM_previs_v12.mp4`: 19,4 s (465 cuadros), sin sonido. Usa el mismo renderer, con las correcciones de abajo.
+- **Más tiempo:** cada parte respira más. El vuelo del pellet va en cámara lenta (velocidad 0,6), y la bajada bajo el agua, la comida y la subida a la bolsa son más largas.
+- **Celular:** la luz fría del amanecer no cambia al apagar la alarma. El celular apagado se lee como un vidrio negro con el reflejo de la ventana; la mano se retira y la cámara baja en cenital. Corta al estanque oscuro, del mismo tamaño y con la misma orientación.
+- **Vuelo:** la cámara va a altura constante junto al pellet, que se ve contra el cielo sin que el horizonte salte, y recién al final ve venir el agua.
+- **Bajo el agua:** el agua es más clara, así que los camarones aparecen debajo del pellet mientras se hunde. La cámara no suelta el pellet hasta la boca del camarón.
+- **Comida:** el pellet llega a la boca real del modelo del camarón (punto calibrado). La cámara gira al perfil y se abre para mostrarlo comiendo.
+- **Subida:** se acortó el tramo gris vacío antes de la bolsa.
+- **Camarones:** 0 superposiciones en todos los cuadros, medidas sobre el eje real del cuerpo.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
