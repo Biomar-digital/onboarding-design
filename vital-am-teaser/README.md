@@ -84,6 +84,25 @@ Renderizar: `node v4.mjs 1 360 1280 frames`, con `scene_v4.glb` (revisión 12) y
 - **Lente:** pasa de 24 a 32 mm durante la bajada.
 - **Sonido de referencia:** un solo barrido de pala, la lluvia de pellets sobre el agua, el golpe de la cámara al entrar y burbujeo apagado (`sfx_v8.py`).
 
+## Previs v9 y prueba de Seedance
+- `previs-v9/`: los pellets nunca tocan el fondo y los camarones comen siempre a media agua (`pellets_in_water_column.py`).
+- `seedance/`: primer borrador de Seedance 2.5 a 480p (45 créditos), con los prompts y las referencias usadas.
+
+## Previs v10 (pellet del cliente, cámara más fluida y match cut)
+`previs-v10/VitalAM_previs_v10.mp4`: la escena es la revisión 34 del proyecto de 3D Jutsu.
+- **Pellet del cliente:** el modelo `pellet_F_poroso_alto_4K.glb` se usa a 3 mm de largo, que es su tamaño real. Se simplificó a unos 14.500 triángulos y, de lejos, pasa a una esfera.
+- **Un solo pellet protagonista** (`hero_pellet_camera.py`): la cámara sigue el mismo pellet desde la pala, por el aire, al agua y hasta el camarón que lo atrapa a media agua.
+  - Va a su lado, a unos 11 cm.
+  - El suavizado se calcula relativo al pellet para que no se salga de cuadro.
+  - Lente: 24 → 35 → 32 mm.
+- **Transición del despertador al estanque (match cut):** después de apagar la alarma, la cámara sube hasta quedar cenital sobre el celular apagado. Corta a un plano cenital del dron a 44 m: el estanque es el mismo rectángulo oscuro, con la misma orientación. Desde ahí el dron se inclina en espiral hasta el hombro del farmer y sigue sin corte con el pellet (`commit_v10.py`).
+  - La mano sale más rápido después del toque.
+  - La pantalla apagada tiene un brillo cálido sutil.
+- **Sin superposiciones:** la pasada de colisiones se volvió a correr con la nueva trayectoria y la auditoría da 0 cuadros con superposición.
+- **Sonido de referencia** (`sfx_v10.py`): el ambiente del estanque entra 8 cuadros antes del corte (J-cut), con un soplo de aire que crece sobre la subida al cenital. La lluvia de pellets y la entrada al agua están sincronizadas con el cuadro 189.
+
+Renderizar: `node v10.mjs 1 360 1280 frames` (desde una carpeta con `scene_v10.glb`, `user_shrimp.glb`, `user_pellet_lod.glb` y `SmartCare_Vital_AM_Bag.glb`).
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
