@@ -153,6 +153,13 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
   - Cada camarón ocupa más o menos 1/5 del ancho del cuadro.
 - **Subida sin corte hasta la bolsa:** la cámara sube en diagonal hacia el muelle, cuyos postes se ven bajo el agua. Sale a la superficie frente al muelle y encuadra la bolsa a contraluz con el sol saliendo. Se eliminó el viaje gris vacío del final anterior.
 
+## Previs v15 (contrapicado, camarones comiendo a media agua y el 6:30)
+`previs-v15/VitalAM_previs_v15.mp4`: unos 21 s, sin sonido. Renderer `v14.html`.
+- **6:30:** la hora vuelve a verse en el celular mientras suena la alarma y desaparece con el botón al apagarla. La pantalla queda azul lisa para el match cut.
+- **Contrapicado:** bajo el agua la cámara baja por debajo del pellet y lo sigue mirando hacia arriba, recortado contra la superficie clara. Los camarones comiendo y el plano del grupo también se ven desde abajo, como en el video de referencia.
+- **Comen a media agua:** entre los cuadros 200 y 262 todo el grupo sube 50 cm desde el fondo hacia el alimento que cae. Es un mismo desplazamiento vertical para todos, así que la auditoría sigue dando 0 superposiciones.
+- **Subida a la bolsa:** la cámara pasa por debajo del grupo hacia el muelle antes de subir, sin atravesar camarones.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
