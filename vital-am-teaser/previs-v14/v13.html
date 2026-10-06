@@ -105,7 +105,7 @@ const proxy=get('HERO_VitalAM_Bag_10kg'); proxy.visible=false;
 const bag=BAG.scene; bag.position.set(proxy.position.x,proxy.position.y-0.36-0.007,proxy.position.z); s.add(bag);
 const farmer=get('FARMER_Root'), hand=get('HAND_Root');
 const phoneUI=['PHONE_Stop_Button','PHONE_Ring_Pulse'].map(get).filter(Boolean);
-{ const t=get('PHONE_Time_Text'); if(t) t.traverse(o=>{ if(o.isMesh) o.material=new THREE.MeshBasicMaterial({visible:false}); }); }   // no on-screen text
+const PTT=get('PHONE_Time_Text'); if(PTT) PTT.traverse(o=>{ if(o.isMesh) o.material=new THREE.MeshBasicMaterial({color:0xffffff}); });   // the 6:30 alarm time, shown while the alarm rings
 // ---- client feed pellet geometry (porous granule, ~3 mm); the Blender feed objects are replaced by the v11 feed system
 let pGeo,pMat; PEL.scene.traverse(o=>{ if(o.isMesh&&!pGeo){ pGeo=o.geometry; pMat=o.material; } });
 pGeo.computeBoundingBox(); const pLen=pGeo.boundingBox.max.x-pGeo.boundingBox.min.x;
@@ -132,7 +132,7 @@ window.shot=f=>{ mixer.setTime((f-1)/FPS); for(const [o,x0] of STRETCH) o.positi
   cam.updateProjectionMatrix();
   const cp=new THREE.Vector3(); cam.getWorldPosition(cp); const under=cp.y<0, room=S[2]==='s2'; cam.near=room?0.01:(under?0.02:0.05); cam.far=room?50:700; cam.updateProjectionMatrix();
   farmer.visible=f<289; bag.visible=f>=289; hand.visible=f>=59;
-  phoneUI.forEach(o=>o.visible=f<85); if(scr&&scr.material&&scr.material.emissive){ if(!scr.userData.e0) scr.userData.e0=scr.material.emissive.clone();
+  phoneUI.forEach(o=>o.visible=f<85); if(PTT) PTT.visible=f<85; if(scr&&scr.material&&scr.material.emissive){ if(!scr.userData.e0) scr.userData.e0=scr.material.emissive.clone();
     if(f<85){ scr.material.emissive.copy(scr.userData.e0); scr.material.emissiveIntensity=1.7; }
     else { const k=Math.min(1,Math.max(0,(f-86)/10)); scr.material.emissive.setRGB(0.95,0.55,0.28); scr.material.emissive.copy(scr.userData.e0); scr.material.emissiveIntensity=1.7; } }  // warm dawn glow on the black screen: rhymes with the sunrise pond
   sky.visible=!under&&!room; s.environment=(!under&&!room)?envAir:null; glow.visible=!under&&!room; sunDisc.visible=!under&&!room;
