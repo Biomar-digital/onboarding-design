@@ -1,0 +1,158 @@
+<!doctype html><html><body style="margin:0">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+// Vital AM teaser – previs v3 animatic renderer. Source of truth: Higgsfield 3D Jutsu scene (scene_v8.glb):
+// cameras, farmer, feed, shrimp positions, sun and phone all come from the Blender scene. This page adds per-shot
+// look (water fog, dawn sky, bedroom), swaps the bag proxy for the real Vital AM bag, and resolves visibility windows.
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+const P=new URLSearchParams(location.search), W=+P.get('w')||1280, H=Math.round(W*9/16), FPS=24;
+const SH=[[1,48,'s1','CAM_S1_Fasting'],[49,96,'s2','CAM_S2_Phone'],[97,261,'s3','CAM_S3_Drone'],[262,288,'s4','CAM_S4_Follow_Feed'],[289,360,'s5','CAM_S5_Reveal']];
+const r=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,logarithmicDepthBuffer:true}); r.setSize(W,H); r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.0;
+document.body.appendChild(r.domElement);
+const s=new THREE.Scene(); const L=new GLTFLoader();
+const [G,BAG,USR,PEL]=await Promise.all([L.loadAsync('scene_v10.glb'),L.loadAsync('SmartCare_Vital_AM_Bag.glb'),L.loadAsync('user_shrimp.glb'),L.loadAsync('user_pellet_lod.glb')]);
+s.add(G.scene); const get=n=>G.scene.getObjectByName(n);
+// ---- sky dome (dawn), used for air shots
+const sky=new THREE.Mesh(new THREE.SphereGeometry(500,48,24),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:new THREE.Vector3(0,0.07,-1)}},
+ vertexShader:'varying vec3 p; void main(){p=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:`uniform vec3 sun; varying vec3 p; void main(){ float h=p.y; vec3 hor=vec3(1.,.55,.25), mid=vec3(.96,.72,.52), top=vec3(.3,.42,.62);
+  vec3 c=mix(hor,mid,smoothstep(0.,.1,h)); c=mix(c,top,smoothstep(.1,.55,h)); c+=vec3(1.,.62,.3)*pow(max(dot(p,normalize(sun)),0.),24.)*1.3;
+  if(h<0.) c=vec3(.25,.2,.15); gl_FragColor=vec4(c,1.);}`})); s.add(sky);
+const pm=new THREE.PMREMGenerator(r); const skyS=new THREE.Scene(); skyS.add(sky.clone()); const envAir=pm.fromScene(skyS,0.02).texture;
+// ---- lights (our own; GLB punctual lights are disabled)
+const hemi=new THREE.HemisphereLight(0xffffff,0x202020,1); s.add(hemi);
+const key=new THREE.DirectionalLight(0xffb070,2.4); key.position.set(0,20,-300); s.add(key);
+const fill=new THREE.DirectionalLight(0xffe0c0,0.5); fill.position.set(-30,40,60); s.add(fill);
+const bagFill=new THREE.SpotLight(0xffd0a0,0,8,0.6,0.6); s.add(bagFill); s.add(bagFill.target);
+const phoneL=new THREE.PointLight(0xa8c4ff,0,2.0,1.2); s.add(phoneL);
+const winL=new THREE.DirectionalLight(0x8fb0ff,0); s.add(winL); s.add(winL.target);
+const uwKey=new THREE.DirectionalLight(0xfff0d8,0); uwKey.position.set(0.3,10,-5); s.add(uwKey);
+// ---- underwater light shafts near the feeding zone
+const rays=new THREE.Group(); const rayM=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{a:{value:0.1}},
+ vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'uniform float a; varying vec2 vUv; void main(){ float e=sin(vUv.x*25.)*.5+.5; gl_FragColor=vec4(vec3(1.,.95,.85)*a*pow(vUv.y,1.4)*(1.-smoothstep(.85,1.,vUv.y))*(.35+.65*e),1.);}'});
+for(let i=0;i<10;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.18+Math.random()*0.2,0.04,1.6,24,1,true),rayM); c.position.set(-1+i*0.32,-0.8,-(4.4+Math.random()*2.6)); c.rotation.set(0.08,0,0.22); rays.add(c);} s.add(rays);
+// ---- glow sprite for the sun
+const gc=document.createElement('canvas'); gc.width=gc.height=256; {const g=gc.getContext('2d'),q=g.createRadialGradient(128,128,0,128,128,128); q.addColorStop(0,'rgba(255,245,220,1)'); q.addColorStop(.15,'rgba(255,205,140,.7)'); q.addColorStop(.45,'rgba(255,150,70,.2)'); q.addColorStop(1,'rgba(255,120,40,0)'); g.fillStyle=q; g.fillRect(0,0,256,256);}
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(gc),blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); s.add(glow);
+// ---- material passes + visibility windows from each object's own animation range
+const water=get('POND_Water_Surface'); const sunDisc=get('ENV_Sun_Disc');
+const airWater=new THREE.MeshPhysicalMaterial({color:0x7d8a66,roughness:0.06,metalness:0.0,envMapIntensity:1.6,clearcoat:1,clearcoatRoughness:0.04,specularIntensity:1,transparent:true,opacity:0.97});
+const underWater=new THREE.MeshBasicMaterial({color:0xdfeef0,side:THREE.DoubleSide});
+let scr=null; const win={}; const mixer=new THREE.AnimationMixer(G.scene);
+for(const c of G.animations){ const ac=mixer.clipAction(c); ac.setLoop(THREE.LoopOnce); ac.clampWhenFinished=true; ac.play(); let lo=1e9,hi=-1; for(const t of c.tracks){lo=Math.min(lo,t.times[0]); hi=Math.max(hi,t.times[t.times.length-1]);} win[c.name]=[lo*FPS+1,hi*FPS+1]; }
+G.scene.traverse(o=>{ if(o.isLight) o.visible=false;
+  if(o.isMesh){ const m=o.material; if(m&&m.name==='MAT_Pond_Water_Volume_Plankton') o.visible=false;
+    if(m&&m.name&&m.name.startsWith('MAT_Sun_Disc')) o.material=new THREE.MeshBasicMaterial({color:new THREE.Color(1,.88,.62).multiplyScalar(4),fog:false});
+    if(m&&m.name==='MAT_Mosquito_Net'){ m.transparent=true; m.opacity=0.18; m.depthWrite=false; }
+    if(m&&m.name==='MAT_Glass_Water'){ m.transparent=true; m.opacity=0.3; }
+    if(m&&m.name==='MAT_Plankton_Speck'){ o.material=new THREE.MeshBasicMaterial({color:0xd8d2bc,transparent:true,opacity:0.35,depthWrite:false}); }
+    const fix={MAT_Farmer_Skin:0x9a6444,MAT_Farmer_Sleeve_Cotton:0x2e3d52,MAT_Phone_Body:0x0b0b0d,MAT_Room_Dark_Wood:0x3a2416};
+    if(m&&fix[m.name]!==undefined){ o.material=new THREE.MeshStandardMaterial({color:fix[m.name],roughness:0.6,emissive:m.name==='MAT_Farmer_Skin'?0x24140c:0x000000}); }
+    if(m&&m.name==='MAT_Phone_Screen'){ o.material=new THREE.MeshStandardMaterial({color:0x000000,emissive:0x2a4a9a,emissiveIntensity:1.6,roughness:0.2}); }
+  }});
+water.material=airWater; scr=get('PHONE_Screen');
+// rigged shrimp bodies come out of the exporter double-transformed: reuse the clean shrimp mesh from the swarm
+const clean=get('SHRIMP_Swarm_0_0'); G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Body$/.test(o.name)&&o.isMesh&&clean){ o.geometry=clean.geometry; o.material=clean.material; o.position.set(0,0,0); o.quaternion.identity(); o.scale.set(1,1,1);} });
+// flat liner at -1.5 m in the feeding pond (matches the shrimp / pellet contact height)
+G.scene.traverse(o=>{ if(o.isMesh&&o.parent&&o.parent.name==='POND_Basin_Lined_3x3'||o.name==='POND_Basin_Lined_3x3'&&o.isMesh){ const p=o.geometry.attributes.position; for(let i=0;i<p.count;i++){ if(p.getY(i)<-1.5) p.setY(i,-1.5);} p.needsUpdate=true; o.geometry.computeVertexNormals(); } });
+const nodeOf=n=>{let o=get(n); return o;};
+const proxy=get('HERO_VitalAM_Bag_10kg'); proxy.visible=false;
+const bag=BAG.scene; bag.position.set(proxy.position.x,proxy.position.y-0.36-0.007,proxy.position.z); s.add(bag);
+const farmer=get('FARMER_Root'), hand=get('HAND_Root');
+const phoneUI=['PHONE_Stop_Button','PHONE_Ring_Pulse'].map(get).filter(Boolean);
+{ const t=get('PHONE_Time_Text'); if(t) t.traverse(o=>{ if(o.isMesh) o.material=new THREE.MeshBasicMaterial({visible:false}); }); }   // no on-screen text
+// ---- client feed pellet (porous granule) replaces the previs pellets, at real size: ~3 mm long x 2.4 mm
+let pGeo,pMat; PEL.scene.traverse(o=>{ if(o.isMesh&&!pGeo){ pGeo=o.geometry; pMat=o.material; } });
+pGeo.computeBoundingBox(); const pLen=pGeo.boundingBox.max.x-pGeo.boundingBox.min.x;
+const loGeo=new THREE.SphereGeometry(1,12,9); loGeo.scale(0.965,0.77,0.765);
+const PEL_LEN=0.003, hide=new THREE.MeshBasicMaterial({visible:false}); let nPel=0;
+G.scene.traverse(o=>{ if(!/^FEED_(Air|Pellet_UW)_/.test(o.name)) return; const nom=o.name.startsWith('FEED_Air')?2.0:1.3;
+  o.traverse(m=>{ if(m.isMesh) m.material=hide; });
+  const k=PEL_LEN/pLen/nom, lod=new THREE.LOD();
+  const hi=new THREE.Mesh(pGeo,pMat); hi.scale.setScalar(k); const lo=new THREE.Mesh(loGeo,pMat); lo.scale.setScalar(k*pLen/1.93);
+  lod.addLevel(hi,0); lod.addLevel(lo,0.35); lod.rotation.set(Math.random()*6.28,Math.random()*6.28,Math.random()*6.28); o.add(lod); nPel++; });
+window.__nPel=nPel;
+
+const timed=[];
+const fogUW=new THREE.FogExp2(0x9fb2b8,1.15), fogAir=new THREE.FogExp2(0xf0b080,0.006);
+const cams={}; G.scene.traverse(o=>{ if(o.isCamera){ const n=(o.parent&&o.parent.name.startsWith('CAM_'))?o.parent.name:o.name; cams[n]=o; }});
+const camOf=n=>cams[n]||Object.values(cams).find(c=>c.name.includes(n));
+const ramp=(f,a,b)=>Math.min(1,Math.max(0,(f-a)/(b-a)));
+window.shot=f=>{ mixer.setTime((f-1)/FPS); G.scene.updateMatrixWorld(true);
+  const S=SH.find(x=>f>=x[0]&&f<=x[1]); const cam=camOf(S[3]); cam.aspect=W/H;
+  // focal-length animation from the Higgsfield scene (glTF cannot carry lens keys): S4 push-in on the shrimp eating, S5 opens up
+  const sm=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t);};
+  if(cam.userData.fov0===undefined) cam.userData.fov0=cam.fov;
+  const mm2fov=mm=>2*Math.atan((36/(W/H))/2/mm)*180/Math.PI;
+  if(S[2]==='s3' && f>=156){ const mm= f<=176 ? 24+(35-24)*sm(156,176,f) : (f<=194 ? 35 : 35+(32-35)*sm(194,262,f)); cam.fov=mm2fov(mm); }
+  else if(S[2]==='s4' && f>=262){ const mm=32+(56-32)*sm(262,286,f); cam.fov=mm2fov(mm); }
+  else if(S[2]==='s5'){ const mm= f<=316 ? 56+(30-56)*sm(289,316,f) : 30+(38-30)*sm(316,360,f); cam.fov=mm2fov(mm); }
+  else cam.fov=cam.userData.fov0;
+  cam.updateProjectionMatrix();
+  const cp=new THREE.Vector3(); cam.getWorldPosition(cp); const under=cp.y<0, room=S[2]==='s2'; cam.near=room?0.01:(under?0.02:0.05); cam.far=room?50:700; cam.updateProjectionMatrix();
+  farmer.visible=f<289; bag.visible=f>=289; hand.visible=f>=59;
+  phoneUI.forEach(o=>o.visible=f<85); if(scr&&scr.material){ if(!scr.userData.e0) scr.userData.e0=scr.material.emissive.clone();
+    if(f<85){ scr.material.emissive.copy(scr.userData.e0); scr.material.emissiveIntensity=1.7; }
+    else { const k=Math.min(1,Math.max(0,(f-86)/10)); scr.material.emissive.setRGB(0.95,0.55,0.28); scr.material.emissiveIntensity=0.01+0.035*k*k; scr.material.color.setRGB(0.02,0.02,0.025); } }  // warm dawn glow on the black screen: rhymes with the sunrise pond
+  sky.visible=!under&&!room; s.environment=(!under&&!room)?envAir:null; glow.visible=!under&&!room; sunDisc.visible=!under&&!room;
+  const sp=new THREE.Vector3(); sunDisc.getWorldPosition(sp); glow.position.copy(sp); glow.scale.setScalar(sp.length()*0.14); sky.material.uniforms.sun.value.copy(sp).normalize(); key.position.copy(sp);
+  rays.visible=under; water.material=under?underWater:airWater;
+  if(room){ s.fog=null; s.background=new THREE.Color(0x05070c); hemi.color.set(0x6070a0); hemi.groundColor.set(0x403848); hemi.intensity=1.1; key.intensity=0; fill.intensity=0;
+    winL.intensity=0.9; winL.position.set(100.75,2.4,-3); winL.target.position.set(100.9,0.5,-0.7); phoneL.intensity=f<85?0.95:0.05; phoneL.position.set(100.92,0.62,-0.7); uwKey.intensity=0; bagFill.intensity=0; }
+  else if(under){ s.fog=fogUW; s.background=new THREE.Color(0x9fb2b8); fogUW.density=S[2]==='s1'?0.55:(S[2]==='s5'?0.5-0.36*ramp(f,292,318):0.5); hemi.color.set(0xd8e6ea); hemi.groundColor.set(0x3a4448); hemi.intensity=S[2]==='s1'?0.9:1.35;
+    key.intensity=0; fill.intensity=0; winL.intensity=0; phoneL.intensity=0; uwKey.intensity=S[2]==='s1'?0.5:1.3; rayM.uniforms.a.value=S[2]==='s1'?0.04:(S[2]==='s5'?0.12+0.1*ramp(f,292,318):0.12); bagFill.intensity=0; }
+  else { s.fog=fogAir; s.background=null; hemi.color.set(0xffc8a0); hemi.groundColor.set(0x2a2018); hemi.intensity=0.75; key.intensity=2.4; fill.intensity=0.45; winL.intensity=0; phoneL.intensity=0; uwKey.intensity=0;
+    if(S[2]==='s5'){ const k=ramp(f,334,356); hemi.intensity=0.35+0.45*k; fill.intensity=0.1+0.5*k; bagFill.intensity=12*k; bagFill.position.set(bag.position.x+0.3,bag.position.y+0.7,bag.position.z+1.8); bagFill.target.position.copy(bag.position).add(new THREE.Vector3(0,0.36,0)); }
+    else bagFill.intensity=0; }
+  r.render(s,cam); return r.domElement.toDataURL('image/jpeg',0.9);};
+window.__dbg=f=>{ window.shot(f); const out=[]; const cam=camOf(SH.find(x=>f>=x[0]&&f<=x[1])[3]); const cp=new THREE.Vector3(); cam.getWorldPosition(cp);
+  G.scene.traverse(o=>{ if(/^SHRIMP_(0[0-5]_Body|Swarm_0_0)$/.test(o.name)||o.name==='POND_Basin_Lined_3x3'||o.name==='SHRIMP_00_Rig'){ const p=new THREE.Vector3(); o.getWorldPosition(p); const bb=new THREE.Box3().setFromObject(o); out.push([o.name,o.type,o.visible,p.toArray().map(v=>+v.toFixed(2)),bb.min.toArray().map(v=>+v.toFixed(2)),bb.max.toArray().map(v=>+v.toFixed(2))]); }});
+  return {cam:cp.toArray().map(v=>+v.toFixed(2)),out}; };
+
+
+// ---- client shrimp model (rigged, with swim cycle) replaces every shrimp; trajectories stay from the Higgsfield scene
+const UCLIP=USR.animations[0];
+const calib=(()=>{ const am=new THREE.AnimationMixer(USR.scene); am.clipAction(UCLIP).play(); am.setTime(0); USR.scene.updateMatrixWorld(true);
+  let m; USR.scene.traverse(o=>{ if(o.isSkinnedMesh) m=o; }); const pos=m.geometry.attributes.position, v=new THREE.Vector3(); const xs=[],ys=[];
+  const root=USR.scene.getObjectByName('Shrimp_rigRoot_M'); const rp=new THREE.Vector3(); root.getWorldPosition(rp);
+  for(let i=0;i<pos.count;i+=2){ v.fromBufferAttribute(pos,i); m.applyBoneTransform(i,v); v.applyMatrix4(m.matrixWorld); if(Math.abs(v.z-rp.z)<0.7){ xs.push(v.x); ys.push(v.y);} }
+  xs.sort((a,b)=>a-b); ys.sort((a,b)=>a-b); const q=(a,p)=>a[Math.floor(p*(a.length-1))];
+  return {x0:q(xs,0.01),x1:q(xs,0.99),y0:q(ys,0.01),y1:q(ys,0.99),z:rp.z}; })();
+const ULEN=calib.x1-calib.x0, UK=0.137/ULEN, UXC=(calib.x0+calib.x1)/2;
+const USHR=[]; let ui=0;
+G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Rig$/.test(o.name)||/^SHRIMP_Swarm_\d+_\d+$/.test(o.name)) USHR.push(o); });
+for(const host of USHR){
+  host.traverse(c=>{ if(c.isMesh) c.visible=false; });
+  const cl=SkeletonUtils.clone(USR.scene); cl.traverse(c=>{ if(c.isMesh){ c.frustumCulled=false; c.castShadow=false; } });
+  const holder=new THREE.Group(); holder.add(cl); host.add(holder);
+  cl.rotation.y=Math.PI; cl.scale.setScalar(UK);
+  cl.position.set(-0.0125+UXC*UK, -0.0178-calib.y0*UK*0.55, calib.z*UK);
+  const mx=new THREE.AnimationMixer(cl); const ac=mx.clipAction(UCLIP); ac.play();
+  host.userData.um={mx,ph:(ui*1.618)%1*UCLIP.duration,rate:/Swarm/.test(host.name)?1.0:0.45}; ui++;
+}
+const _shot=window.shot;
+// swim-cycle speed follows each shrimp's real speed (slow idle beat at rest, full beat when swimming)
+let _lastF=null;
+window.shot=f=>{ const seq=(_lastF!==null&&f===_lastF+1);
+  for(const h of USHR){ const u=h.userData.um; if(!seq){ u.acc=u.ph+(f-1)/24*u.rate; } u.mx.setTime(((u.acc||0)%UCLIP.duration+UCLIP.duration)%UCLIP.duration); }
+  const out=_shot(f);
+  for(const h of USHR){ const u=h.userData.um; const p=new THREE.Vector3(); h.getWorldPosition(p);
+    const sp=u.prev?p.distanceTo(u.prev)*24:0; u.prev=p; const target=Math.min(1.4,Math.max(0.28,sp/0.14)); u.rate+= (target-u.rate)*0.25; u.acc=(u.acc||u.ph)+u.rate/24; }
+  _lastF=f; return out; };
+
+// ---- overlap audit: every shrimp body as a capsule (rostrum tip -> telson), pairwise distance per frame
+const SHR=[]; G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Rig$/.test(o.name)||/^SHRIMP_Swarm_\d+_\d+$/.test(o.name)) SHR.push(o); });
+function segd(p1,q1,p2,q2){ const d1=q1.clone().sub(p1), d2=q2.clone().sub(p2), r=p1.clone().sub(p2); const a=d1.dot(d1), e=d2.dot(d2), f=d2.dot(r), c=d1.dot(r), b=d1.dot(d2), den=a*e-b*b;
+  let s=den>1e-12?Math.min(1,Math.max(0,(b*f-c*e)/den)):0, t=e>1e-12?(b*s+f)/e:0; if(t<0){t=0;s=Math.min(1,Math.max(0,-c/a));} else if(t>1){t=1;s=Math.min(1,Math.max(0,(b-c)/a));}
+  return p1.clone().add(d1.multiplyScalar(s)).distanceTo(p2.clone().add(d2.multiplyScalar(t))); }
+window.__overlap=(f)=>{ mixer.setTime((f-1)/FPS); G.scene.updateMatrixWorld(true); const caps=[];
+  for(const o of SHR){ const sc=new THREE.Vector3(); o.getWorldScale(sc); const vis=sc.x>1e-4; if(!vis) continue;
+    caps.push([o.name,o.localToWorld(new THREE.Vector3(0.055,0,0)),o.localToWorld(new THREE.Vector3(-0.080,0,0)),0.0095*sc.x]); }
+  let n=0, worst=9, pairs=[]; for(let i=0;i<caps.length;i++) for(let j=i+1;j<caps.length;j++){ const A=caps[i],B=caps[j]; if(A[1].distanceTo(B[1])>0.4) continue;
+    const d=segd(A[1],A[2],B[1],B[2]), m=A[3]+B[3]; const r=d/m; if(r<worst) worst=r; if(r<1){ n++; if(pairs.length<6) pairs.push([A[0],B[0],+r.toFixed(2)]); } }
+  return {f,n,worst:+worst.toFixed(3),pairs}; };
+window.ready=true;
+</script></body></html>
