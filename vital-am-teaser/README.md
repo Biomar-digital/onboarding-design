@@ -134,6 +134,16 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Subida:** se acortó el tramo gris vacío antes de la bolsa.
 - **Camarones:** 0 superposiciones en todos los cuadros, medidas sobre el eje real del cuerpo.
 
+## Previs v13 (match cut exacto, granjero legible, final que se entiende)
+`previs-v13/VitalAM_previs_v13.mp4`: unos 20 s (495 cuadros), sin sonido. Renderer `v12.html`.
+- **Pantalla del celular:** al apagar la alarma solo desaparecen los elementos de la alarma (sin texto). La pantalla sigue encendida en el mismo azul, así que la luz del cuarto no cambia.
+- **Match cut exacto:** la pantalla mide 2,22:1, así que el estanque de alimentación se alargó a 66,7 × 30 m (2,22:1) y la granja lo acompaña.
+  - El dron abre a 64 m, en cenital, y el estanque refleja el cielo del amanecer en el mismo azul que la pantalla. Medido en el render: pantalla (48, 97, 199) y estanque (48, 97, 199).
+  - El rectángulo ocupa la misma posición y el mismo tamaño en el cuadro (x 107–532 contra 108–531). Los estanques vecinos quedan oscuros, como la mesa alrededor del celular.
+- **Granjero:** figura legible (camisa, pantalón, botas, cuello, sombrero cónico de paja claro y balde azul con alimento). El dron baja hasta un plano medio de tres cuartos de frente, con el sol detrás de la cámara. Ese momento dura más: se lo ve cargar la pala y lanzar.
+- **Pellets:** 4 mm. Bajo el agua tienen un brillo cálido sutil para leerse contra los camarones, sin perder el marrón.
+- **Final:** después de que el protagonista atrapa el pellet, la cámara se abre a un plano del grupo comiendo. Los camarones se ven a tamaño medio, no gigantes, y se entiende que comen pellets.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
