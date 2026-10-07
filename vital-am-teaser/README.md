@@ -171,6 +171,19 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Ritmo:** la bajada del pellet se aceleró para que el grupo entre antes.
 - 0 superposiciones entre camarones en todos los cuadros.
 
+## Previs v17 (giro alrededor del granjero, camarones vistos desde arriba, salida suave)
+`previs-v17/VitalAM_previs_v17.mp4`: unos 20 s, sin sonido. Renderer `v16.html`; render completo con `render_v17.sh`.
+- **Granjero:**
+  - Se lo ve de frente mientras carga la pala. Tiene cara simple y camisa con botones, para que se lea que está de frente.
+  - La cámara gira a su alrededor por el lado de la pala y queda detrás de él justo cuando lanza. Ahí acompaña el revoleo y sigue los pellets.
+  - El brazo izquierdo ahora cuelga natural al costado; antes quedaba clavado detrás del hombro.
+- **El pellet protagonista sale de la pala** y se une a su trayectoria sin saltar. Antes aparecía de golpe a 2,4 m de altura y la cámara pegaba un tirón.
+- **Comida:** la cámara mira un poco desde arriba, a 50 cm del camarón protagonista. Ningún otro camarón pasa a menos de 26 cm de la lente, así que no hay "gigantes".
+- **Pellets que parecían pegados a los camarones:** eran pellets a la deriva que atravesaban los cuerpos. Ahora rodean cada cuerpo.
+- **Salida del agua:** disolvencia de 15 cuadros entre una pasada bajo el agua y otra sobre el agua, para que el cruce de la superficie no sea brusco.
+- **Final:** acercamiento lento y estable a la bolsa, con un arco suave y el sol subiendo detrás. Ese tramo va más lento (velocidad 0,5).
+- 0 superposiciones entre camarones en todos los cuadros.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
