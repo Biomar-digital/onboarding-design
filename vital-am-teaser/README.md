@@ -205,6 +205,13 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
   - El cruce de la superficie es el plano mitad bajo el agua y mitad sobre el agua. La imagen bajo el agua entra sin desplazamiento.
 - **Saltos medidos cuadro a cuadro:** solo quedan los cortes previstos (al celular, el match cut y la entrada al agua).
 
+## Previs v20 (estanque con su color, granjero siempre en cuadro, empuje final a la bolsa)
+`previs-v20/VitalAM_previs_v20.mp4`: unos 22,5 s (539 cuadros), sin sonido. Renderer `v19.html`.
+- **Match cut:** el estanque aparece desde el primer cuadro con su color real (verde oliva). Se quitó el reflejo azul que imitaba la pantalla del celular; la forma, la posición y el tamaño del rectángulo siguen coincidiendo con la pantalla.
+- **Dron:** la orientación pasa suavemente del cenital al granjero. Su posición proyectada se verificó cuadro a cuadro y el granjero está dentro del cuadro en todo el tramo del dron, también en el plano general desde lejos.
+- **Final:** se agregó 1 s de empuje lento hacia la bolsa, que sigue sin corte al arco de salida del agua.
+- 0 superposiciones entre camarones en todos los cuadros.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
