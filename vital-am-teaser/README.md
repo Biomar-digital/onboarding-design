@@ -198,7 +198,7 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
   - Después baja en curva hasta un plano general de la granja: el granjero chico en el muelle, el galpón, las palmeras y el amanecer detrás.
   - Se acerca desacelerando hasta quedar de frente al granjero, y de ahí sale el giro alrededor de él hasta quedar detrás en el lanzamiento.
   - La trayectoria es un spline suavizado. El dron y el giro miran al mismo punto del granjero, así que no hay saltos.
-- **Salto de los 16 s:** en la transición de la atrapada al plano del grupo, la mezcla arrancaba 4 cuadros tarde. Corregido.
+- **Salto de los 16–17 s:** había quedado activo un tramo de cámara viejo, que primero tiraba hacia la posición de grupo anterior y después saltaba a la nueva. Se eliminó: la cámara pasa de la atrapada al grupo y a la subida en un solo movimiento continuo.
 - **Salida a la bolsa en una sola parábola:**
   - Una curva Bézier continua: sube desde el grupo, cruza la superficie (con un leve frenado, sin detenerse), se eleva y baja suave hacia la bolsa.
   - El zoom es leve; ya no hay un empuje recto aparte.

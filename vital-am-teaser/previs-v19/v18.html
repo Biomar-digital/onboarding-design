@@ -439,7 +439,6 @@ const XF0=318, XF1=326;   // surface crossing (dissolve between an under- and an
 function endCam(f){
   const catchP=fc=>{ const M=mouth(HERO_SH,fc); return {p:M.clone().add(CATCH.off.clone().multiplyScalar(1-0.12*smo(TE_HERO-4,TE_HERO+14,fc))),t:M.clone()}; };
   if(f<=TE_HERO+14){ const c=catchP(f); return {p:c.p,q:qLook(c.p,c.t),mm:42}; }
-  if(f<=304){ const c=catchP(Math.min(f,TE_HERO+40)), w=smo(TE_HERO+14,302,f); const p=c.p.clone().lerp(PG2,w), t=c.t.clone().lerp(TG2,w); return {p,q:qLook(p,t),mm:40+5*w}; }
   // after the catch: wide on the feeding group (a little from above), slow drift, then crane straight up through the surface toward the bag
   const C=SCHOOL.C, BT=V(BAGP.x,BAGP.y+0.04,BAGP.z);
   const PW=V(C.x+0.25,C.y+0.1,SCHOOL.zmax+0.62), TW=V(C.x,C.y-0.06,C.z-0.3);
@@ -447,7 +446,7 @@ function endCam(f){
   const PU=V(PD.x,0.55,PD.z-0.3);
   const PA=V(BAGP.x+0.1,0.72,BAGP.z+2.3);
   if(f<=300){ const c=catchP(Math.min(f,TE_HERO+40)), w=smo(TE_HERO+14,300,f); const p=c.p.clone().lerp(PW,w), t=c.t.clone().lerp(TW,w); return {p,q:qLook(p,t),mm:42-6*w}; }
-  if(f<=314){ const p=PW.clone().lerp(PD,smo(298,314,f)); return {p,q:qLook(p,TW),mm:36}; }
+  if(f<=314){ const p=PW.clone().lerp(PD,smo(300,314,f)); return {p,q:qLook(p,TW),mm:36}; }
   // one continuous arc: rise through the waterline (slowing a little there), crest above the water, settle on the bag
   const ARC=new THREE.CubicBezierCurve3(PD.clone(),V(PD.x,-0.15,PD.z-0.6),V(PA.x+0.35,1.25,PA.z+1.6),PA.clone());
   const u=arcU(f,ARC); const p=ARC.getPoint(u); const t=TW.clone().lerp(BT,smo(316,334,f));
