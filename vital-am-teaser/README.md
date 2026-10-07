@@ -184,6 +184,13 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Final:** acercamiento lento y estable a la bolsa, con un arco suave y el sol subiendo detrás. Ese tramo va más lento (velocidad 0,5).
 - 0 superposiciones entre camarones en todos los cuadros.
 
+## Previs v18 (final rehecho: grupo comiendo, salida mitad y mitad y plano final de la bolsa)
+`previs-v18/VitalAM_previs_v18.mp4`: unos 20,7 s, sin sonido. Renderer `v17.html`; final con `render_v18.sh`.
+- **Grupo comiendo con el alimento cayendo:** plano casi nivelado a unos 60 cm del cardumen, con un desplazamiento lento. Los pellets siguen hundiéndose despacio entre los camarones y se desvanecen antes del fondo (nunca lo tocan). Se quitaron las manchas de arena del fondo en estos planos.
+- **Salida del agua suave, con un plano mitad bajo el agua y mitad sobre el agua:** la cámara sube y frena en la superficie. Durante unos 21 cuadros, una línea de agua ondulada baja por el cuadro: arriba se ven el muelle, la bolsa y el amanecer; abajo, el agua y los postes. Lo componen `v17ou.mjs` y `ou_comp.py` a partir de dos pasadas (bajo y sobre el agua), con el horizonte submarino alineado a la línea del agua.
+- **Plano final de la bolsa:** la cámara sube a la altura de la bolsa y se acerca despacio sobre el agua, con zoom lento de 28 a 42 mm. La bolsa queda entera en el cuadro, con el sol subiendo detrás.
+- 0 superposiciones entre camarones en todos los cuadros.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
