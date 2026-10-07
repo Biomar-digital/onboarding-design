@@ -191,6 +191,20 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Plano final de la bolsa:** la cámara sube a la altura de la bolsa y se acerca despacio sobre el agua, con zoom lento de 28 a 42 mm. La bolsa queda entera en el cuadro, con el sol subiendo detrás.
 - 0 superposiciones entre camarones en todos los cuadros.
 
+## Previs v19 (dron con plano general de la granja, final en un solo arco)
+`previs-v19/VitalAM_previs_v19.mp4`: unos 21,5 s, sin sonido. Renderer `v18.html`; render con `render_v19.sh`.
+- **Dron:**
+  - Se queda más tiempo en cenital sobre el estanque, con una bajada lenta.
+  - Después baja en curva hasta un plano general de la granja: el granjero chico en el muelle, el galpón, las palmeras y el amanecer detrás.
+  - Se acerca desacelerando hasta quedar de frente al granjero, y de ahí sale el giro alrededor de él hasta quedar detrás en el lanzamiento.
+  - La trayectoria es un spline suavizado. El dron y el giro miran al mismo punto del granjero, así que no hay saltos.
+- **Salto de los 16 s:** en la transición de la atrapada al plano del grupo, la mezcla arrancaba 4 cuadros tarde. Corregido.
+- **Salida a la bolsa en una sola parábola:**
+  - Una curva Bézier continua: sube desde el grupo, cruza la superficie (con un leve frenado, sin detenerse), se eleva y baja suave hacia la bolsa.
+  - El zoom es leve; ya no hay un empuje recto aparte.
+  - El cruce de la superficie es el plano mitad bajo el agua y mitad sobre el agua. La imagen bajo el agua entra sin desplazamiento.
+- **Saltos medidos cuadro a cuadro:** solo quedan los cortes previstos (al celular, el match cut y la entrada al agua).
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
