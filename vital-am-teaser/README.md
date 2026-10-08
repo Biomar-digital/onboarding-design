@@ -213,7 +213,7 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - 0 superposiciones entre camarones en todos los cuadros.
 
 ## Previs v21 (dron sin contragiro, plano contrapicado más lejos, muelle flotante)
-`previs-v21/VitalAM_previs_v21.mp4`: sin sonido. Renderer `v20.html`; render con `render_v21.sh`.
+`previs-v21/VitalAM_previs_v21.mp4`: unos 22,5 s (539 cuadros), sin sonido. Renderer `v20.html`; render con `render_v21.sh`.
 - **Dron sin giro y contragiro:**
   - El giro raro salía de dos cosas: la interpolación de rotación (que hacía girar la cámara sobre su eje) y un desvío lateral de la trayectoria.
   - Ahora la orientación pasa de cenital a mirar al granjero interpolando la dirección y el "arriba" de la cámara, sin rotar sobre su eje.
@@ -224,6 +224,7 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
   - Es un plano contrapicado (cámara debajo, mirando hacia arriba), más lejos del grupo, que se mueve lento y lateral.
   - De ahí sale la parábola continua hacia la superficie y la bolsa.
   - La posición se eligió buscando el lugar con más espacio libre alrededor de la cámara (unos 40 cm), así ningún camarón tapa el lente ni aparece gigante.
+- **Transición del pellet al plano de los camarones:** la cámara se aleja hacia atrás sin darse vuelta y gira de forma gradual; ya no mira de golpe al fondo ni cruza el grupo.
 - **Muelle flotante:** sin patas, con la plataforma al ras del agua sobre dos flotadores. El granjero y la bolsa bajaron con él.
 - 0 superposiciones entre camarones en todos los cuadros.
 
