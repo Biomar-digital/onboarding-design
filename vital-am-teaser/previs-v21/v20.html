@@ -88,7 +88,7 @@ get('HERO_VitalAM_Bag_10kg').position.y-=DOCK_D;
 { const PONT=new THREE.MeshStandardMaterial({color:0x2b3133,roughness:0.6}); for(const x of [-0.27,0.27]){ const g=new THREE.BoxGeometry(0.2,0.2,7.0); const m=new THREE.Mesh(g,PONT); m.position.set(x,-0.04,-12.8); s.add(m); } }
 const FROOT=get('FARMER_Root');
 function applyDock(){ const u=FROOT.userData; let base=FROOT.position.y; if(u.dAfter!==undefined&&Math.abs(base-u.dAfter)<1e-9) base=u.dAfter+DOCK_D; FROOT.position.y=base-DOCK_D; u.dAfter=FROOT.position.y; }
-{ mixer.setTime((150-1)/FPS); applyDock(); G.scene.updateMatrixWorld(true);
+{ mixer.setTime((150-1)/FPS); G.scene.updateMatrixWorld(true);   // build the farmer parts at the rig's own height; the dock offset is applied afterwards to the whole root
   const SHIRT=new THREE.MeshStandardMaterial({color:0x5f7d9c,roughness:0.85}), PANTS=new THREE.MeshStandardMaterial({color:0x34342c,roughness:0.9}),
         BOOT=new THREE.MeshStandardMaterial({color:0x1d2320,roughness:0.5}), SKIN=new THREE.MeshStandardMaterial({color:0x9a6444,roughness:0.7,emissive:0x24140c}),
         STRAW=new THREE.MeshStandardMaterial({color:0xe6cf98,roughness:0.8});
@@ -379,8 +379,9 @@ const FARMER_LOOK=new THREE.Vector3(0,9.62,1.75-DOCK_D);
 function droneCam(f){ const i=Math.max(0,Math.min(DU.length-1,Math.round((f-97)/0.25))); const pb=DPATH.getPoint(DU[i]);
   // orientation: straight down on the pond (match cut), then a smooth turn to look at the farmer from the pond side
   const P3=B2T(pb.x,pb.y,pb.z), FL3=B2T(FARMER_LOOK.x,FARMER_LOOK.y,FARMER_LOOK.z);
+  // top-down frame has the farmer at the top, so tilting up toward him is a pure pitch (no roll)
   const w=smo(99,126,f); const F0=V(0,-1,0), F1=FL3.clone().sub(P3).normalize(); const Fw=F0.clone().lerp(F1,w).normalize();
-  const U=V(0,0,1).lerp(V(0,1,0),w).normalize(); const R=Fw.clone().cross(U).normalize(); const Uo=R.clone().cross(Fw).normalize();
+  const U=V(0,0,-1).lerp(V(0,1,0),w).normalize(); const R=Fw.clone().cross(U).normalize(); const Uo=R.clone().cross(Fw).normalize();
   const q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(R,Uo,Fw.clone().negate()));
   return {p:P3,q,mm:24+2*smo(132,148,f)}; }
 // chase: beside/behind the hero pellet, closing in from the scoop to ~7.5 cm; dives with it and settles above it as it sinks

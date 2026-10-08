@@ -226,6 +226,8 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
   - La posición se eligió buscando el lugar con más espacio libre alrededor de la cámara (unos 40 cm), así ningún camarón tapa el lente ni aparece gigante.
 - **Transición del pellet al plano de los camarones:** la cámara se aleja hacia atrás sin darse vuelta y gira de forma gradual; ya no mira de golpe al fondo ni cruza el grupo.
 - **Muelle flotante:** sin patas, con la plataforma al ras del agua sobre dos flotadores. El granjero y la bolsa bajaron con él.
+- **Granjero:** la camisa, el pantalón, las botas y la cara se arman primero y después el muelle baja al granjero entero (antes quedaban 42 cm más arriba que el esqueleto y el sombrero caía a los hombros).
+- **Dron sin cambio de eje:** el cenital arranca con el granjero arriba del cuadro, así la cámara solo se inclina hacia él, sin rotar de costado. El rectángulo del estanque es igual girado 180°, así que el match cut con el celular sigue coincidiendo.
 - 0 superposiciones entre camarones en todos los cuadros.
 
 ## Plan de producción
