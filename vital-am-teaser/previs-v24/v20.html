@@ -1,0 +1,583 @@
+<!doctype html><html><body style="margin:0">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+// Vital AM teaser – previs v3 animatic renderer. Source of truth: Higgsfield 3D Jutsu scene (scene_v8.glb):
+// cameras, farmer, feed, shrimp positions, sun and phone all come from the Blender scene. This page adds per-shot
+// look (water fog, dawn sky, bedroom), swaps the bag proxy for the real Vital AM bag, and resolves visibility windows.
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+window.__force=new URLSearchParams(location.search).get('force')||null;
+const P=new URLSearchParams(location.search), W=+P.get('w')||1280, H=Math.round(W*9/16), FPS=24;
+const SH=[[1,48,'s1','CAM_S1_Fasting'],[49,96,'s2','CAM_S2_Phone'],[97,261,'s3','CAM_S3_Drone'],[262,288,'s4','CAM_S4_Follow_Feed'],[289,400,'s5','CAM_S5_Reveal']];
+const r=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,logarithmicDepthBuffer:true}); r.setSize(W,H); r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.0;
+document.body.appendChild(r.domElement);
+const s=new THREE.Scene(); const L=new GLTFLoader();
+const [G,BAG,USR,PEL]=await Promise.all([L.loadAsync('scene_v10.glb'),L.loadAsync('SmartCare_Vital_AM_Bag.glb'),L.loadAsync('shrimp_ae.glb'),L.loadAsync('user_pellet_lod.glb')]);
+s.add(G.scene); const get=n=>G.scene.getObjectByName(n);
+// ---- sky dome (dawn), used for air shots
+const sky=new THREE.Mesh(new THREE.SphereGeometry(500,48,24),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:new THREE.Vector3(0,0.07,-1)}},
+ vertexShader:'varying vec3 p; void main(){p=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:`uniform vec3 sun; varying vec3 p; void main(){ float h=p.y; vec3 hor=vec3(1.,.55,.25), mid=vec3(.96,.72,.52), top=vec3(.3,.42,.62);
+  vec3 c=mix(hor,mid,smoothstep(0.,.1,h)); c=mix(c,top,smoothstep(.1,.55,h)); c+=vec3(1.,.62,.3)*pow(max(dot(p,normalize(sun)),0.),24.)*1.3;
+  if(h<0.) c=vec3(.25,.2,.15); gl_FragColor=vec4(c,1.);}`})); s.add(sky);
+const pm=new THREE.PMREMGenerator(r); const skyS=new THREE.Scene(); skyS.add(sky.clone()); const envAir=pm.fromScene(skyS,0.02).texture;
+// ---- lights (our own; GLB punctual lights are disabled)
+const hemi=new THREE.HemisphereLight(0xffffff,0x202020,1); s.add(hemi);
+const key=new THREE.DirectionalLight(0xffb070,2.4); key.position.set(0,20,-300); s.add(key);
+const fill=new THREE.DirectionalLight(0xffe0c0,0.5); fill.position.set(-30,40,60); s.add(fill);
+const bagFill=new THREE.SpotLight(0xffd0a0,0,8,0.6,0.6); s.add(bagFill); s.add(bagFill.target);
+const phoneL=new THREE.PointLight(0xa8c4ff,0,2.0,1.2); s.add(phoneL);
+const winL=new THREE.DirectionalLight(0x8fb0ff,0); s.add(winL); s.add(winL.target);
+const uwKey=new THREE.DirectionalLight(0xfff0d8,0); uwKey.position.set(0.3,10,-5); s.add(uwKey);
+const uwFill=new THREE.DirectionalLight(0xe8f0ee,0); s.add(uwFill); s.add(uwFill.target);
+// ---- underwater light shafts near the feeding zone
+const BASIN=[]; const rays=new THREE.Group(); const rayM=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{a:{value:0.1}},
+ vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'uniform float a; varying vec2 vUv; void main(){ float e=sin(vUv.x*25.)*.5+.5; gl_FragColor=vec4(vec3(1.,.95,.85)*a*pow(vUv.y,1.4)*(1.-smoothstep(.85,1.,vUv.y))*(.35+.65*e),1.);}'});
+for(let i=0;i<10;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.18+Math.random()*0.2,0.04,1.6,24,1,true),rayM); c.position.set(-1+i*0.32,-0.8,-(4.4+Math.random()*2.6)); c.rotation.set(0.08,0,0.22); rays.add(c);} s.add(rays);
+// ---- glow sprite for the sun
+const gc=document.createElement('canvas'); gc.width=gc.height=256; {const g=gc.getContext('2d'),q=g.createRadialGradient(128,128,0,128,128,128); q.addColorStop(0,'rgba(255,245,220,1)'); q.addColorStop(.15,'rgba(255,205,140,.7)'); q.addColorStop(.45,'rgba(255,150,70,.2)'); q.addColorStop(1,'rgba(255,120,40,0)'); g.fillStyle=q; g.fillRect(0,0,256,256);}
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(gc),blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); s.add(glow);
+// ---- material passes + visibility windows from each object's own animation range
+const water=get('POND_Water_Surface'); const sunDisc=get('ENV_Sun_Disc');
+const airWater=new THREE.MeshPhysicalMaterial({fog:false,color:0x6e7a52,roughness:0.06,metalness:0.0,envMapIntensity:1.6,clearcoat:1,clearcoatRoughness:0.04,specularIntensity:1,transparent:true,opacity:0.97});
+const underWater=new THREE.MeshBasicMaterial({color:0xf2f6ee,side:THREE.DoubleSide,fog:true});
+let scr=null; const win={}; const mixer=new THREE.AnimationMixer(G.scene);
+for(const c of G.animations){ const ac=mixer.clipAction(c); ac.setLoop(THREE.LoopOnce); ac.clampWhenFinished=true; ac.play(); let lo=1e9,hi=-1; for(const t of c.tracks){lo=Math.min(lo,t.times[0]); hi=Math.max(hi,t.times[t.times.length-1]);} win[c.name]=[lo*FPS+1,hi*FPS+1]; }
+G.scene.traverse(o=>{ if(o.isLight) o.visible=false;
+  if(o.isMesh){ const m=o.material; if(m&&m.name==='MAT_Pond_Water_Volume_Plankton') o.visible=false;
+    if(m&&m.name&&m.name.startsWith('MAT_Sun_Disc')) o.material=new THREE.MeshBasicMaterial({color:new THREE.Color(1,.88,.62).multiplyScalar(4),fog:false});
+    if(m&&m.name==='MAT_Mosquito_Net'){ m.transparent=true; m.opacity=0.18; m.depthWrite=false; }
+    if(m&&m.name==='MAT_Glass_Water'){ m.transparent=true; m.opacity=0.3; }
+    if(m&&m.name==='MAT_Plankton_Speck'){ o.material=new THREE.MeshBasicMaterial({color:0xd8d2bc,transparent:true,opacity:0.35,depthWrite:false}); }
+    const fix={MAT_Farmer_Skin:0x9a6444,MAT_Farmer_Sleeve_Cotton:0x2e3d52,MAT_Phone_Body:0x0b0b0d,MAT_Room_Dark_Wood:0x3a2416};
+    if(m&&fix[m.name]!==undefined){ o.material=new THREE.MeshStandardMaterial({color:fix[m.name],roughness:0.6,emissive:m.name==='MAT_Farmer_Skin'?0x24140c:0x000000}); }
+    if(m&&m.name==='MAT_Phone_Screen'){ o.material=new THREE.MeshBasicMaterial({color:new THREE.Color(0x2a4a9a).multiplyScalar(1.7)}); }
+  }});
+water.material=airWater; scr=get('PHONE_Screen'); G.scene.traverse(o=>{ if(/^POND_Basin/.test(o.name)&&o.isMesh) BASIN.push(o); });
+const GLASS=(()=>{ const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,256,256);
+  const q=g.createLinearGradient(0,0,256,256); q.addColorStop(0,'rgba(0,0,0,0)'); q.addColorStop(0.38,'rgba(255,255,255,0.0)'); q.addColorStop(0.5,'rgba(255,255,255,0.55)'); q.addColorStop(0.62,'rgba(255,255,255,0.0)'); g.fillStyle=q; g.fillRect(0,0,256,256); return new THREE.CanvasTexture(c); })();
+// rigged shrimp bodies come out of the exporter double-transformed: reuse the clean shrimp mesh from the swarm
+const clean=get('SHRIMP_Swarm_0_0'); G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Body$/.test(o.name)&&o.isMesh&&clean){ o.geometry=clean.geometry; o.material=clean.material; o.position.set(0,0,0); o.quaternion.identity(); o.scale.set(1,1,1);} });
+// flat liner at -1.5 m in the feeding pond (matches the shrimp / pellet contact height)
+G.scene.traverse(o=>{ if(o.isMesh&&o.parent&&o.parent.name==='POND_Basin_Lined_3x3'||o.name==='POND_Basin_Lined_3x3'&&o.isMesh){ const p=o.geometry.attributes.position; for(let i=0;i<p.count;i++){ if(p.getY(i)<-1.5) p.setY(i,-1.5);} p.needsUpdate=true; o.geometry.computeVertexNormals(); } });
+
+// The feeding pond is 40 x 30 m in the Higgsfield scene; the phone screen is 2.22:1. For an exact match cut the farm is
+// stretched along x (pond 66.7 x 30 m, a common long rectangular grow-out pond); everything near x=0 is unchanged.
+const KX=+(P.get('kx')||(0.1512/0.0681)/(40/30));
+for(const n of ['POND_Basin_Lined_3x3','POND_Water_Surface','POND_Water_Volume']){ get(n).traverse(o=>{ if(o.isMesh){ const a=o.geometry.attributes.position; for(let i=0;i<a.count;i++) a.setX(i,a.getX(i)*KX); a.needsUpdate=true; o.geometry.computeBoundingBox(); o.geometry.computeBoundingSphere(); } }); }
+{ const ws=get('POND_Water_Surface'); ws.geometry.computeBoundingBox(); const bb=ws.geometry.boundingBox; const c=document.createElement('canvas'); c.width=c.height=1024; const g=c.getContext('2d');
+  g.fillStyle='#000'; g.fillRect(0,0,1024,1024); const u0=(-20*KX-bb.min.x)/(bb.max.x-bb.min.x), u1=(20*KX-bb.min.x)/(bb.max.x-bb.min.x);
+  const uv=ws.geometry.attributes.uv; let vz=0.5; const pz=ws.geometry.attributes.position;
+  // map z to v using the mesh's own uv/position pairs
+  let i0=0,i1=0; for(let i=0;i<pz.count;i++){ if(pz.getZ(i)<pz.getZ(i0)) i0=i; if(pz.getZ(i)>pz.getZ(i1)) i1=i; }
+  const z0=pz.getZ(i0), z1=pz.getZ(i1), v0=uv.getY(i0), v1=uv.getY(i1); const vOf=z=>v0+(v1-v0)*(z-z0)/(z1-z0);
+  const ua=Math.min(u0,u1), ub=Math.max(u0,u1), va=Math.min(vOf(-15),vOf(15)), vb=Math.max(vOf(-15),vOf(15));
+  g.fillStyle='#fff'; g.fillRect(ua*1024,(1-vb)*1024,(ub-ua)*1024,(vb-va)*1024); window.__POND_MASK=new THREE.CanvasTexture(c); }
+// dawn sky mirrored by the feeding pond seen from straight above (same blue as the phone screen); only this pond
+const SKYREF=new THREE.Mesh(new THREE.PlaneGeometry(40*KX,30),new THREE.MeshBasicMaterial({color:new THREE.Color(0x2a4a9a).multiplyScalar(1.7),transparent:true,opacity:0,fog:false,depthWrite:false}));
+SKYREF.rotation.x=-Math.PI/2; SKYREF.position.set(0,0.01,0); s.add(SKYREF);
+const STRETCH=[]; for(const o of G.scene.children){ if(/^(ENV_Coconut_Palm_|AER_LongArm_|SET_Farm_Shed)/.test(o.name)) STRETCH.push([o,o.position.x]); }
+
+const DOCK_D=+(P.get('dock')||0.42);
+G.scene.traverse(o=>{ if(/^SET_Walkway_Post_/.test(o.name)) o.visible=false; });
+const DOCK_STATIC=[]; G.scene.traverse(o=>{ if(/^SET_Walkway_(Plank|Stringer)_/.test(o.name)) DOCK_STATIC.push(o); });
+for(const o of DOCK_STATIC) o.position.y-=DOCK_D;
+get('HERO_VitalAM_Bag_10kg').position.y-=DOCK_D;
+const PONTS=[]; { const PONT=new THREE.MeshStandardMaterial({color:0x2b3133,roughness:0.6}); for(const x of [-0.27,0.27]){ const g=new THREE.BoxGeometry(0.2,0.2,7.0); const m=new THREE.Mesh(g,PONT); m.position.set(x,-0.04,-12.8); s.add(m); PONTS.push(m); } }
+const FROOT=get('FARMER_Root');
+function applyDock(){ const u=FROOT.userData; let base=FROOT.position.y; if(u.dAfter!==undefined&&Math.abs(base-u.dAfter)<1e-9) base=u.dAfter+DOCK_D; FROOT.position.y=base-DOCK_D; u.dAfter=FROOT.position.y; }
+{ mixer.setTime((150-1)/FPS); G.scene.updateMatrixWorld(true);   // build the farmer parts at the rig's own height; the dock offset is applied afterwards to the whole root
+  const SHIRT=new THREE.MeshStandardMaterial({color:0x5f7d9c,roughness:0.85}), PANTS=new THREE.MeshStandardMaterial({color:0x34342c,roughness:0.9}),
+        BOOT=new THREE.MeshStandardMaterial({color:0x1d2320,roughness:0.5}), SKIN=new THREE.MeshStandardMaterial({color:0x9a6444,roughness:0.7,emissive:0x24140c}),
+        STRAW=new THREE.MeshStandardMaterial({color:0xe6cf98,roughness:0.8});
+  const at=(parent,geo,mat,world,scl)=>{ const m=new THREE.Mesh(geo,mat); parent.add(m); const q=new THREE.Quaternion(); parent.getWorldQuaternion(q);
+    m.position.copy(parent.worldToLocal(world.clone())); m.quaternion.copy(q.invert()); if(scl) m.scale.copy(scl); return m; };
+  const INV=new THREE.MeshBasicMaterial({visible:false}); const hideMesh=n=>{ const o=get(n); if(o) o.material=INV; };
+  const tp=get('FARMER_Torso_Pivot'), root=get('FARMER_Root'), ap=get('FARMER_ArmR_Shoulder');
+  // torso: shirt with shoulders, chest and a tucked waist (shoulders along x, flatter front-to-back)
+  hideMesh('FARMER_Torso');
+  const prof=[[0.0,-0.33],[0.165,-0.33],[0.17,-0.22],[0.162,-0.08],[0.178,0.08],[0.205,0.2],[0.2,0.27],[0.13,0.31],[0.055,0.33],[0.0,0.33]].map(p=>new THREE.Vector2(p[0],p[1]));
+  at(tp,new THREE.LatheGeometry(prof,28),SHIRT,new THREE.Vector3(0,1.757,-9.62),new THREE.Vector3(1,1,0.68));
+  at(tp,new THREE.CylinderGeometry(0.048,0.055,0.09,16),SKIN,new THREE.Vector3(0,2.1,-9.61));
+  // hips + trousers + boots
+  at(root,new THREE.CylinderGeometry(0.17,0.16,0.16,24),PANTS,new THREE.Vector3(0,1.42,-9.62),new THREE.Vector3(1,1,0.72));
+  for(const sx of [-1,1]){ const n=sx<0?'FARMER_Leg_R':'FARMER_Leg_L'; hideMesh(n); const x=0.1*sx;
+    at(root,new THREE.CylinderGeometry(0.085,0.07,0.62,16),PANTS,new THREE.Vector3(x,1.1,-9.62));
+    at(root,new THREE.CylinderGeometry(0.068,0.075,0.26,16),BOOT,new THREE.Vector3(x,0.71,-9.6)); }
+  ['FARMER_Foot_L','FARMER_Foot_R'].forEach(n=>{ const o=get(n); if(o) o.material=BOOT; }); { const b=get('FARMER_Feed_Bucket'); if(b) b.material=new THREE.MeshStandardMaterial({color:0x1f4f8a,roughness:0.5}); const bp=get('FARMER_Feed_Bucket_Pile'); if(bp) bp.material=new THREE.MeshStandardMaterial({color:0x7a5230,roughness:0.95}); }
+  { const hd=get('FARMER_Head'), DARK=new THREE.MeshStandardMaterial({color:0x1b120c,roughness:0.6});
+    const H0=new THREE.Vector3(0.001,2.188,-9.6), F=(x,y,z)=>H0.clone().add(new THREE.Vector3(x,y,z));
+    const nose=new THREE.ConeGeometry(0.016,0.04,10); nose.rotateX(Math.PI/2); at(hd,nose,SKIN,F(0,-0.005,0.112));
+    for(const sx of [-1,1]){ at(hd,new THREE.SphereGeometry(0.011,10,8),DARK,F(0.036*sx,0.022,0.094)); at(hd,new THREE.BoxGeometry(0.03,0.006,0.008),DARK,F(0.036*sx,0.042,0.096)); }
+    at(hd,new THREE.BoxGeometry(0.034,0.006,0.006),DARK,F(0,-0.048,0.098));
+    const PL=new THREE.MeshStandardMaterial({color:0x4a6684,roughness:0.85}); at(tp,new THREE.BoxGeometry(0.03,0.46,0.008),PL,new THREE.Vector3(0,1.76,-9.62+0.125));
+    for(let k=0;k<4;k++) at(tp,new THREE.SphereGeometry(0.007,8,6),new THREE.MeshStandardMaterial({color:0xe8e2d0}),new THREE.Vector3(0,1.92-k*0.1,-9.62+0.13)); }
+  { for(const n of ['FARMER_Arm_L','FARMER_Hand_L']){ const o=get(n); if(o) o.material=INV; }
+    const limb=(a,b,r0,r1,mat)=>{ const d=b.clone().sub(a), L=d.length(); const g=new THREE.CylinderGeometry(r1,r0,L,14); const m=at(tp,g,mat,a.clone().add(b).multiplyScalar(0.5));
+      const wq=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); const pq=new THREE.Quaternion(); tp.getWorldQuaternion(pq); m.quaternion.copy(pq.invert().multiply(wq)); return m; };
+    const S0=new THREE.Vector3(0.215,2.0,-9.62), E0=new THREE.Vector3(0.245,1.71,-9.58), H0b=new THREE.Vector3(0.235,1.45,-9.52);
+    limb(S0,E0,0.055,0.048,SHIRT); limb(E0,H0b,0.046,0.04,SHIRT); at(tp,new THREE.SphereGeometry(0.045,12,10),SKIN,H0b.clone().add(new THREE.Vector3(0,-0.04,0.005))); }
+  // sleeves in shirt colour, straw hat brighter so the silhouette reads as a Vietnamese farmer
+  G.scene.traverse(o=>{ if(!o.isMesh) return; if(/^FARMER_Arm/.test(o.name)&&o.name!=='FARMER_Arm_L') o.material=SHIRT; if((/^FARMER_Hand/.test(o.name)&&o.name!=='FARMER_Hand_L')||o.name==='FARMER_Head') o.material=SKIN; if(o.name==='FARMER_Non_La_Hat') o.material=STRAW; });
+}
+
+const nodeOf=n=>{let o=get(n); return o;};
+const proxy=get('HERO_VitalAM_Bag_10kg'); proxy.visible=false;
+const bag=BAG.scene; bag.position.set(proxy.position.x,proxy.position.y-0.36-0.007,proxy.position.z); s.add(bag);
+const farmer=get('FARMER_Root'), hand=get('HAND_Root');
+const phoneUI=['PHONE_Stop_Button','PHONE_Ring_Pulse'].map(get).filter(Boolean);
+const PTT=get('PHONE_Time_Text'); if(PTT) PTT.traverse(o=>{ if(o.isMesh) o.material=new THREE.MeshBasicMaterial({color:0xffffff}); });   // the 6:30 alarm time, shown while the alarm rings
+// ---- client feed pellet geometry (porous granule, ~3 mm); the Blender feed objects are replaced by the v11 feed system
+let pGeo,pMat; PEL.scene.traverse(o=>{ if(o.isMesh&&!pGeo){ pGeo=o.geometry; pMat=o.material; } });
+pGeo.computeBoundingBox(); const pLen=pGeo.boundingBox.max.x-pGeo.boundingBox.min.x;
+const hideM=new THREE.MeshBasicMaterial({visible:false});
+G.scene.traverse(o=>{ if(/^FEED_(Air|Pellet_UW)_/.test(o.name)) o.traverse(m=>{ if(m.isMesh) m.material=hideM; }); });
+
+const timed=[];
+const fogUW=new THREE.FogExp2(0x93a5a3,1.15), fogAir=new THREE.FogExp2(0xf0b080,0.006);
+const cams={}; G.scene.traverse(o=>{ if(o.isCamera){ const n=(o.parent&&o.parent.name.startsWith('CAM_'))?o.parent.name:o.name; cams[n]=o; }});
+const camOf=n=>cams[n]||Object.values(cams).find(c=>c.name.includes(n));
+const smo=(a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
+const ramp=(f,a,b)=>Math.min(1,Math.max(0,(f-a)/(b-a)));
+window.shot=f=>{ mixer.setTime((f-1)/FPS); for(const [o,x0] of STRETCH) o.position.x=x0*KX; applyDock(); G.scene.updateMatrixWorld(true); if(window.__post) window.__post(f);
+  const S=SH.find(x=>f>=x[0]-0.5&&f<x[1]+0.5); const ovc=window.__camOv?window.__camOv(f):null; const cam=ovc||camOf(S[3]); cam.aspect=W/H;
+  // focal-length animation from the Higgsfield scene (glTF cannot carry lens keys): S4 push-in on the shrimp eating, S5 opens up
+  const sm=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t);};
+  if(cam.userData.fov0===undefined) cam.userData.fov0=cam.fov;
+  const mm2fov=mm=>2*Math.atan((36/(W/H))/2/mm)*180/Math.PI;
+  if(ovc){ cam.fov=mm2fov(ovc.userData.mm); }
+  else if(S[2]==='s3' && f>=156){ const mm= f<=176 ? 24+(35-24)*sm(156,176,f) : (f<=194 ? 35 : 35+(32-35)*sm(194,262,f)); cam.fov=mm2fov(mm); }
+  else if(S[2]==='s4' && f>=262){ const mm=32+(56-32)*sm(262,286,f); cam.fov=mm2fov(mm); }
+  else if(S[2]==='s5'){ const mm= f<=316 ? 56+(30-56)*sm(289,316,f) : 30+(38-30)*sm(316,360,f); cam.fov=mm2fov(mm); }
+  else cam.fov=cam.userData.fov0;
+  cam.updateProjectionMatrix();
+  const cp=new THREE.Vector3(); cam.getWorldPosition(cp); const under=cp.y<0, room=S[2]==='s2'; cam.near=room?0.01:(under?0.02:0.05); cam.far=room?50:700; cam.updateProjectionMatrix();
+  // the 6:30 stays on screen through the push-in and the dissolve to the pond
+  farmer.visible=f<289; bag.visible=f>=289; hand.visible=f>=59;
+  phoneUI.forEach(o=>o.visible=f<85); if(PTT) PTT.visible=true; if(scr&&scr.material&&scr.material.emissive){ if(!scr.userData.e0) scr.userData.e0=scr.material.emissive.clone();
+    if(f<85){ scr.material.emissive.copy(scr.userData.e0); scr.material.emissiveIntensity=1.7; }
+    else { const k=Math.min(1,Math.max(0,(f-86)/10)); scr.material.emissive.setRGB(0.95,0.55,0.28); scr.material.emissive.copy(scr.userData.e0); scr.material.emissiveIntensity=1.7; } }  // warm dawn glow on the black screen: rhymes with the sunrise pond
+  sky.visible=!under&&!room; s.environment=(!under&&!room)?envAir:null; glow.visible=!under&&!room; sunDisc.visible=!under&&!room;
+  // sunrise in s5: read the disc's own track (held after its last key at 360), base height from the first s5 frame, same in every render process
+  if(S[2]==='s5'){ if(!window.__sunTr){ let tr=null; for(const cl of G.animations) for(const t of cl.tracks) if(t.name===sunDisc.name+'.position'||t.name===sunDisc.uuid+'.position') tr=t; window.__sunTr=tr?tr.createInterpolant():null; }
+    const it=window.__sunTr; if(it){ const at=x=>Array.from(it.evaluate((Math.min(x,360)-1)/FPS)); const p=at(f), y0=at(289)[1]; sunDisc.position.set(p[0],y0-8+14*smo(318,360,f),p[2]); }
+    else { sunDisc.position.y=sunDisc.userData.y0===undefined?(sunDisc.userData.y0=sunDisc.position.y):sunDisc.userData.y0; sunDisc.position.y=sunDisc.userData.y0-8+14*smo(318,360,f); }
+    sunDisc.updateMatrixWorld(true); }
+  const sp=new THREE.Vector3(); sunDisc.getWorldPosition(sp); glow.position.copy(sp); glow.scale.setScalar(sp.length()*0.14); sky.material.uniforms.sun.value.copy(sp).normalize(); key.position.copy(sp); window.__sunp=sp.toArray();
+  // no fake light shafts (they read as a white sail when the camera passes them) and no pond floor once the feeding starts:
+  // the feed never reaches the floor, and its lined slope read as a hard 'floor' edge in the rising shot
+  rays.visible=false; for(const m of BASIN) m.visible=!(under&&f>=280);
+  water.material=under?underWater:airWater; underWater.color.set(f>=306?0xb3c2bf:0xf2f6ee); { const k=0; airWater.color.setRGB(0.157,0.195,0.084); airWater.envMapIntensity=1.6*(1-0.9*k); airWater.clearcoat=1-0.9*k; airWater.specularIntensity=1-0.95*k;  airWater.emissive.setRGB(0,0,0); SKYREF.material.opacity=k; SKYREF.visible=k>0.001; }
+  if(room){ s.fog=null; s.background=new THREE.Color(0x05070c); hemi.color.set(0x6070a0); hemi.groundColor.set(0x403848); hemi.intensity=1.1; key.intensity=0; fill.intensity=0;
+    winL.intensity=0.9; winL.color.set(0x8fb0ff); winL.position.set(100.75,2.4,-3); winL.target.position.set(100.9,0.5,-0.7); phoneL.intensity=0.95; phoneL.position.set(100.92,0.62,-0.7); uwKey.intensity=0; uwFill.intensity=0; bagFill.intensity=0; }
+  else if(under){ s.fog=fogUW; s.background=new THREE.Color(0x93a5a3); fogUW.density=S[2]==='s1'?0.55:(S[2]==='s5'?0.34-0.2*ramp(f,292,318):0.34); hemi.color.set(0xd8e6ea); hemi.groundColor.set(0x3a4448); hemi.intensity=S[2]==='s1'?0.9:1.6;
+    key.intensity=0; fill.intensity=0; winL.intensity=0; uwFill.intensity=0; phoneL.intensity=0; uwKey.intensity=S[2]==='s1'?0.5:1.3; { const cd=new THREE.Vector3(); cam.getWorldDirection(cd); uwFill.position.copy(cp).addScaledVector(cd,-3).add(new THREE.Vector3(0,1.5,0)); uwFill.target.position.copy(cp).addScaledVector(cd,2); uwFill.intensity=S[2]==='s1'?0.4:1.4; } rayM.uniforms.a.value=S[2]==='s1'?0.04:(S[2]==='s5'?0.12+0.1*ramp(f,292,318):0.12); bagFill.intensity=0; }
+  else { s.fog=fogAir; s.background=null; hemi.color.set(0xffc8a0); hemi.groundColor.set(0x2a2018); hemi.intensity=0.75; key.intensity=2.4; { const fk=smo(124,138,f)*(1-smo(162,172,f)); fill.intensity=0.45+1.3*fk; fill.position.set(-30+0*fk,25,-60+70*fk); } winL.intensity=0; uwFill.intensity=0; phoneL.intensity=0; uwKey.intensity=0; uwFill.intensity=0;
+    if(S[2]==='s5'){ const k=ramp(f,334,356); hemi.intensity=0.35+0.45*k; fill.intensity=0.1+0.5*k; bagFill.intensity=12*k; bagFill.position.set(bag.position.x+0.3,bag.position.y+0.7,bag.position.z+1.8); bagFill.target.position.copy(bag.position).add(new THREE.Vector3(0,0.36,0)); }
+    else bagFill.intensity=0; }
+  if(window.__pre) window.__pre(f,cam,under);
+  r.render(s,cam); return r.domElement.toDataURL('image/jpeg',0.9);};
+window.__dbg=f=>{ window.shot(f); const out=[]; const cam=camOf(SH.find(x=>f>=x[0]&&f<=x[1])[3]); const cp=new THREE.Vector3(); cam.getWorldPosition(cp);
+  G.scene.traverse(o=>{ if(/^SHRIMP_(0[0-5]_Body|Swarm_0_0)$/.test(o.name)||o.name==='POND_Basin_Lined_3x3'||o.name==='SHRIMP_00_Rig'){ const p=new THREE.Vector3(); o.getWorldPosition(p); const bb=new THREE.Box3().setFromObject(o); out.push([o.name,o.type,o.visible,p.toArray().map(v=>+v.toFixed(2)),bb.min.toArray().map(v=>+v.toFixed(2)),bb.max.toArray().map(v=>+v.toFixed(2))]); }});
+  return {cam:cp.toArray().map(v=>+v.toFixed(2)),out}; };
+
+
+// ---- client shrimp model (rigged, with swim cycle) replaces every shrimp; trajectories stay from the Higgsfield scene
+// the client's swim cycle closes in pose but not in speed (swimmerets reverse at the seam): crossfade the last second into the first,
+// so the cycle (7 s) loops with no hitch and no reset
+function loopClip(clip,D){ const P=clip.duration-D, n=Math.round(P*30), qa=new THREE.Quaternion(), qb=new THREE.Quaternion();
+  const tracks=clip.tracks.map(tr=>{ const it=tr.createInterpolant(), sz=tr.getValueSize(), isQ=tr instanceof THREE.QuaternionKeyframeTrack;
+    const times=new Float32Array(n+1), vals=new Float32Array((n+1)*sz);
+    for(let k=0;k<=n;k++){ const t=k*P/n; let o=Array.from(it.evaluate(t));
+      if(t<D){ const b=Array.from(it.evaluate(t+P)), x=t/D, w=x*x*(3-2*x);
+        if(isQ){ qa.fromArray(o); qb.fromArray(b); if(qa.dot(qb)<0) qa.set(-qa.x,-qa.y,-qa.z,-qa.w); o=qb.slerp(qa,w).toArray(); } else o=b.map((v,i)=>v+(o[i]-v)*w); }
+      times[k]=t; vals.set(o,k*sz); }
+    return new tr.constructor(tr.name,times,vals); });
+  return new THREE.AnimationClip(clip.name+'_loop',P,tracks); }
+const UCLIP=loopClip(USR.animations[0],1.0);
+window.__loopChk=()=>{ const chk=c=>{ let wp=0,wv=0,mv=0; const dt=1/24, T=c.duration; for(const tr of c.tracks){ const it=tr.createInterpolant(); const g=t=>Array.from(it.evaluate(t));
+    const a0=g(0),a1=g(dt),b0=g(T-dt),b1=g(T); for(let i=0;i<a0.length;i++){ wp=Math.max(wp,Math.abs(a0[i]-b1[i])); wv=Math.max(wv,Math.abs((a1[i]-a0[i])-(b1[i]-b0[i]))/dt); mv=Math.max(mv,Math.abs(a1[i]-a0[i])/dt); } }
+    return {dur:+T.toFixed(2),seamPos:+wp.toFixed(4),seamVelJump:+wv.toFixed(3),maxVel:+mv.toFixed(3)}; };
+  return {orig:chk(USR.animations[0]),loop:chk(UCLIP)}; };
+USR.scene.traverse(o=>{ if(o.isMesh&&o.material){ const m=o.material; m.emissive=new THREE.Color(0.17,0.19,0.18); m.emissiveMap=m.map; m.roughness=0.45; m.transparent=+(P.get("op")||0.8)<1; m.opacity=+(P.get("op")||0.8); m.depthWrite=true; m.needsUpdate=true; } });
+const calib=(()=>{ const am=new THREE.AnimationMixer(USR.scene); am.clipAction(UCLIP).play(); am.setTime(0); USR.scene.updateMatrixWorld(true);
+  let m; USR.scene.traverse(o=>{ if(o.isSkinnedMesh) m=o; }); const pos=m.geometry.attributes.position, v=new THREE.Vector3(); const xs=[],ys=[];
+  const root=USR.scene.getObjectByName('Shrimp_rigRoot_M')||USR.scene.getObjectByName('Root_M'); const rp=new THREE.Vector3(); root.getWorldPosition(rp);
+  for(let i=0;i<pos.count;i+=2){ v.fromBufferAttribute(pos,i); m.applyBoneTransform(i,v); v.applyMatrix4(m.matrixWorld); if(Math.abs(v.z-rp.z)<0.7){ xs.push(v.x); ys.push(v.y);} }
+  xs.sort((a,b)=>a-b); ys.sort((a,b)=>a-b); const q=(a,p)=>a[Math.floor(p*(a.length-1))];
+  return {x0:q(xs,0.01),x1:q(xs,0.99),y0:q(ys,0.01),y1:q(ys,0.99),z:rp.z}; })();
+const ULEN=calib.x1-calib.x0, UK=0.137/ULEN, UXC=(calib.x0+calib.x1)/2;
+const USHR=[]; let ui=0;
+G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Rig$/.test(o.name)||/^SHRIMP_Swarm_\d+_\d+$/.test(o.name)) USHR.push(o); });
+for(const host of USHR){
+  host.traverse(c=>{ if(c.isMesh) c.visible=false; });
+  const cl=SkeletonUtils.clone(USR.scene); cl.traverse(c=>{ if(c.isMesh){ c.frustumCulled=false; c.castShadow=false; } });
+  const holder=new THREE.Group(); holder.add(cl); host.add(holder); host.userData.holder=holder;
+  cl.rotation.y=Math.PI; cl.scale.setScalar(UK);
+  cl.position.set(-0.0125+UXC*UK, -0.0178-calib.y0*UK*0.55, calib.z*UK);
+  const mx=new THREE.AnimationMixer(cl); const ac=mx.clipAction(UCLIP); ac.play();
+  host.userData.um={mx,ph:(ui*1.618)%1*UCLIP.duration,rate:/Swarm/.test(host.name)?1.0:0.45}; ui++;
+}
+const _shot=window.shot;
+// swim-cycle speed follows each shrimp's real speed (slow idle beat at rest, full beat when swimming)
+let _lastF=null;
+window.shot=f=>{ const seq=(_lastF!==null&&f>_lastF&&f-_lastF<1.01);
+  for(const h of USHR){ const u=h.userData.um; if(!seq){ u.acc=u.ph+(f-1)/24*u.rate; } u.mx.setTime(((u.acc||0)%UCLIP.duration+UCLIP.duration)%UCLIP.duration); }
+  const out=_shot(f);
+  for(const h of USHR){ const u=h.userData.um; const p=new THREE.Vector3(); h.getWorldPosition(p);
+    const sp=u.prev?p.distanceTo(u.prev)*24:0; u.prev=p; const target=Math.min(1.4,Math.max(0.28,sp/0.14)); u.rate+= (target-u.rate)*0.25; u.acc=(u.acc||u.ph)+u.rate/24; }
+  _lastF=f; return out; };
+
+// ---- overlap audit: every shrimp body as a capsule (rostrum tip -> telson), pairwise distance per frame
+const SHR=[]; G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Rig$/.test(o.name)||/^SHRIMP_Swarm_\d+_\d+$/.test(o.name)) SHR.push(o); });
+function segd(p1,q1,p2,q2){ const d1=q1.clone().sub(p1), d2=q2.clone().sub(p2), r=p1.clone().sub(p2); const a=d1.dot(d1), e=d2.dot(d2), f=d2.dot(r), c=d1.dot(r), b=d1.dot(d2), den=a*e-b*b;
+  let s=den>1e-12?Math.min(1,Math.max(0,(b*f-c*e)/den)):0, t=e>1e-12?(b*s+f)/e:0; if(t<0){t=0;s=Math.min(1,Math.max(0,-c/a));} else if(t>1){t=1;s=Math.min(1,Math.max(0,(b-c)/a));}
+  return p1.clone().add(d1.multiplyScalar(s)).distanceTo(p2.clone().add(d2.multiplyScalar(t))); }
+window.__overlap=(f)=>{ mixer.setTime((f-1)/FPS); G.scene.updateMatrixWorld(true); const caps=[];
+  for(const o of SHR){ const sc=new THREE.Vector3(); o.getWorldScale(sc); const vis=sc.x>1e-4; if(!vis) continue;
+    caps.push([o.name,o.localToWorld(new THREE.Vector3(0.055,0,0)),o.localToWorld(new THREE.Vector3(-0.080,0,0)),0.0095*sc.x]); }
+  let n=0, worst=9, pairs=[]; for(let i=0;i<caps.length;i++) for(let j=i+1;j<caps.length;j++){ const A=caps[i],B=caps[j]; if(A[1].distanceTo(B[1])>0.4) continue;
+    const d=segd(A[1],A[2],B[1],B[2]), m=A[3]+B[3]; const r=d/m; if(r<worst) worst=r; if(r<1){ n++; if(pairs.length<6) pairs.push([A[0],B[0],+r.toFixed(2)]); } }
+  return {f,n,worst:+worst.toFixed(3),pairs}; };
+//V11
+// ===================== v11: one feed system + one camera that follows the hero pellet =====================
+// Every pellet leaves the scoop on a ballistic arc, splashes, and sinks while slowing down (never reaches the floor).
+// Each shrimp that can reach the feed gets a pellet that arrives at its mouth; it is eaten in bites, with crumbs.
+const V=(x,y,z)=>new THREE.Vector3(x,y,z), B2T=(x,y,z)=>V(x,z,-y);
+let _seed=20261006; const rnd=()=>{ _seed=(_seed*1664525+1013904223)>>>0; return _seed/4294967296; };
+const gauss=()=>{ const u=Math.max(rnd(),1e-9),v=rnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };
+
+const MOUTH=V(+(P.get('mx')||0.033),+(P.get('my')||0.006),0);   // host-local: just behind the rostrum base, under the head
+const MAXPITCH=0.6;                                               // shrimp swim near-horizontal (<= ~34 deg)
+function clampShrimp(){ const q=new THREE.Quaternion(), sc=new THREE.Vector3();
+  for(const h of USHR){ const hd=h.userData.holder; hd.quaternion.identity(); h.getWorldScale(sc); if(sc.x<1e-3) continue; hd.updateMatrixWorld(true);
+    h.getWorldQuaternion(q); const fw=V(1,0,0).applyQuaternion(q); const p=Math.asin(Math.max(-1,Math.min(1,fw.y)));
+    if(Math.abs(p)<=MAXPITCH) continue; const hz=V(fw.x,0,fw.z); if(hz.length()<1e-6) hz.set(1,0,0); hz.normalize();
+    const pc=Math.sign(p)*MAXPITCH; const nf=hz.multiplyScalar(Math.cos(pc)); nf.y=Math.sin(pc);
+    const qc=new THREE.Quaternion().setFromUnitVectors(fw,nf); hd.quaternion.copy(q.clone().invert().multiply(qc).multiply(q)); hd.updateMatrixWorld(true); } }
+// feeding: the whole group rises off the bottom toward the falling feed (one shared vertical offset keeps every gap -> still no overlaps)
+const LIFT=f=>+(P.get('lift')||0.5)*smo(200,262,f);
+function liftShrimp(f){ const d=LIFT(f);
+  for(const h of USHR){ const u=h.userData; let base=h.position.y; if(u.liftAfter!==undefined && Math.abs(h.position.y-u.liftAfter)<1e-9) base=u.liftAfter-u.liftD;   // animation did not reset y
+    h.position.y=base+d; u.liftAfter=h.position.y; u.liftD=d; }
+  G.scene.updateMatrixWorld(true); }
+const setF=f=>{ mixer.setTime((f-1)/FPS); applyDock(); G.scene.updateMatrixWorld(true); liftShrimp(f); clampShrimp(); };
+// ---------- samples from the Higgsfield scene ----------
+const SCOOP=get('FARMER_Scoop_Load'); const T1=[]; G.scene.traverse(o=>{ if(/^FEED_Air_T1_\d+$/.test(o.name)) T1.push(o); });
+const HERO_I=T1.findIndex(o=>o.name==='FEED_Air_T1_45'); const HERO_SH=USHR.findIndex(o=>o.name==='SHRIMP_05_Rig');
+const PRE={scoop:{},tm:T1.map(()=>({})),mo:USHR.map(()=>({})),hq:USHR.map(()=>({}))};
+{ const v=V(0,0,0), sc=V(0,0,0);
+  for(let f=140;f<=345;f++){ setF(f);
+    if(f<=180){ SCOOP.getWorldPosition(v); PRE.scoop[f]=v.clone(); }
+    if(f<=200) T1.forEach((o,i)=>{ o.getWorldScale(sc); if(sc.x>1e-3){ o.getWorldPosition(v); PRE.tm[i][f]=v.clone(); } });
+    if(f>=180) USHR.forEach((h,i)=>{ h.getWorldScale(sc); if(sc.x<1e-3) return; PRE.mo[i][f]=h.userData.holder.localToWorld(MOUTH.clone()); });
+  } }
+const span=o=>{ const k=Object.keys(o).map(Number); return [Math.min(...k),Math.max(...k)]; };
+const TM=PRE.tm.map(t=>{ const [a,b]=span(t); return {f0:a,f1:b,p0:t[a],p1:t[b]}; });
+const [HF0,HFL]=[TM[HERO_I].f0,TM[HERO_I].f1];
+const LAND=TM[HERO_I].p1.clone(); LAND.y=0;
+const FAN=TM.reduce((a,t)=>a.add(V(t.p1.x,0,t.p1.z)),V(0,0,0)).multiplyScalar(1/TM.length);
+const FANR=Math.max(...TM.map(t=>Math.hypot(t.p1.x-FAN.x,t.p1.z-FAN.z)))*1.15;
+const lerpKey=(o,f)=>{ const a=Math.floor(f),b=a+1,t=f-a; const A=o[a],B=o[b]; if(A&&B) return A.clone().lerp(B,t); return (A||B||null)&&(A||B).clone(); };
+const scoopAt=f=>lerpKey(PRE.scoop,Math.max(140,Math.min(180,f)));
+const mouth=(i,f)=>{ const m=PRE.mo[i]; const li=lerpKey(m,f); if(li) return li; const k=Object.keys(m).map(Number); if(!k.length) return null; return m[Math.max(Math.min(...k),Math.min(Math.max(...k),f))]; };
+const g=V(0,-9.81,0);
+// ---------- build the feed ----------
+const FEED=[]; const EAT=34;            // frames to eat one pellet (6 bites)
+function ballistic(p){ const T=(p.tl-p.tr)/FPS; p.V0=V(p.S.x,0,p.S.z).sub(p.R).sub(g.clone().multiplyScalar(0.5*T*T)).multiplyScalar(1/T); }
+function spinAxis(){ return V(gauss(),gauss(),gauss()).normalize(); }
+// hero: its own Higgsfield arc in the air, then sinks to the hero shrimp's mouth
+const TE_HERO=278;
+FEED.push({kind:'hero',tr:HF0,tl:HFL,S:LAND.clone(),host:HERO_SH,te:TE_HERO,ax:spinAxis(),sz:1.0,ph:0});
+// eaters: every shrimp whose mouth is in the feeding zone, mid-water, gets one pellet that reaches it
+const used=new Set([HERO_SH]); let nEat=0;
+USHR.forEach((h,i)=>{ if(used.has(i)) return; const ok=[];
+  for(let f=226;f<=300;f++){ const m=PRE.mo[i][f]; if(!m) continue; if(m.y>-0.45||m.y<-1.36) continue; if(Math.hypot(m.x-FAN.x,m.z-FAN.z)>FANR) continue; ok.push(f); }
+  if(ok.length<8) return; const te=ok[Math.floor(rnd()*ok.length)]; const M=PRE.mo[i][te];
+  const S=V(M.x+gauss()*0.12,0,M.z+gauss()*0.12); const tl=184+Math.floor(rnd()*11), tr=HF0-1+Math.floor(rnd()*4);
+  const p={kind:'eat',tr,tl,S,host:i,te,ax:spinAxis(),sz:0.85+0.3*rnd(),ph:rnd()*6}; p.R=scoopAt(tr).clone().add(V(gauss()*0.015,gauss()*0.01,gauss()*0.015)); ballistic(p); FEED.push(p); used.add(i); nEat++; });
+// the rest of the scoop: a dense fan that sinks and slows mid-water, above the shrimp
+const NFLOAT=+(P.get('n')||520);
+for(let k=0;k<NFLOAT;k++){ const t=TM[Math.floor(rnd()*TM.length)];
+  const tr=Math.max(140,t.f0-1+Math.round(gauss()*1.2)); const S=V(t.p1.x+gauss()*0.45,0,t.p1.z+gauss()*0.45);
+  const tl=Math.max(tr+10,t.f1+Math.round(gauss()*1.5));
+  const p={kind:'float',tr,tl,S,ax:spinAxis(),sz:0.8+0.4*rnd(),ph:rnd()*6,Dm:0.55+0.4*rnd(),dr:V(gauss()*0.01,0,gauss()*0.01)};
+  p.R=scoopAt(tr).clone().add(V(gauss()*0.02,gauss()*0.012,gauss()*0.02)); ballistic(p); FEED.push(p); }
+const HERO=FEED[0];
+const heroAir=f=>lerpKey(PRE.tm[HERO_I],Math.max(HF0,Math.min(HFL,f)));
+// position + scale of a pellet at frame f (null = not visible)
+function pelAt(p,f,out){
+  if(f<p.tr&&!(p.kind==='hero'&&f>=HF0-0.5)) return null;
+  if(p.kind==='hero' && f<=HFL){ out.copy(heroAir(f)); if(f<HF0+6){ const w=smo(HF0-0.5,HF0+6,f); out.copy(scoopAt(f).clone().lerp(out,w)); } if(f===HFL) out.y=Math.min(out.y,0); return 1; }
+  if(f<p.tl){ const t=(f-p.tr)/FPS; out.copy(p.R).addScaledVector(p.V0,t).addScaledVector(g,0.5*t*t); return 1; }
+  const t=(f-p.tl)/FPS;
+  if(p.kind==='float'){ const d=p.Dm*(1-Math.exp(-t/1.25))+0.045*t; out.set(p.S.x+p.dr.x*t,-d,p.S.z+p.dr.z*t); const k=1-smo(1.18,1.3,d); return k>0.02?k:null; }
+  // eaters / hero: ease from the landing point to the mouth, arriving with no speed at te
+  if(f<p.te){ const u=(f-p.tl)/(p.te-p.tl), e=1-Math.pow(1-u,1.6); const M=mouth(p.host,p.te);
+    out.set(p.S.x+(M.x-p.S.x)*e, M.y*e, p.S.z+(M.z-p.S.z)*e); return 1; }
+  const M=mouth(p.host,f); if(!M) return null; const k=Math.floor((f-p.te)/6); const sc=1-0.17*k-0.03*((f-p.te)%6)/6; if(sc<=0.05) return null;
+  out.copy(M).add(V(Math.sin(f*1.7+p.ph)*0.0006,Math.sin(f*2.3+p.ph)*0.0005,Math.cos(f*1.9+p.ph)*0.0006)); return sc;
+}
+window.__heroPos=(f,o)=>pelAt(HERO,f,o||V(0,0,0));
+// crumbs: two per bite, drifting down slowly and fading
+const CR=[]; for(const p of FEED){ if(p.kind==='float') continue; for(let b=1;b<=6;b++){ const f0=p.te+6*b; for(let c=0;c<2;c++) CR.push({p,f0,v:V(gauss()*0.012,-0.006-0.01*rnd(),gauss()*0.012),s:0.25+0.25*rnd()}); } }
+// ---------- render objects ----------
+const PKX=+(P.get("pk")||1);   // pellet size multiplier for AI-reference renders (default: true size)
+const PEL_K=0.004/pLen, NHI=60;
+const hiI=new THREE.InstancedMesh(pGeo,pMat,NHI); hiI.frustumCulled=false; s.add(hiI);
+const loG=new THREE.SphereGeometry(1,10,8); loG.scale(0.965*0.002,0.77*0.002,0.765*0.002);
+const loI=new THREE.InstancedMesh(loG,pMat,FEED.length+CR.length); loI.frustumCulled=false; s.add(loI);
+const ringG=new THREE.RingGeometry(0.8,1.0,40); ringG.rotateX(-Math.PI/2);
+const ringI=new THREE.InstancedMesh(ringG,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending,fog:true}),FEED.length); ringI.frustumCulled=false; s.add(ringI);
+const BUB=[]; for(let k=0;k<70;k++) BUB.push({o:V(LAND.x+gauss()*0.05,-0.01-0.07*rnd(),LAND.z+gauss()*0.05),f0:HFL+Math.floor(rnd()*5),v:0.10+0.22*rnd(),r:0.0003+0.0009*rnd()*rnd(),ph:rnd()*6});
+let _fs=777; const fr=()=>{ _fs=(_fs*1664525+1013904223)>>>0; return _fs/4294967296; }, fg=()=>{ const u=Math.max(fr(),1e-9),v=fr(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };   // own RNG: keeps the scene's random sequence unchanged
+// every pellet drags a few air bubbles under when it enters; they let go and rise
+for(const p of FEED){ if(!p.S||p.tl===undefined||p===FEED[0]) continue; const n=2+Math.floor(fr()*3);
+  for(let k=0;k<n;k++) BUB.push({o:V(p.S.x+fg()*0.006,-0.006-0.03*fr(),p.S.z+fg()*0.006),f0:p.tl+Math.floor(fr()*3),v:0.08+0.16*fr(),r:0.0004+0.0008*fr(),ph:fr()*6}); }
+// splash crown: a few droplets jump out of the surface where each pellet lands (seen from above)
+const DROP=[]; for(const p of FEED){ if(!p.S||p.tl===undefined) continue; const n=p===FEED[0]?9:4;
+  for(let k=0;k<n;k++){ const a=(k/n)*Math.PI*2+fr(); const hs=0.10+0.12*fr(); DROP.push({S:p.S,f0:p.tl,vx:Math.cos(a)*hs*0.5,vz:Math.sin(a)*hs*0.5,vy:0.35+0.35*fr(),r:(p===FEED[0]?0.0016:0.0011)*(0.7+0.6*fr())}); } }
+const dropI=new THREE.InstancedMesh(new THREE.SphereGeometry(1,8,6),new THREE.MeshStandardMaterial({color:0xe9efe6,roughness:0.15,transparent:true,opacity:0.75}),DROP.length); dropI.frustumCulled=false; s.add(dropI);
+const bubI=new THREE.InstancedMesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshPhysicalMaterial({color:0xffffff,transmission:0,transparent:true,opacity:0.28,roughness:0.05,metalness:0,envMapIntensity:2,emissive:0xb8c8b8,emissiveIntensity:0.35}),BUB.length); bubI.frustumCulled=false; s.add(bubI);
+const ZERO=new THREE.Matrix4().makeScale(0,0,0), M4=new THREE.Matrix4(), Q=new THREE.Quaternion(), SC=V(1,1,1), TMP=V(0,0,0);
+const BODY=[]; function bodies(){ BODY.length=0; const sc=V(0,0,0); for(let i=0;i<USHR.length;i++){ const h=USHR[i]; h.getWorldScale(sc); if(sc.x<1e-3) continue; const hd=h.userData.holder;
+  const A=hd.localToWorld(V(0.065,0.013,0)), B=hd.localToWorld(V(-0.09,0.013,0)); BODY.push([i,A,B,0.026*sc.x,A.clone().add(B).multiplyScalar(0.5)]); } }
+function pushOut(p,skip){ for(let it=0;it<2;it++){ for(const [i,A,B,r,C] of BODY){ if(i===skip) continue; if(Math.abs(p.x-C.x)>0.12||Math.abs(p.y-C.y)>0.12||Math.abs(p.z-C.z)>0.12) continue;
+  const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,p.clone().sub(A).dot(ab)/ab.lengthSq())); const q=A.clone().addScaledVector(ab,t); const v=p.clone().sub(q); const L=v.length(); if(L<r){ p.addScaledVector(L>1e-6?v.multiplyScalar(1/L):V(0,1,0),r-L); } } } }
+window.__pre=(f,cam,under)=>{ for(const m of PONTS) m.visible=!under;   // dock floats read as a stray pale slab through the underwater fog
+  if(under) bodies(); else BODY.length=0; if(pMat.emissive){ pMat.emissive.setRGB(0.45,0.24,0.1); pMat.emissiveIntensity=under?0.22:0.06; } const cp=V(0,0,0); cam.getWorldPosition(cp); const near=[]; let li=0;
+  FEED.forEach((p,idx)=>{ const sc=pelAt(p,f,TMP); if(sc===null) return; if(BODY.length&&TMP.y<0&&!(p.kind!=='float'&&f>=p.te-10)) pushOut(TMP,p.kind!=='float'?p.host:-1); const d=TMP.distanceTo(cp);
+    const air=f<p.tl; Q.setFromAxisAngle(p.ax,(air?0.9:0.15)*f+p.ph); const k=sc*p.sz*PKX;
+    if(d<0.9&&near.length<NHI){ near.push([TMP.clone(),Q.clone(),k]); return; }
+    M4.compose(TMP,Q,SC.set(k,k,k)); loI.setMatrixAt(li++,M4); });
+  for(const c of CR){ const t=(f-c.f0)/FPS; if(t<0||t>1.6) continue; const M=mouth(c.p.host,c.f0); if(!M) continue;
+    TMP.copy(M).addScaledVector(c.v,t); const k=c.s*(1-t/1.6); M4.compose(TMP,Q.identity(),SC.set(k,k,k)); loI.setMatrixAt(li++,M4); }
+  for(let i=li;i<loI.count;i++) loI.setMatrixAt(i,ZERO); loI.instanceMatrix.needsUpdate=true;
+  for(let i=0;i<NHI;i++){ if(i<near.length){ const [p,q,k]=near[i]; M4.compose(p,q,SC.set(PEL_K*k,PEL_K*k,PEL_K*k)); hiI.setMatrixAt(i,M4); } else hiI.setMatrixAt(i,ZERO); } hiI.instanceMatrix.needsUpdate=true;
+  // splash rings on the surface (seen from above only)
+  let ri=0; if(!under) FEED.forEach(p=>{ const a=f-p.tl; if(a<0||a>=16) return; const r=0.003+0.022*(a/16); TMP.set(p.S.x,0.0015,p.S.z); M4.compose(TMP,Q.identity(),SC.set(r,1,r)); ringI.setMatrixAt(ri++,M4); });
+  for(let i=ri;i<ringI.count;i++) ringI.setMatrixAt(i,ZERO); ringI.instanceMatrix.needsUpdate=true; ringI.material.opacity=0.22;
+  DROP.forEach((d,i)=>{ const t=(f-d.f0)/FPS; if(under||t<0||t>0.4){ dropI.setMatrixAt(i,ZERO); return; } const y=d.vy*t-4.9*t*t; if(y<0){ dropI.setMatrixAt(i,ZERO); return; }
+    TMP.set(d.S.x+d.vx*t,y,d.S.z+d.vz*t); M4.compose(TMP,Q.identity(),SC.set(d.r,d.r,d.r)); dropI.setMatrixAt(i,M4); }); dropI.instanceMatrix.needsUpdate=true;
+  // entry bubbles: hero pellet cloud plus a few per pellet (underwater only)
+  BUB.forEach((b,i)=>{ const t=(f-b.f0)/FPS; if(!under||t<0){ bubI.setMatrixAt(i,ZERO); return; } const y=b.o.y+b.v*t; if(y>-0.002){ bubI.setMatrixAt(i,ZERO); return; }
+    TMP.set(b.o.x+Math.sin(t*9+b.ph)*0.004,y,b.o.z+Math.cos(t*7+b.ph)*0.004); M4.compose(TMP,Q.identity(),SC.set(b.r,b.r,b.r)); bubI.setMatrixAt(i,M4); }); bubI.instanceMatrix.needsUpdate=true;
+};
+const SILT=[]; G.scene.traverse(o=>{ if(/^POND_Silt_/.test(o.name)) SILT.push(o); });
+window.__post=f=>{ liftShrimp(f); clampShrimp(); for(const o of SILT) o.visible=f<200; };
+window.__audit=(f)=>{ setF(f); const caps=[]; const sc=V(0,0,0);
+  for(const h of USHR){ h.getWorldScale(sc); if(sc.x<1e-3) continue; const hd=h.userData.holder; const YA=+(P.get('ya')||0.013); caps.push([hd.localToWorld(V(0.055,YA,0)),hd.localToWorld(V(-0.080,YA,0)),0.0095*sc.x]); }
+  let n=0; for(let i=0;i<caps.length;i++) for(let j=i+1;j<caps.length;j++){ const A=caps[i],B=caps[j]; if(A[0].distanceTo(B[0])>0.4) continue; if(segd(A[0],A[1],B[0],B[1])<A[2]+B[2]) n++; } return n; };
+window.__calib=f=>{ const T=window.THREE_; window.__camOv=null; const h=USHR[HERO_SH]; const hd=h.userData.holder; setF(f);
+  const cols=[0xff0000,0x00ff00,0x0000ff,0xffff00,0xff00ff,0x00ffff,0xffffff,0xff8800];
+  const pts=[[0.03,-0.01],[0.02,-0.02],[0.01,-0.025],[0.0,-0.02],[0.04,-0.02],[0.03,-0.03],[0.05,0],[0.015,-0.035]];
+  const ms=pts.map((q,i)=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(0.0025,8,6),new THREE.MeshBasicMaterial({color:cols[i],fog:false})); m.position.set(q[0],q[1],0); hd.add(m); return m; });
+  const q=new THREE.Quaternion(); hd.getWorldQuaternion(q); const fw=V(1,0,0).applyQuaternion(q), up=V(0,1,0).applyQuaternion(q), sd=fw.clone().cross(up).normalize();
+  const c=hd.localToWorld(V(0.02,-0.01,0)); vc.position.copy(c).addScaledVector(sd,0.16); vc.lookAt(c); vc.userData.mm=40; window.__camOv=()=>vc;
+  const out=window.shot(f); ms.forEach(m=>hd.remove(m)); return out; };
+window.__probe=f=>{ setF(f); const out={}; const bb=o=>{ const B=new THREE.Box3().setFromObject(o); return [B.min.toArray().map(v=>+v.toFixed(3)),B.max.toArray().map(v=>+v.toFixed(3))]; };
+  G.scene.traverse(o=>{ if(/^(FARMER_|PHONE_Screen|PHONE_Root|POND_|WALK|ENV_Walk|DYKE|ROOM_Bedside)/.test(o.name)){ const p=V(0,0,0); o.getWorldPosition(p); out[o.name]=[o.type,p.toArray().map(v=>+v.toFixed(3)),bb(o),o.children.length]; } });
+  return out; };
+window.__probe2=f=>{ setF(f); const out=[]; for(const o of G.scene.children){ const p=V(0,0,0); o.getWorldPosition(p); const B=new THREE.Box3().setFromObject(o); out.push([o.name,o.type,p.toArray().map(v=>+v.toFixed(1)),B.min.toArray().map(v=>+v.toFixed(1)),B.max.toArray().map(v=>+v.toFixed(1)),o.children.length]); } return out; };
+window.__mats=()=>{ const out=[]; USR.scene.traverse(o=>{ if(o.isMesh){ const m=o.material; out.push([o.name,m.type,m.color&&m.color.getHexString(),m.metalness,m.roughness,!!m.map,m.transparent,m.opacity,!!m.normalMap,m.emissive&&m.emissive.getHexString()]); } });
+  const pos=[]; setF(300); for(const h of USHR){ const p=V(0,0,0); h.getWorldPosition(p); pos.push(p.toArray().map(v=>+v.toFixed(2))); } return {mats:out,MTE:MTE.toArray(),pos}; };
+window.__feedInfo={n:FEED.length,eaters:nEat,crumbs:CR.length,HF0,HFL,LAND:LAND.toArray(),FAN:FAN.toArray(),FANR};
+
+//CAM
+// ---------- one camera from the phone to the shrimp's mouth ----------
+const vc=new THREE.PerspectiveCamera(50,W/H,0.02,700); vc.userData.mm=50; s.add(vc);
+const wrapA=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
+function qBl(rx,rz){ const F=B2T(-Math.sin(rz)*Math.sin(rx),Math.cos(rz)*Math.sin(rx),-Math.cos(rx)), U=B2T(-Math.sin(rz)*Math.cos(rx),Math.cos(rz)*Math.cos(rx),Math.sin(rx));
+  const R=F.clone().cross(U); return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(R,U,F.clone().negate())); }
+function qLook(p,t){ return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(p,t,V(0,1,0))); }
+const lookBl=(p,t)=>{ const d=t.clone().sub(p).normalize(); return [Math.acos(Math.max(-1,Math.min(1,-d.z))),Math.atan2(-d.x,d.y)]; };
+const pose=n=>{ const c=camOf(n),p=V(0,0,0),q=new THREE.Quaternion(); c.getWorldPosition(p); c.getWorldQuaternion(q); return {p,q}; };
+// phone: after the tap the camera settles straight above the dark phone and keeps pushing in (same motion as the drone after the cut)
+const PH=get('PHONE_Root'); const RZ2=+(P.get('rz2')||1.361);
+function phoneCam(f){ const pc=V(0,0,0); PH.getWorldPosition(pc); const h=0.317*Math.exp(0.042*(96-f));
+  const mine={p:pc.clone().add(V(0,h,0)),q:qBl(0.0,RZ2)}; const bl=pose('CAM_S2_Phone'); const w=smo(84,92,f);
+  return {p:bl.p.lerp(mine.p,w),q:bl.q.slerp(mine.q,w),mm:50}; }
+// drone: opens straight down on the pond (same size and orientation as the phone), keeps descending and spirals to the shoulder
+const SHP=new THREE.Vector3(-0.95,7.0,1.95), SHT=new THREE.Vector3(-0.2,9.62,1.75);
+let [RX1,RZ1]=lookBl(SHP,SHT); RZ1=Math.PI+wrapA(RZ1-Math.PI);
+const DK=[[97,new THREE.Vector3(0,0.1,64)],[114,new THREE.Vector3(0,0.1,56)],[130,new THREE.Vector3(-0.7,-9.0,5.0)],[148,SHP.clone()]];
+const DPATH=new THREE.CatmullRomCurve3(DK.map(k=>k[1]),false,'centripetal');
+const DU=(()=>{ const tab=[]; for(let f=97;f<=148;f+=0.25){ let i=0; while(i<DK.length-2&&f>DK[i+1][0]) i++; const u=(i+(f-DK[i][0])/(DK[i+1][0]-DK[i][0]))/(DK.length-1); tab.push(Math.min(1,Math.max(0,u))); }
+  const sg=12, N=tab.length, at=j=>j<0?tab[0]-(tab[1]-tab[0])*(-j):(j>=N?tab[N-1]+(tab[N-1]-tab[N-2])*(j-N+1):tab[j]);
+  const out=tab.map((_,i)=>{ let a=0,w=0; for(let j=i-3*sg;j<=i+3*sg;j++){ const g=Math.exp(-0.5*((j-i)/sg)**2); a+=at(j)*g; w+=g; } return a/w; });
+  const o0=out[0], o1=out[N-1]; const nrm=out.map(v=>(v-o0)/(o1-o0));
+  // last leg (wide of the farm -> in front of the farmer) eases out to a stop, so the orbit starts from rest
+  const K2=DK[DK.length-2][0], i2=Math.round((K2-97)/0.25), u2=nrm[i2]; return nrm.map((v,i)=>{ const f=97+i*0.25; return f<=K2?v:u2+(1-u2)*smo(K2,148,f); }); })();
+const FARMER_LOOK=new THREE.Vector3(0,9.62,1.75-DOCK_D);
+function droneCam(f){ const i=Math.max(0,Math.min(DU.length-1,Math.round((f-97)/0.25))); const pb=DPATH.getPoint(DU[i]);
+  // orientation: straight down on the pond (match cut), then a smooth turn to look at the farmer from the pond side
+  const P3=B2T(pb.x,pb.y,pb.z), FL3=B2T(FARMER_LOOK.x,FARMER_LOOK.y,FARMER_LOOK.z);
+  // top-down frame has the farmer at the top, so tilting up toward him is a pure pitch (no roll)
+  const w=smo(99,126,f); const F0=V(0,-1,0), F1=FL3.clone().sub(P3).normalize(); const Fw=F0.clone().lerp(F1,w).normalize();
+  const U=V(0,0,-1).lerp(V(0,1,0),w).normalize(); const R=Fw.clone().cross(U).normalize(); const Uo=R.clone().cross(Fw).normalize();
+  const q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(R,Uo,Fw.clone().negate()));
+  return {p:P3,q,mm:24+2*smo(132,148,f)}; }
+// chase: beside/behind the hero pellet, closing in from the scoop to ~7.5 cm; dives with it and settles above it as it sinks
+const R0=scoopAt(HF0).clone(); const DIR=V(LAND.x-R0.x,0,LAND.z-R0.z).normalize(); const UPV=V(0,1,0); let SIDE=DIR.clone().cross(UPV).normalize();
+{ const fr=V(0,0,0); get('FARMER_Root').getWorldPosition(fr); if(R0.clone().sub(fr).dot(SIDE)<0) SIDE.negate(); }
+// frame when the hero pellet flies past the front camera (camera turns with the cloud, then follows it)
+const FRONTP=B2T(SHP.x,SHP.y,SHP.z); let FP=HFL; for(let f=HF0;f<=HFL;f++){ if(heroAir(f).z>FRONTP.z){ FP=f; break; } }
+let APEX=HF0, ay=-1e9; for(let f=HF0;f<=HFL;f++){ const p=heroAir(f); if(p.y>ay){ ay=p.y; APEX=f; } }
+const heroP=f=>{ if(f<HF0) return scoopAt(f).clone(); const o=V(0,0,0); if(pelAt(HERO,f,o)===null) return mouth(HERO_SH,f).clone(); return o; };
+// the hero shrimp's side (horizontal), facing the S5 rise, measured when it takes the pellet
+const SDH=(()=>{ setF(TE_HERO); const h=USHR[HERO_SH].userData.holder, q=new THREE.Quaternion(); h.getWorldQuaternion(q);
+  const fw=V(1,0,0).applyQuaternion(q), sd=V(fw.z,0,-fw.x).normalize(); const s5=V(0,0,0); camOf('CAM_S5_Reveal').getWorldPosition(s5); const M=mouth(HERO_SH,TE_HERO);
+  setF(300); const s5b=V(0,0,0); camOf('CAM_S5_Reveal').getWorldPosition(s5b); if(s5b.clone().sub(M).dot(sd)<0) sd.negate(); return sd; })();
+function chaseCam(f){ const H=heroP(f); const air=f<=HFL;
+  const d=air?0.075+1.2*(1-smo(161,182,f)):0.075+0.035*smo(HFL+4,262,f);
+  let upk=-0.12+0.4*smo(HFL-10,HFL,f);
+  if(!air) upk=0.28-0.42*smo(HFL+6,HFL+44,f);
+  const side=air?0.4+0.6*(1-smo(156,170,f)):0.4;
+  const B=DIR.clone().multiplyScalar(-0.9).addScaledVector(SIDE,side).normalize();
+  let p;
+  if(air){ p=H.clone().addScaledVector(B,d).addScaledVector(UPV,upk*d); }
+  else { const e0=B.clone().addScaledVector(UPV,upk).normalize(), e1=CATCH.off.clone().normalize(); const w=smo(HFL+16,TE_HERO-16,f);
+    const a0=Math.atan2(e0.z,e0.x), a1=Math.atan2(e1.z,e1.x), az=a0+wrapA(a1-a0)*w, el=Math.asin(e0.y)+(Math.asin(e1.y)-Math.asin(e0.y))*w;
+    const dd=0.075+(0.50-0.075)*smo(HFL+24,TE_HERO-16,f); p=H.clone().add(V(Math.cos(el)*Math.cos(az),Math.sin(el),Math.cos(el)*Math.sin(az)).multiplyScalar(dd)); }
+  return {p,q:qLook(p,H),mm:32+18*smo(162,182,f)}; }
+const s5mm=f=>f<=316?56+(30-56)*smo(289,316,f):30+(38-30)*smo(316,360,f);
+const HSH=USHR[HERO_SH];
+function eatCam(f){ const hd=HSH.userData.holder, q=new THREE.Quaternion(); hd.getWorldQuaternion(q);
+  const fw=V(1,0,0).applyQuaternion(q), up=V(0,1,0).applyQuaternion(q), sd=fw.clone().cross(up).normalize();
+  const M=mouth(HERO_SH,f).clone(); const s5=pose('CAM_S5_Reveal').p; if(s5.clone().sub(M).dot(sd)<0) sd.negate();
+  const p=M.clone().addScaledVector(sd,0.13).addScaledVector(up,0.02).addScaledVector(fw,0.03);
+  return {p,q:qLook(p,M.clone().addScaledVector(fw,-0.02)),mm:40}; }
+const mix=(a,b,w)=>({p:a.p.clone().lerp(b.p,w),q:a.q.clone().slerp(b.q,w),mm:a.mm+(b.mm-a.mm)*w});
+
+// ---------- ending as one move: catch (25 cm) -> group feeding, backlit like the reference (70 cm) -> rise to the jetty -> bag at sunrise ----------
+const BAGP=V(0,0,0); get('HERO_VitalAM_Bag_10kg').getWorldPosition(BAGP);
+const MTE=mouth(HERO_SH,TE_HERO).clone();
+// ---- shrimp capsules (visible body axis) for camera clearance
+const CAPS=f=>{ setF(f); const out=[]; const sc=V(0,0,0); USHR.forEach((h,i)=>{ h.getWorldScale(sc); if(sc.x<1e-3) return; const hd=h.userData.holder; out.push([i,hd.localToWorld(V(0.06,0.013,0)),hd.localToWorld(V(-0.085,0.013,0))]); }); return out; };
+const segPt=(a,b,p)=>{ const ab=b.clone().sub(a); const t=Math.max(0,Math.min(1,p.clone().sub(a).dot(ab)/ab.lengthSq())); return a.clone().addScaledVector(ab,t).distanceTo(p); };
+// the feeding school at the group shot: centre and extent
+const SCHOOL=(()=>{ const c=CAPS(300); const P0=c.map(x=>x[1].clone().add(x[2]).multiplyScalar(0.5)); const C=P0.reduce((a,p)=>a.add(p),V(0,0,0)).multiplyScalar(1/P0.length);
+  const zs=P0.map(p=>p.z).sort((a,b)=>a-b), ys=P0.map(p=>p.y).sort((a,b)=>a-b); const q=(a,t)=>a[Math.floor(t*(a.length-1))];
+  return {C,zmin:q(zs,0.05),zmax:q(zs,0.95),ymin:q(ys,0.05),ymax:q(ys,0.95)}; })();
+const PG2=V(SCHOOL.C.x,SCHOOL.ymax+0.42,SCHOOL.zmax+0.9), TG2=V(SCHOOL.C.x,SCHOOL.C.y,SCHOOL.C.z-0.1);
+// catch camera: ~30 cm from the hero's mouth, a little below, on the side with free space (no body in front of the lens, none in the way when pulling back)
+const CATCH=(()=>{ const fr=[]; for(let f=TE_HERO-34;f<=TE_HERO+14;f+=4) fr.push(f); const D=fr.map(f=>({caps:CAPS(f),M:(f<TE_HERO?heroP(f):mouth(HERO_SH,f)).clone()}));
+  const fb=[]; for(let f=TE_HERO+16;f<=304;f+=4) fb.push(f); const DB=fb.map(f=>({f,caps:CAPS(f)}));
+  setF(TE_HERO); const q=new THREE.Quaternion(); USHR[HERO_SH].userData.holder.getWorldQuaternion(q); const fw=V(1,0,0).applyQuaternion(q); fw.y=0; fw.normalize(); const sd=V(fw.z,0,-fw.x);
+  let best=null; const MT=mouth(HERO_SH,TE_HERO).clone();
+  for(let az=0;az<360;az+=15) for(const el of [12,18,24,30]){ const a=az*Math.PI/180, e=el*Math.PI/180;
+    const off=sd.clone().multiplyScalar(Math.cos(a)).addScaledVector(fw,Math.sin(a)).multiplyScalar(Math.cos(e)*0.5); off.y=Math.sin(e)*0.5;
+    let clr=9, los=9, pb=9;
+    for(const d of D){ const c=(d.M.y===undefined?d.M:d.M).clone().add(off); for(const [i,A,B] of d.caps){ if(i===HERO_SH) continue; clr=Math.min(clr,segPt(A,B,c)); for(let k=1;k<=4;k++) los=Math.min(los,segPt(A,B,c.clone().lerp(d.M,k/5))); } }
+    for(const d of DB){ const w=smo(TE_HERO+14,304,d.f); const c=MT.clone().add(off).lerp(PG2,w); for(const [i,A,B] of d.caps) pb=Math.min(pb,segPt(A,B,c)); }
+    const score=Math.min(clr-0.28,los-0.04,pb-0.24)+0.03*Math.abs(Math.cos(a));
+    if(!best||score>best.score) best={score,off,az,el,clr:+clr.toFixed(3),los:+los.toFixed(3),pb:+pb.toFixed(3)}; }
+  setF(TE_HERO); return best; })();
+window.__catch=()=>({az:CATCH.az,el:CATCH.el,clr:CATCH.clr,los:CATCH.los,pb:CATCH.pb,school:SCHOOL});
+// rise: sweep under the school (looking up at it against the light), then up to the jetty
+const PS=V(BAGP.x+0.05,-0.05,BAGP.z+2.3), TS=V(BAGP.x,0.45,BAGP.z-0.6);
+const PE=V(BAGP.x+0.05,0.62,BAGP.z+2.05), TE=V(BAGP.x,BAGP.y+0.22,BAGP.z);
+const UNDER=Math.max(-1.36,SCHOOL.ymin-0.3);
+const RISE=new THREE.CatmullRomCurve3([PG2.clone(),V(SCHOOL.C.x,UNDER,SCHOOL.zmax-0.2),V(SCHOOL.C.x-0.05,UNDER,SCHOOL.zmin-0.35),V(PS.x,-0.4,PS.z+0.15),PS.clone()]);
+const RISET=new THREE.CatmullRomCurve3([TG2.clone(),V(SCHOOL.C.x,SCHOOL.C.y+0.1,SCHOOL.C.z-0.2),V(SCHOOL.C.x,-0.15,SCHOOL.zmin-1.6),V(PS.x,0.3,PS.z-2.2),TS.clone()]);
+const XF0=318, XF1=326;   // surface crossing (dissolve between an under- and an above-water pass)
+// wide shot of the feeding group from a little below (contrapicado), ~1.2 m away, drifting slowly
+const TWL=V(SCHOOL.C.x,SCHOOL.C.y+0.1,SCHOOL.C.z);
+// pick the wide low-angle position with the most free space around the lens over the whole feeding stretch
+const [WL0,WL1]=(()=>{ const fr=[]; for(let f=TE_HERO-34;f<=316;f+=4) fr.push(f); const D=fr.map(f=>({f,caps:CAPS(f)}));
+  let best=null; const CQ=chaseCam(TE_HERO-34).q; const CL=V(0,0,-1).applyQuaternion(CQ);
+  for(let az=0;az<360;az+=20) for(const el of [-8,-14,-20]) for(const dist of [1.1,1.35,1.6,1.85,2.1]){ const a=az*Math.PI/180, e=el*Math.PI/180;
+    const dir=V(Math.cos(a)*Math.cos(e),Math.sin(e),Math.sin(a)*Math.cos(e)); const p0=TWL.clone().addScaledVector(dir,dist);
+    if(p0.y<-1.38||p0.y>-0.15) continue; const side=V(-Math.sin(a),0,Math.cos(a)); const p1=p0.clone().addScaledVector(side,0.45);
+    let clr=9; for(const d of D){ const w=smo(TE_HERO-34,314,d.f); const p=p0.clone().lerp(p1,w); for(const [i,A,B] of d.caps) clr=Math.min(clr,segPt(A,B,p)); }
+    const sunward=0.06*Math.max(0,Math.sin(a));   // prefer the +z side (looking toward the sunrise light)
+    const cont=-dir.dot(CL);   // keep facing the way the pellet-follow camera already looks
+    const score=Math.min(clr,0.6)+sunward-0.04*(dist-1.1)+0.6*cont-(clr<0.25?1:0)-(el>-14?1:0);
+    (window.__wc=window.__wc||[]).push([az,el,dist,+clr.toFixed(2),+cont.toFixed(2)]);
+    if(!best||score>best.score) best={score,p0,p1,clr,az,el,dist}; }
+  window.__wide={clr:+best.clr.toFixed(3),cont:+(-best.p0.clone().sub(TWL).normalize().dot(CL)).toFixed(2),az:best.az,el:best.el,dist:best.dist}; setF(TE_HERO); return [best.p0,best.p1]; })();
+function wideCam(f){ const p=WL0.clone().lerp(WL1,smo(TE_HERO-34,314,f)); return {p,q:qLook(p,TWL.clone().add(V(0.12*smo(TE_HERO-34,314,f),0,0))),mm:32}; }
+function endCam(f){
+  const catchP=fc=>{ const M=mouth(HERO_SH,fc); return {p:M.clone().add(CATCH.off.clone().multiplyScalar(1-0.12*smo(TE_HERO-4,TE_HERO+14,fc))),t:M.clone()}; };
+  // after the catch: wide on the feeding group (a little from above), slow drift, then crane straight up through the surface toward the bag
+  const C=SCHOOL.C, BT=V(BAGP.x,BAGP.y+0.04,BAGP.z);
+  const TW=TWL.clone().add(V(0.12,0,0));
+  const PD=WL1.clone();
+  const PU=V(PD.x,0.55,PD.z-0.3);
+  const PA=V(BAGP.x+0.1,0.42,BAGP.z+2.3);
+  if(f<=314) return wideCam(f);
+  // one continuous arc: rise through the waterline (slowing a little there), crest above the water, settle on the bag
+  // arc and final push-in are ONE path: the arc arrives already heading at the bag, then the same move brakes slowly to rest (no stop-and-go, no lens jump)
+  const dir=BT.clone().sub(PA).normalize(), PE=PA.clone().addScaledVector(dir,0.38);
+  const ARC=new THREE.CurvePath(); const BZ=new THREE.CubicBezierCurve3(PD.clone(),V(PD.x,-0.15,PD.z-0.6),PA.clone().addScaledVector(dir,-2.4),PA.clone()); BZ.arcLengthDivisions=8000; ARC.add(BZ);   // fine arc-length table: the default 200 steps put small speed kinks in the move ARC.add(new THREE.LineCurve3(PA.clone(),PE));
+  const u=arcU(f,ARC); const p=ARC.getPoint(Math.min(u,1)); const t=TW.clone().lerp(BT,smo(316,334,f));
+  return forceY({p,q:qLook(p,t),mm:32+11*smo(326,372,f)}); }
+// arc parameter with a speed dip at the waterline (continuous, no stop)
+let ARCU=null; function arcU(f,ARC){ if(!ARCU){ const N=4000, pts=[]; let L=0; let prev=ARC.getPoint(0); const cum=[0]; for(let i=1;i<=N;i++){ const q=ARC.getPoint(i/N); L+=q.distanceTo(prev); cum.push(L); pts.push(q); prev=q; }
+    let ux=0; for(let i=0;i<=N;i++){ const q=ARC.getPoint(i/N); if(q.y>=0){ ux=i/N; break; } }
+    const f0=314, f1=372, sx=cum[Math.round(ux*N)]/L; const tab=[]; let acc=0; const dt=0.25; const speed=x=>smo(f0,f0+8,x)*(1-smo(330,f1+2,x));
+    // integrate a speed profile, then put the dip where the arc crosses the surface
+    const fs=[]; for(let x=f0;x<=f1;x+=dt){ fs.push(x); tab.push(acc); acc+=speed(x)*dt; }
+    const sN=tab.map(v=>v/acc); // 0..1 arc-length fraction without dip
+    let fc=f0; for(let i=0;i<sN.length;i++){ if(sN[i]>=sx){ fc=fs[i]; break; } }
+    const tab2=[]; acc=0; const sp2=x=>speed(x)*(1-0.45*Math.exp(-0.5*((x-fc)/4)**2)); for(const x of fs){ tab2.push(acc); acc+=sp2(x)*dt; }
+    const sF=tab2.map(v=>v/acc); ARCU={fs,sF,cum,L,N}; }
+  const {fs,sF,cum,L,N}=ARCU; const x=Math.max(0,Math.min(fs.length-1,(f-fs[0])/0.25)), k=Math.floor(x), k1=Math.min(fs.length-1,k+1); const target=(sF[k]+(sF[k1]-sF[k])*(x-k))*L;
+  let lo=0,hi=N; while(hi-lo>1){ const m=(lo+hi)>>1; if(cum[m]<target) lo=m; else hi=m; } return (lo+Math.max(0,Math.min(1,(target-cum[lo])/Math.max(1e-9,cum[hi]-cum[lo]))))/N; }
+// over/under pass control: the renderer composites an under-water and an above-water pass across the waterline
+function forceY(c){ window.__camY=c.p.y; if(window.__force==='under') c.p.y=Math.min(c.p.y,-0.03); else if(window.__force==='above') c.p.y=Math.max(c.p.y,0.03); c.q=qLook(c.p,c.p.clone().add(V(0,0,-1).applyQuaternion(c.q))); return c; }
+const g5=f=>f<=312?f:(f<=318?312+(f-312)*15/6:327+(f-318)*33/42);
+function s5Pose(f){ const g=g5(f); if(Math.abs(g-f)<1e-6) return pose('CAM_S5_Reveal'); mixer.setTime((g-1)/FPS); G.scene.updateMatrixWorld(true); const r=pose('CAM_S5_Reveal'); mixer.setTime((f-1)/FPS); G.scene.updateMatrixWorld(true); liftShrimp(f); clampShrimp(); return r; }
+const camBase=f=>{ let c; window.__camY=null;
+  if(f<=96.5) c=phoneCam(f);
+  else if(f<148) c=droneCam(f);
+  else if(f<180){ const FC=V(0,1.75-DOCK_D,-9.62); const front=droneCam(Math.min(f,148));
+    const v0=front.p.clone().sub(FC), a0=Math.atan2(v0.z,v0.x), r0=Math.hypot(v0.x,v0.z), h0=front.p.y;
+    const a1=a0+wrapA(Math.atan2(-1.75,-0.75)-a0+ (Math.atan2(-1.75,-0.75)-a0<0?2*Math.PI:0)); const w=smo(148,161,f);
+    const az=a0+((a1<a0?a1+2*Math.PI:a1)-a0)*w, r=r0+(2.6-r0)*w, hgt=h0+(1.95-DOCK_D-h0)*w;
+    const po=V(FC.x+Math.cos(az)*r,hgt,FC.z+Math.sin(az)*r); const tt=FC.clone().lerp(heroP(f),smo(157,165,f));
+    const orb={p:po,q:qLook(po,tt),mm:26}; c=f<161?orb:mix(orb,chaseCam(f),smo(161,180,f)); }
+  else if(f<TE_HERO-40) c=chaseCam(f);
+  else if(f<TE_HERO-4) c=mix(chaseCam(f),wideCam(f),smo(TE_HERO-40,TE_HERO-4,f));
+  else c=endCam(f);
+  return c; };
+// ---- camera never enters a shrimp: precompute the path under water, push it out of any body (12 cm), smooth the push
+const AV0=HFL+30, AV1=312, AVS=0.25, RAV=+(P.get('rav')||0.27); const RAVf=f=>RAV+0.13*smo(TE_HERO-56,TE_HERO-16,f);
+const AVC=(()=>{ const n=Math.round((AV1-AV0)/AVS)+1; let corr=[]; let worst=9;
+  for(let i=0;i<n;i++){ const f=AV0+i*AVS; const c=camBase(f); const caps=CAPS(f); const p=c.p.clone();
+    for(let it=0;it<4;it++){ const d=V(0,0,0); for(const [k,A,B] of caps){ const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,p.clone().sub(A).dot(ab)/ab.lengthSq())); const q=A.clone().addScaledVector(ab,t); const v=p.clone().sub(q); const L=v.length();
+        if(L<RAVf(f)){ d.addScaledVector(L>1e-6?v.multiplyScalar(1/L):V(0,1,0),RAV-L); } } d.y*=0.2; p.add(d); }
+    corr.push(p.sub(c.p)); }
+  const sm=(arr,sig)=>arr.map((_,i)=>{ const acc=V(0,0,0); let ws=0; for(let j=Math.max(0,i-3*sig);j<=Math.min(arr.length-1,i+3*sig);j++){ const w=Math.exp(-0.5*((j-i)/sig)**2); acc.addScaledVector(arr[j],w); ws+=w; } return acc.multiplyScalar(1/ws); });
+  corr=sm(corr,12);
+  for(let pass=0;pass<3;pass++){ const add=[]; for(let i=0;i<n;i++){ const f=AV0+i*AVS; const c=camBase(f); const p=c.p.clone().add(corr[i]); const d=V(0,0,0);
+      for(const [k,A,B] of CAPS(f)){ const ab=B.clone().sub(A); const t=Math.max(0,Math.min(1,p.clone().sub(A).dot(ab)/ab.lengthSq())); const v=p.clone().sub(A.clone().addScaledVector(ab,t)); const L=v.length(); if(L<RAVf(f)) d.addScaledVector(L>1e-6?v.multiplyScalar(1/L):V(0,1,0),(RAVf(f)-L)*1.6); }
+      d.y*=0.2; add.push(d); } const sa=sm(add,10); corr=corr.map((v,i)=>v.add(sa[i])); }
+  // edges fade to zero
+  corr=corr.map((v,i)=>v.multiplyScalar(Math.min(1,i/16,(corr.length-1-i)/16)));
+  for(let i=0;i<n;i+=4){ const f=AV0+i*AVS; const c=camBase(f); const p=c.p.clone().add(corr[i]); for(const [k,A,B] of CAPS(f)){ const dd=segPt(A,B,p); if(dd<0.09) (window.__close=window.__close||[]).push([+f.toFixed(2),k,+dd.toFixed(3)]); worst=Math.min(worst,dd); } }
+  window.__avoid={close:(window.__close||[]).slice(0,30),hero:HERO_SH,worst:+worst.toFixed(3),maxShift:+Math.max(...corr.map(v=>v.length())).toFixed(3)};
+  setF(AV0); return corr; })();
+window.__camOv=f=>{ if(f<84) return null; let c=camBase(f);
+  if(f>=AV0&&f<=AV1){ const x=(f-AV0)/AVS, i=Math.floor(x), t=x-i; const a=AVC[Math.min(i,AVC.length-1)], b=AVC[Math.min(i+1,AVC.length-1)]; const cr=a.clone().lerp(b,t);
+    if(cr.lengthSq()>1e-10){ const fw=V(0,0,-1).applyQuaternion(c.q); const hp=heroP(f), base=c.p.clone().addScaledVector(fw,Math.max(0.3,hp.distanceTo(c.p))); const tgt=hp.lerp(base,smo(TE_HERO-40,TE_HERO-4,f)); const p=c.p.clone().add(cr); c={p,q:qLook(p,tgt),mm:c.mm}; } }
+  vc.position.copy(c.p); vc.quaternion.copy(c.q); vc.userData.mm=c.mm; vc.updateMatrixWorld(true); return vc; };
+window.__arc=()=>{ const o=[]; for(let f=HF0;f<=HFL;f+=2){ const p=heroAir(f); o.push([f,+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2)]); } return {FP,arc:o}; };
+window.__xf=()=>({XF0,XF1}); window.__camYat=F=>{ window.__camOv(window.__tmap(F)); return window.__camY; };
+window.__farmerNDC=()=>{ const o=[]; const fh=V(0,0,0); for(let F=1;F<=window.__NOUT;F++){ const f=window.__tmap(F); if(f<97||f>162) continue; const c=window.__camOv(f); c.aspect=W/H; c.fov=2*Math.atan((36/(W/H))/2/c.userData.mm)*180/Math.PI; c.updateProjectionMatrix(); c.updateMatrixWorld(true); get('FARMER_Head').getWorldPosition(fh); const n=fh.clone().project(c); o.push([F,+f.toFixed(1),+n.x.toFixed(2),+n.y.toFixed(2)]); } return o; };
+window.__probeDock=()=>{ setF(340); const out=[]; G.scene.traverse(o=>{ if(!o.isMesh&&!(o.children&&o.children.length)) return; const B=new THREE.Box3().setFromObject(o); if(B.isEmpty()) return;
+  if(B.max.x>-1.2&&B.min.x<1.4&&B.max.z>-17&&B.min.z<-8.6&&B.max.y>-2&&B.min.y<2.6&&B.max.y-B.min.y<4) out.push([o.name,o.type,o.parent?o.parent.name:'',B.min.toArray().map(v=>+v.toFixed(2)),B.max.toArray().map(v=>+v.toFixed(2))]); }); return out; };
+window.__camInfo={APEX,HF0,HFL,DIR:DIR.toArray(),SIDE:SIDE.toArray()};
+
+
+const SEG=[[1,48,0.8],[49,96,0.85],[97,116,0.5],[117,138,0.75],[139,160,0.5],[161,190,0.6],[191,205,0.8],[206,252,1.75],[253,270,0.8],[271,300,0.55],[301,372,0.5]];
+const spd=f=>{ let v=0.8; for(const [a,b,k] of SEG) if(f>=a-0.5&&f<b+0.5) v=k; return v; };
+const TMAP=[1]; { let f=1; while(f<372){ let k=0,n=0; for(let d=-6;d<=6;d++){ k+=spd(f+d); n++; } f=Math.min(372,f+(f>=360?0.5:k/n)); TMAP.push(f); } }
+window.__NOUT=TMAP.length; window.shotOut=F=>window.shot(TMAP[Math.max(0,Math.min(TMAP.length-1,F-1))]);
+window.__tmap=F=>TMAP[F-1];
+window.__kids=f=>{ window.shot(f); return s.children.map((c,i)=>{ const b=new THREE.Box3().setFromObject(c); let n=0; c.traverse(o=>{ if(o.isMesh) n++; }); return [i,c.type,c.name||'',c.visible,n,b.isEmpty()?null:b.min.toArray().map(v=>+v.toFixed(1)).concat(b.max.toArray().map(v=>+v.toFixed(1)))]; }); };
+window.__pick=(f,px,py)=>{ window.shot(f); const c=window.__camOv(f); c.aspect=W/H; c.fov=2*Math.atan((36/(W/H))/2/c.userData.mm)*180/Math.PI; c.updateProjectionMatrix(); const rc=new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px/W*2-1,-(py/H*2-1)),c); return rc.intersectObjects(s.children,true).slice(0,6).map(h=>{ let n=h.object, path=[]; while(n){ path.push(n.name||n.type); n=n.parent; } return [+h.distance.toFixed(3),h.object.visible,path.slice(0,4).join('<')]; }); };
+window.ready=true;
+</script></body></html>
