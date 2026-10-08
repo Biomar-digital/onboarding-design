@@ -230,6 +230,24 @@ Renderizar: `node v11.mjs 1 360 1280 frames` (desde la carpeta del previs v10, c
 - **Dron sin cambio de eje:** el cenital arranca con el granjero arriba del cuadro, así la cámara solo se inclina hacia él, sin rotar de costado. El rectángulo del estanque es igual girado 180°, así que el match cut con el celular sigue coincidiendo.
 - 0 superposiciones entre camarones en todos los cuadros.
 
+## Previs v22 (camarón nuevo en loop, final sin rebote, gotas y burbujas)
+`previs-v22/VitalAM_previs_v22.mp4`: unos 22,5 s (541 cuadros), sin sonido. Renderer `v20.html`, que usa el camarón `Shrimp_Feed_AE.glb`; render con `render_v22.sh`.
+- **Camarón del cliente:**
+  - Todos los camarones usan `Shrimp_Feed_AE.glb`, con 80 % de opacidad.
+  - El ciclo de nado original cerraba en posición pero no en velocidad: los pleópodos cambiaban de dirección de golpe en el empalme.
+  - Se fundió el último segundo con el primero. Ahora el ciclo dura 7 s y loopea sin salto ni reinicio: el salto de velocidad en el empalme bajó de 2,15 a 0,09.
+  - Cada camarón arranca en una fase distinta del ciclo.
+- **Final sin rebote:**
+  - Antes, la parábola se frenaba casi hasta parar, después el empuje arrancaba a velocidad plena y el lente saltaba de 42 a 40 mm.
+  - Ahora es un único recorrido: llega a la bolsa ya apuntando a ella, el zoom es continuo (32 a 43 mm) y frena de forma pareja hasta quedar quieta.
+  - También se eliminaron dos saltos del sol: la altura base del sol ahora se calcula siempre igual, y el sol mantiene su posición después del último cuadro clave.
+- **Gotas y burbujas:**
+  - Cada pellet que toca el agua levanta una pequeña corona de gotas; la del pellet héroe es más grande.
+  - Cada pellet arrastra entre 2 y 4 burbujas bajo el agua, que se sueltan y suben.
+  - En la versión final el agua (splash, espuma y burbujas reales) la genera la IA; el previs solo marca dónde y cuándo cae cada impacto.
+- **Flotadores del muelle:** se ocultan bajo el agua, porque a través de la niebla se veían como una placa clara.
+- 0 superposiciones entre camarones en todos los cuadros.
+
 ## Plan de producción
 | Fase | Herramienta | Créditos |
 |---|---|---|
