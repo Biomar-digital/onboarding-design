@@ -584,7 +584,20 @@ const spd=f=>{ let v=0.8; for(const [a,b,k] of SEG) if(f>=a-0.5&&f<b+0.5) v=k; r
 const TMAP=[1]; { let f=1; while(f<372){ let k=0,n=0; for(let d=-6;d<=6;d++){ k+=spd(f+d); n++; } f=Math.min(372,f+(f>=360?0.5:k/n)); TMAP.push(f); } }
 window.__NOUT=TMAP.length; window.shotOut=F=>window.shot(TMAP[Math.max(0,Math.min(TMAP.length-1,F-1))]);
 window.__tmap=F=>TMAP[F-1];
+window.__s1shrimp=()=>{ const out={}; const sc=V(0,0,0); for(let f=1;f<=48;f+=1){ setF(f); USHR.forEach((h,i)=>{ h.getWorldScale(sc); if(sc.x<1e-3) return; const p=V(0,0,0); h.userData.holder.getWorldPosition(p); (out[i]=out[i]||[]).push([f,+p.x.toFixed(3),+p.y.toFixed(3),+p.z.toFixed(3)]); }); }
+  const c=s1Cam(24); return {cam:c.p.toArray().map(v=>+v.toFixed(2)),names:Object.keys(out).map(i=>[+i,USHR[i].name]),tracks:out}; };
 window.__kids=f=>{ window.shot(f); return s.children.map((c,i)=>{ const b=new THREE.Box3().setFromObject(c); let n=0; c.traverse(o=>{ if(o.isMesh) n++; }); return [i,c.type,c.name||'',c.visible,n,b.isEmpty()?null:b.min.toArray().map(v=>+v.toFixed(1)).concat(b.max.toArray().map(v=>+v.toFixed(1)))]; }); };
 window.__pick=(f,px,py)=>{ window.shot(f); const c=window.__camOv(f); c.aspect=W/H; c.fov=2*Math.atan((36/(W/H))/2/c.userData.mm)*180/Math.PI; c.updateProjectionMatrix(); const rc=new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(px/W*2-1,-(py/H*2-1)),c); return rc.intersectObjects(s.children,true).slice(0,6).map(h=>{ let n=h.object, path=[]; while(n){ path.push(n.name||n.type); n=n.parent; } return [+h.distance.toFixed(3),h.object.visible,path.slice(0,4).join('<')]; }); };
+// opening shot keeps only still, well-spaced shrimp: no shrimp swimming off (one rig has a swim burst here) and no clumped swarm grid
+let S1KEEP=null; { s1Cam(1); const sc=V(0,0,0), tr={};
+  for(let f=1;f<=48;f++){ setF(f); USHR.forEach((h,i)=>{ h.getWorldScale(sc); if(sc.x<1e-3) return; const p=V(0,0,0); h.userData.holder.getWorldPosition(p); (tr[i]=tr[i]||[]).push(p); }); }
+  const c24=s1Cam(24), cam=c24.p, cand=[]; const pc=new THREE.PerspectiveCamera(2*Math.atan((36/(W/H))/2/c24.mm)*180/Math.PI,W/H,0.01,50); pc.position.copy(c24.p); pc.quaternion.copy(c24.q); pc.updateMatrixWorld(true); pc.updateProjectionMatrix();
+  const inView=p=>{ const n=p.clone().project(pc); return n.z<1&&Math.abs(n.x)<0.85&&n.y>-0.8&&n.y<0.55; };
+  for(const i in tr){ const t=tr[i]; let mx=0; for(let k=1;k<t.length;k++) mx=Math.max(mx,t[k].distanceTo(t[k-1])); if(t.length<48||mx>0.004) continue; if(!inView(t[0])||!inView(t[47])) continue; const d=t[23].distanceTo(cam); if(d>1.9) continue;
+    setF(24); const ax=V(1,0,0).applyQuaternion(USHR[+i].userData.holder.getWorldQuaternion(new THREE.Quaternion())); if(Math.abs(ax.y)>0.45) continue; { const vd=t[23].clone().sub(cam).normalize(); if(Math.abs(ax.dot(vd))>0.8) continue; }   // no steep / standing shrimp
+    const n=t[23].clone().project(pc); cand.push([d,+i,t[23],n]); }
+  cand.sort((a,b)=>a[0]-b[0]); const keep=[]; for(const c of cand){ if(keep.length>=9) break; if(keep.every(k=>k[2].distanceTo(c[2])>=0.13&&Math.hypot(k[3].x-c[3].x,(k[3].y-c[3].y)*0.6)>=0.12)) keep.push(c); }
+  S1KEEP=new Set(keep.map(k=>k[1])); window.__s1keep=[...S1KEEP].map(i=>USHR[i].name); setF(1); }
+{ const _p=window.__post; window.__post=f=>{ _p(f); USHR.forEach((h,i)=>{ h.visible= f>48.5 || S1KEEP.has(i); }); }; }
 window.ready=true;
 </script></body></html>
