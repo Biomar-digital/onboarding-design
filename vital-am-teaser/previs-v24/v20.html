@@ -32,7 +32,7 @@ const winL=new THREE.DirectionalLight(0x8fb0ff,0); s.add(winL); s.add(winL.targe
 const uwKey=new THREE.DirectionalLight(0xfff0d8,0); uwKey.position.set(0.3,10,-5); s.add(uwKey);
 const uwFill=new THREE.DirectionalLight(0xe8f0ee,0); s.add(uwFill); s.add(uwFill.target);
 // ---- underwater light shafts near the feeding zone
-const BASIN=[]; const rays=new THREE.Group(); const rayM=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{a:{value:0.1}},
+const BASIN=[]; const MUD=new THREE.MeshStandardMaterial({color:0x6f6e4c,roughness:1,metalness:0}); const rays=new THREE.Group(); const rayM=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{a:{value:0.1}},
  vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
  fragmentShader:'uniform float a; varying vec2 vUv; void main(){ float e=sin(vUv.x*25.)*.5+.5; gl_FragColor=vec4(vec3(1.,.95,.85)*a*pow(vUv.y,1.4)*(1.-smoothstep(.85,1.,vUv.y))*(.35+.65*e),1.);}'});
 for(let i=0;i<10;i++){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.18+Math.random()*0.2,0.04,1.6,24,1,true),rayM); c.position.set(-1+i*0.32,-0.8,-(4.4+Math.random()*2.6)); c.rotation.set(0.08,0,0.22); rays.add(c);} s.add(rays);
@@ -169,11 +169,12 @@ window.shot=f=>{ mixer.setTime((f-1)/FPS); for(const [o,x0] of STRETCH) o.positi
   // no fake light shafts (they read as a white sail when the camera passes them) and no pond floor once the feeding starts:
   // the feed never reaches the floor, and its lined slope read as a hard 'floor' edge in the rising shot
   rays.visible=false; for(const m of BASIN) m.visible=!(under&&f>=280);
+  for(const m of BASIN){ if(!m.userData.m0) m.userData.m0=m.material; m.material=under?MUD:m.userData.m0; }   // soft olive mud under water instead of the black liner
   water.material=under?underWater:airWater; underWater.color.set(f>=306?0xb3c2bf:0xf2f6ee); { const k=0; airWater.color.setRGB(0.157,0.195,0.084); airWater.envMapIntensity=1.6*(1-0.9*k); airWater.clearcoat=1-0.9*k; airWater.specularIntensity=1-0.95*k;  airWater.emissive.setRGB(0,0,0); SKYREF.material.opacity=k; SKYREF.visible=k>0.001; }
   if(room){ s.fog=null; s.background=new THREE.Color(0x05070c); hemi.color.set(0x6070a0); hemi.groundColor.set(0x403848); hemi.intensity=1.1; key.intensity=0; fill.intensity=0;
     winL.intensity=0.9; winL.color.set(0x8fb0ff); winL.position.set(100.75,2.4,-3); winL.target.position.set(100.9,0.5,-0.7); phoneL.intensity=0.95; phoneL.position.set(100.92,0.62,-0.7); uwKey.intensity=0; uwFill.intensity=0; bagFill.intensity=0; }
-  else if(under){ s.fog=fogUW; s.background=new THREE.Color(0x93a5a3); fogUW.density=S[2]==='s1'?0.55:(S[2]==='s5'?0.34-0.2*ramp(f,292,318):0.34); hemi.color.set(0xd8e6ea); hemi.groundColor.set(0x3a4448); hemi.intensity=S[2]==='s1'?0.9:1.6;
-    key.intensity=0; fill.intensity=0; winL.intensity=0; uwFill.intensity=0; phoneL.intensity=0; uwKey.intensity=S[2]==='s1'?0.5:1.3; { const cd=new THREE.Vector3(); cam.getWorldDirection(cd); uwFill.position.copy(cp).addScaledVector(cd,-3).add(new THREE.Vector3(0,1.5,0)); uwFill.target.position.copy(cp).addScaledVector(cd,2); uwFill.intensity=S[2]==='s1'?0.4:1.4; } rayM.uniforms.a.value=S[2]==='s1'?0.04:(S[2]==='s5'?0.12+0.1*ramp(f,292,318):0.12); bagFill.intensity=0; }
+  else if(under){ s.fog=fogUW; s.background=new THREE.Color(0x93a5a3); fogUW.density=S[2]==='s1'?0.3:(S[2]==='s5'?0.34-0.2*ramp(f,292,318):0.34); hemi.color.set(0xd8e6ea); hemi.groundColor.set(0x3a4448); hemi.intensity=S[2]==='s1'?0.9:1.6;
+    key.intensity=0; fill.intensity=0; winL.intensity=0; uwFill.intensity=0; phoneL.intensity=0; uwKey.intensity=S[2]==='s1'?1.6:1.3; { const cd=new THREE.Vector3(); cam.getWorldDirection(cd); uwFill.position.copy(cp).addScaledVector(cd,-3).add(new THREE.Vector3(0,1.5,0)); uwFill.target.position.copy(cp).addScaledVector(cd,2); uwFill.intensity=S[2]==='s1'?0.4:1.4; } rayM.uniforms.a.value=S[2]==='s1'?0.04:(S[2]==='s5'?0.12+0.1*ramp(f,292,318):0.12); bagFill.intensity=0; }
   else { s.fog=fogAir; s.background=null; hemi.color.set(0xffc8a0); hemi.groundColor.set(0x2a2018); hemi.intensity=0.75; key.intensity=2.4; { const fk=smo(124,138,f)*(1-smo(162,172,f)); fill.intensity=0.45+1.3*fk; fill.position.set(-30+0*fk,25,-60+70*fk); } winL.intensity=0; uwFill.intensity=0; phoneL.intensity=0; uwKey.intensity=0; uwFill.intensity=0;
     if(S[2]==='s5'){ const k=ramp(f,334,356); hemi.intensity=0.35+0.45*k; fill.intensity=0.1+0.5*k; bagFill.intensity=12*k; bagFill.position.set(bag.position.x+0.3,bag.position.y+0.7,bag.position.z+1.8); bagFill.target.position.copy(bag.position).add(new THREE.Vector3(0,0.36,0)); }
     else bagFill.intensity=0; }
@@ -366,7 +367,7 @@ window.__pre=(f,cam,under)=>{ for(const m of PONTS) m.visible=!under;   // dock 
     TMP.set(b.o.x+Math.sin(t*9+b.ph)*0.004,y,b.o.z+Math.cos(t*7+b.ph)*0.004); M4.compose(TMP,Q.identity(),SC.set(b.r,b.r,b.r)); bubI.setMatrixAt(i,M4); }); bubI.instanceMatrix.needsUpdate=true;
 };
 const SILT=[]; G.scene.traverse(o=>{ if(/^POND_Silt_/.test(o.name)) SILT.push(o); });
-window.__post=f=>{ liftShrimp(f); clampShrimp(); for(const o of SILT) o.visible=f<200; };
+window.__post=f=>{ liftShrimp(f); clampShrimp(); for(const o of SILT) o.visible=f>48.5&&f<200; };   // no flat silt decals in the close opening shot
 window.__audit=(f)=>{ setF(f); const caps=[]; const sc=V(0,0,0);
   for(const h of USHR){ h.getWorldScale(sc); if(sc.x<1e-3) continue; const hd=h.userData.holder; const YA=+(P.get('ya')||0.013); caps.push([hd.localToWorld(V(0.055,YA,0)),hd.localToWorld(V(-0.080,YA,0)),0.0095*sc.x]); }
   let n=0; for(let i=0;i<caps.length;i++) for(let j=i+1;j<caps.length;j++){ const A=caps[i],B=caps[j]; if(A[0].distanceTo(B[0])>0.4) continue; if(segd(A[0],A[1],B[0],B[1])<A[2]+B[2]) n++; } return n; };
@@ -560,7 +561,13 @@ const AVC=(()=>{ const n=Math.round((AV1-AV0)/AVS)+1; let corr=[]; let worst=9;
   for(let i=0;i<n;i+=4){ const f=AV0+i*AVS; const c=camBase(f); const p=c.p.clone().add(corr[i]); for(const [k,A,B] of CAPS(f)){ const dd=segPt(A,B,p); if(dd<0.09) (window.__close=window.__close||[]).push([+f.toFixed(2),k,+dd.toFixed(3)]); worst=Math.min(worst,dd); } }
   window.__avoid={close:(window.__close||[]).slice(0,30),hero:HERO_SH,worst:+worst.toFixed(3),maxShift:+Math.max(...corr.map(v=>v.length())).toFixed(3)};
   setF(AV0); return corr; })();
-window.__camOv=f=>{ if(f<84) return null; let c=camBase(f);
+// opening (fasting shrimp): low, close and centred on the resting group with a slow push-in, instead of the wide empty-water frame
+let S1C=null; function s1Cam(f){ if(!S1C){ setF(24); const pts=[], sc=V(0,0,0); USHR.forEach(h=>{ h.getWorldScale(sc); if(sc.x<1e-3) return; const p=V(0,0,0); h.userData.holder.getWorldPosition(p); pts.push(p); });
+    const g=pose('CAM_S1_Fasting').p; pts.sort((a,b)=>a.distanceTo(g)-b.distanceTo(g)); const near=pts.slice(0,Math.max(3,Math.min(8,pts.length)));
+    const C=near.reduce((a,p)=>a.add(p),V(0,0,0)).multiplyScalar(1/near.length); const d=g.clone().sub(C); d.y=0; d.normalize(); S1C={C,d}; }
+  const k=smo(1,48,f), dist=1.15-0.3*k; const p=S1C.C.clone().addScaledVector(S1C.d,dist); p.y=S1C.C.y+0.16;
+  return {p,q:qLook(p,S1C.C.clone().add(V(0,0.03,0))),mm:32}; }
+window.__camOv=f=>{ if(f<=48.5){ const c=s1Cam(f); vc.position.copy(c.p); vc.quaternion.copy(c.q); vc.userData.mm=c.mm; vc.updateMatrixWorld(true); return vc; } if(f<84) return null; let c=camBase(f);
   if(f>=AV0&&f<=AV1){ const x=(f-AV0)/AVS, i=Math.floor(x), t=x-i; const a=AVC[Math.min(i,AVC.length-1)], b=AVC[Math.min(i+1,AVC.length-1)]; const cr=a.clone().lerp(b,t);
     if(cr.lengthSq()>1e-10){ const fw=V(0,0,-1).applyQuaternion(c.q); const hp=heroP(f), base=c.p.clone().addScaledVector(fw,Math.max(0.3,hp.distanceTo(c.p))); const tgt=hp.lerp(base,smo(TE_HERO-40,TE_HERO-4,f)); const p=c.p.clone().add(cr); c={p,q:qLook(p,tgt),mm:c.mm}; } }
   vc.position.copy(c.p); vc.quaternion.copy(c.q); vc.userData.mm=c.mm; vc.updateMatrixWorld(true); return vc; };
