@@ -214,6 +214,7 @@ const USHR=[]; let ui=0;
 G.scene.traverse(o=>{ if(/^SHRIMP_\d\d_Rig$/.test(o.name)||/^SHRIMP_Swarm_\d+_\d+$/.test(o.name)) USHR.push(o); });
 for(const host of USHR){
   host.traverse(c=>{ if(c.isMesh) c.visible=false; });
+  if(host.isMesh){ host.material=host.material.clone(); host.material.visible=false; }
   const cl=SkeletonUtils.clone(USR.scene); cl.traverse(c=>{ if(c.isMesh){ c.frustumCulled=false; c.castShadow=false; } });
   const holder=new THREE.Group(); holder.add(cl); host.add(holder); host.userData.holder=holder;
   cl.rotation.y=Math.PI; cl.scale.setScalar(UK);
@@ -592,11 +593,13 @@ window.__pick=(f,px,py)=>{ window.shot(f); const c=window.__camOv(f); c.aspect=W
 let S1KEEP=null; { s1Cam(1); const sc=V(0,0,0), tr={};
   for(let f=1;f<=48;f++){ setF(f); USHR.forEach((h,i)=>{ h.getWorldScale(sc); if(sc.x<1e-3) return; const p=V(0,0,0); h.userData.holder.getWorldPosition(p); (tr[i]=tr[i]||[]).push(p); }); }
   const c24=s1Cam(24), cam=c24.p, cand=[]; const pc=new THREE.PerspectiveCamera(2*Math.atan((36/(W/H))/2/c24.mm)*180/Math.PI,W/H,0.01,50); pc.position.copy(c24.p); pc.quaternion.copy(c24.q); pc.updateMatrixWorld(true); pc.updateProjectionMatrix();
+  const c48=s1Cam(48), pc2=pc.clone(); pc2.position.copy(c48.p); pc2.quaternion.copy(c48.q); pc2.updateMatrixWorld(true);
   const inView=p=>{ const n=p.clone().project(pc); return n.z<1&&Math.abs(n.x)<0.85&&n.y>-0.8&&n.y<0.55; };
-  for(const i in tr){ const t=tr[i]; let mx=0; for(let k=1;k<t.length;k++) mx=Math.max(mx,t[k].distanceTo(t[k-1])); if(t.length<48||mx>0.004) continue; if(!inView(t[0])||!inView(t[47])) continue; const d=t[23].distanceTo(cam); if(d>1.9) continue;
-    setF(24); const ax=V(1,0,0).applyQuaternion(USHR[+i].userData.holder.getWorldQuaternion(new THREE.Quaternion())); if(Math.abs(ax.y)>0.45) continue; { const vd=t[23].clone().sub(cam).normalize(); if(Math.abs(ax.dot(vd))>0.8) continue; }   // no steep / standing shrimp
-    const n=t[23].clone().project(pc); cand.push([d,+i,t[23],n]); }
-  cand.sort((a,b)=>a[0]-b[0]); const keep=[]; for(const c of cand){ if(keep.length>=9) break; if(keep.every(k=>k[2].distanceTo(c[2])>=0.13&&Math.hypot(k[3].x-c[3].x,(k[3].y-c[3].y)*0.6)>=0.12)) keep.push(c); }
+  for(const i in tr){ const t=tr[i]; let mx=0; for(let k=1;k<t.length;k++) mx=Math.max(mx,t[k].distanceTo(t[k-1])); if(t.length<48||mx>0.004) continue; const d=t[23].distanceTo(cam), vis=inView(t[0])||inView(t[47]);
+    setF(24); const ax=V(1,0,0).applyQuaternion(USHR[+i].userData.holder.getWorldQuaternion(new THREE.Quaternion())); if(vis&&Math.abs(ax.y)>0.55) continue;
+    const n=t[23].clone().project(pc), n2=t[47].clone().project(pc2); cand.push([d,+i,t[23],n,vis,n2]); }
+  cand.sort((a,b)=>a[0]-b[0]); const keep=[]; for(const c of cand){ if(!c[4]){ keep.push(c); continue; } if(keep.every(k=>!k[4]||(k[2].distanceTo(c[2])>=0.075&&Math.hypot(k[3].x-c[3].x,(k[3].y-c[3].y)*0.6)>=0.045&&Math.hypot(k[5].x-c[5].x,(k[5].y-c[5].y)*0.6)>=0.09))) keep.push(c); }
+  window.__s1vis=keep.filter(k=>k[4]).length;
   S1KEEP=new Set(keep.map(k=>k[1])); window.__s1keep=[...S1KEEP].map(i=>USHR[i].name); setF(1); }
 { const _p=window.__post; window.__post=f=>{ _p(f); USHR.forEach((h,i)=>{ h.visible= f>48.5 || S1KEEP.has(i); }); }; }
 window.ready=true;
