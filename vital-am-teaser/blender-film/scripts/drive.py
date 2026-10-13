@@ -51,16 +51,27 @@ def smooth_keys(K,F):
 HANDK=[(0,(-0.30,-0.22,0.98)),(196,(-0.30,-0.22,0.98)),(206,(-0.40,-0.05,0.74)),(212,(-0.40,-0.02,0.72)),(219,(-0.28,-0.22,1.10)),(226,(-0.18,-0.55,1.46)),(236,(-0.08,-0.42,1.88)),(262,(-0.22,-0.42,1.20)),(400,(-0.26,-0.30,1.02))]
 SPINEK=[(0,(0,0,0)),(196,(0,0,0)),(206,(16,0,-6)),(212,(18,0,-8)),(219,(4,0,8)),(226,(-4,0,-12)),(236,(-2,0,-16)),(262,(2,0,-6)),(400,(0,0,0))]
 def apply_farmer(F):
+    import throw_anim
     arm=bpy.data.objects.get('FARMER_RIG')
     if not arm: return
-    base=arm.location.copy(); h=smooth_keys(HANDK,F)
-    bpy.data.objects['HAND_TGT'].location=base+h
-    bpy.data.objects['ELBOW_POLE'].location=base+Vector((-0.75,0.35,1.0))
-    sp=smooth_keys(SPINEK,F); pb=arm.pose.bones
-    pb['Spine01'].rotation_euler=[math.radians(v) for v in sp]
-    pb['LeftArm'].rotation_euler=(0,0,math.radians(28)); pb['LeftForeArm'].rotation_euler=(math.radians(12),0,0)
+    if 'base_loc' not in arm: arm['base_loc']=list(arm.location)
+    b0=Vector(arm['base_loc']); arm.location=b0+Vector((0,throw_anim.root_offset(F),0))
+    pb=arm.pose.bones
+    for c in pb['RightForeArm'].constraints: c.influence=0.0
+    if 'FOOT_L_TGT' not in bpy.data.objects:
+        # pin the feet to the deck: two-bone leg IK so hips can hinge and drop with natural knee bend
+        for pb_ in pb: pb_.rotation_mode='XYZ'; pb_.rotation_euler=(0,0,0); pb_.location=(0,0,0)
+        bpy.context.view_layer.update()
+        for side in ('Left','Right'):
+            ft=arm.matrix_world@pb[side+'Foot'].head; kn=arm.matrix_world@pb[side+'Leg'].head
+            t=bpy.data.objects.new('FOOT_%s_TGT'%side[0],None); bpy.context.scene.collection.objects.link(t); t.location=ft
+            p=bpy.data.objects.new('KNEE_%s_POLE'%side[0],None); bpy.context.scene.collection.objects.link(p); p.location=kn+Vector((0,-0.6,0))
+            c=pb[side+'Leg'].constraints.new('IK'); c.target=t; c.pole_target=p; c.chain_count=2; c.pole_angle=math.radians(-90)
+    for b,r in throw_anim.pose_at(F).items():
+        if b in pb: pb[b].rotation_mode='XYZ'; pb[b].rotation_euler=r
+    pb['Hips'].location=(0,throw_anim.hip_drop(F),0)
     bpy.context.view_layer.update()
-    import importlib, sys as _s
+    import sys as _s
     fl=_s.modules.get('farmer_lib')
     if fl is None:
         _s.path.insert(0,S+'bt'); import farmer_lib as fl
