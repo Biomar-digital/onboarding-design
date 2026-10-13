@@ -44,5 +44,5 @@ Archivo: `draft_completo_v24_estiloB.mp4` (22,4 s, 480p). Cuadros cada 0,25 s en
 - El final (push-in suave al paquete al amanecer) está bien.
 
 ## Generales
-- La IA rearmó el montaje con sus propios tiempos: drone 5 s (previs ~3), granjero 2 s (previs ~6).
+- La IA rearmó el montaje con sus propios tiempos: en el previs drone + granjero ocupan 5,5–11,6 s y los camarones empiezan a los 11,6 s; en el draft el granjero recién aparece a los 10,75 s y los camarones a los 15,25 s.
 - 480p de borrador; sin audio (correcto).
