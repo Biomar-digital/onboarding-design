@@ -50,6 +50,23 @@ def smooth_keys(K,F):
 # farmer faces -Y; local offsets (right=-X, forward=-Y, up=+Z) from the rig origin
 HANDK=[(0,(-0.30,-0.22,0.98)),(196,(-0.30,-0.22,0.98)),(206,(-0.40,-0.05,0.74)),(212,(-0.40,-0.02,0.72)),(219,(-0.28,-0.22,1.10)),(226,(-0.18,-0.55,1.46)),(236,(-0.08,-0.42,1.88)),(262,(-0.22,-0.42,1.20)),(400,(-0.26,-0.30,1.02))]
 SPINEK=[(0,(0,0,0)),(196,(0,0,0)),(206,(16,0,-6)),(212,(18,0,-8)),(219,(4,0,8)),(226,(-4,0,-12)),(236,(-2,0,-16)),(262,(2,0,-6)),(400,(0,0,0))]
+def _swing(arm,bone,child,target_a):
+    # rotate pose bone about its head so the head->child-head vector points at target_a (armature space)
+    pb=arm.pose.bones[bone]; h=pb.head.copy(); c=arm.pose.bones[child].head.copy()
+    q=(c-h).rotation_difference(target_a-h)
+    pb.matrix=Matrix.Translation(h)@q.to_matrix().to_4x4()@Matrix.Translation(-h)@pb.matrix
+    bpy.context.view_layer.update()
+def two_bone_ik(arm,up,lo,end,T_w,P_w):
+    # analytic two-bone IK (the auto-rig bone axes/tails are unreliable, so work with joint positions)
+    Mi=arm.matrix_world.inverted(); pb=arm.pose.bones
+    S=pb[up].head.copy(); E0=pb[lo].head.copy(); W0=pb[end].head.copy()
+    L1=(E0-S).length; L2=(W0-E0).length
+    T=Mi@T_w; P=Mi@P_w
+    d=T-S; D=max(1e-6,min(d.length,(L1+L2)*0.999)); u=d.normalized()
+    a=(L1*L1-L2*L2+D*D)/(2*D); hgt=math.sqrt(max(0.0,L1*L1-a*a))
+    pv=(P-S); pv=(pv-u*pv.dot(u)); pv=pv.normalized() if pv.length>1e-6 else Vector((0,0,-1))
+    E=S+u*a+pv*hgt; W=S+u*D
+    _swing(arm,up,lo,E); _swing(arm,lo,end,W)
 def apply_farmer(F):
     import throw_anim
     arm=bpy.data.objects.get('FARMER_RIG')
@@ -57,7 +74,9 @@ def apply_farmer(F):
     if 'base_loc' not in arm: arm['base_loc']=list(arm.location)
     b0=Vector(arm['base_loc']); arm.location=b0+Vector((0,throw_anim.root_offset(F),0))
     pb=arm.pose.bones
-    for c in pb['RightForeArm'].constraints: c.influence=0.0
+    base=arm.location.copy()
+    for bn in ('RightForeArm','RightHand'):
+        for c in [c for c in pb[bn].constraints if c.type=='IK']: pb[bn].constraints.remove(c)
     if 'FOOT_L_TGT' not in bpy.data.objects:
         # pin the feet to the deck: two-bone leg IK so hips can hinge and drop with natural knee bend
         for pb_ in pb: pb_.rotation_mode='XYZ'; pb_.rotation_euler=(0,0,0); pb_.location=(0,0,0)
@@ -68,8 +87,11 @@ def apply_farmer(F):
             p=bpy.data.objects.new('KNEE_%s_POLE'%side[0],None); bpy.context.scene.collection.objects.link(p); p.location=kn+Vector((0,-0.6,0))
             c=pb[side+'Leg'].constraints.new('IK'); c.target=t; c.pole_target=p; c.chain_count=2; c.pole_angle=math.radians(-90)
     for b,r in throw_anim.pose_at(F).items():
+        if b in ('RightArm','RightForeArm'): pb[b].rotation_euler=(0,0,0); continue   # driven by IK
         if b in pb: pb[b].rotation_mode='XYZ'; pb[b].rotation_euler=r
     pb['Hips'].location=(0,throw_anim.hip_drop(F),0)
+    bpy.context.view_layer.update()
+    two_bone_ik(arm,'RightArm','RightForeArm','RightHand',base+Vector(throw_anim.hand_target(F)),base+Vector(throw_anim.elbow_pole(F)))
     bpy.context.view_layer.update()
     import sys as _s
     fl=_s.modules.get('farmer_lib')

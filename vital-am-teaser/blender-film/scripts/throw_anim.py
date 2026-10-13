@@ -53,3 +53,13 @@ def root_offset(F):
     # weight shifts forward (-Y) into the throw and back
     ts=[0,214,219,225,236,260,600]; vs=[0,0,0.04,-0.07,-0.05,0,0]
     return _hermite(ts,vs,F)
+# ---- right arm by IK: hand target + explicit elbow pole, in the farmer's root frame
+# (x: + = his left, -X = his right; y: -Y = forward; z: up from the feet)
+HAND={0:(-0.24,-0.20,0.92),196:(-0.24,-0.20,0.92),205:(-0.42,-0.24,0.44),209:(-0.42,-0.24,0.42),214:(-0.33,-0.16,0.82),
+      219:(-0.40,0.26,0.92),224:(-0.36,-0.50,1.16),231:(-0.04,-0.64,1.24),246:(-0.22,-0.36,1.00),266:(-0.24,-0.20,0.92),600:(-0.24,-0.20,0.92)}
+POLE={0:(-0.34,0.30,0.95),196:(-0.34,0.30,0.95),205:(-0.70,0.05,0.85),209:(-0.70,0.05,0.85),214:(-0.55,0.25,0.95),
+      219:(-0.40,0.65,1.05),224:(-0.62,-0.05,0.95),231:(-0.40,-0.20,0.90),246:(-0.38,0.20,0.85),266:(-0.34,0.30,0.95),600:(-0.34,0.30,0.95)}
+def _vec_at(D,F,lag):
+    ts=sorted(D); return tuple(_hermite(ts,[D[t][c] for t in ts],F-lag) for c in range(3))
+def hand_target(F): return _vec_at(HAND,F,1.0)
+def elbow_pole(F): return _vec_at(POLE,F,1.0)
