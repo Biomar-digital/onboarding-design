@@ -143,4 +143,20 @@ cb=ct.nodes.new('CompositorNodeColorBalance'); cb.name='GRADE'; cb.correction_me
 ct.links.new(gl.outputs[0],cb.inputs[1]); ct.links.new(cb.outputs[0],comp.inputs[0])
 for o in bpy.data.objects:
     if o.type=='LIGHT': o.visible_camera=False
+
+# ---- photo textures (Higgsfield): grass on dykes, mud on pond floor, weathered planks on the dock
+def imgtex(n,l,path,scale,blend=0.25):
+    tc=n.new('ShaderNodeTexCoord'); mp=n.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value=(scale,scale,scale); l.new(tc.outputs['Object'],mp.inputs[0])
+    t=n.new('ShaderNodeTexImage'); t.image=bpy.data.images.load(S+'tex/'+path,check_existing=True); t.projection='BOX'; t.projection_blend=blend; l.new(mp.outputs[0],t.inputs[0]); return t
+def photo(name,path,scale,tint=(1,1,1),rough=0.9,bstr=0.35):
+    m=bpy.data.materials[name]; n=m.node_tree.nodes; l=m.node_tree.links; b=[x for x in n if x.type=='BSDF_PRINCIPLED'][0]
+    t=imgtex(n,l,path,scale); big=noise(n,l,0.05,4,0.5); hv=ramp(n,l,big.outputs['Fac'],(0.78*tint[0],0.78*tint[1],0.78*tint[2]),(1.15*tint[0],1.1*tint[1],1.0*tint[2]),0.3,0.7)
+    mu=n.new('ShaderNodeMix'); mu.data_type='RGBA'; mu.blend_type='MULTIPLY'; mu.inputs['Factor'].default_value=1.0; l.new(t.outputs['Color'],mu.inputs['A']); l.new(hv.outputs[0],mu.inputs['B'])
+    return m,n,l,b,t,mu
+m,n,l,b,t,mu=photo('MAT_Dyke_Earth','grass.png',0.35,(0.95,1.0,0.85))
+l.new(mu.outputs['Result'],b.inputs['Base Color']); bump(n,l,t.outputs['Color'],b,0.35,0.03)
+m,n,l,b,t,mu=photo('MAT_HDPE_Liner','mud.png',0.6,(0.85,0.85,0.8))
+mx=[x for x in n if x.type=='MIX' and x.data_type=='RGBA' and x.inputs['A'].is_linked and x!=mu][0]; l.new(mu.outputs['Result'],mx.inputs['A'])
+m,n,l,b,t,mu=photo('MAT_Walkway_Wood_Weathered','wood.png',0.9,(0.9,0.82,0.72))
+l.new(mu.outputs['Result'],b.inputs['Base Color']); bump(n,l,t.outputs['Color'],b,0.3,0.004)
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('LOOK_SAVED')

@@ -156,17 +156,26 @@ def apply(d, shrimp, pel_scale=0.8):
         r.hide_render=True
         for ch in r.children: ch.hide_render=True
     # pellets: hi (client pellet geometry), lo (spheres in previs -> pellet here)
-    pool=[bpy.data.objects['PEL_%03d'%i] for i in range(700)]; j=0
+    pool=[o for o in bpy.data.objects if o.name.startswith('PEL_') and o.name!='PEL_SRC']; j=0
     for e in d['inst']['hi']:
-        if j>=700: break
+        if j>=len(pool): break
         pool[j].matrix_world=ow(e)@Matrix.Scale(pel_scale,4); pool[j].hide_render=False; j+=1
     for e in d['inst']['lo']:
-        if j>=700: break
+        if j>=len(pool): break
         pool[j].matrix_world=ow(e)@Matrix.Scale(0.002*pel_scale,4); pool[j].hide_render=False; j+=1
     for q in pool[j:]: q.hide_render=True
-    for kind,key,n in (('BUB','bub',80),('DROP','drop',160),('RING','ring',40)):
+    mo=bpy.data.objects.get('MOTES')
+    if mo: mo.hide_render=not d['under']; mo.location=(0.0006*d['F'],0.0002*d['F'],0.0004*d['F'])
+    for kind,key,n in (('BUB','bub',800),('DROP','drop',900),('RING','ring',400)):
         L=d['inst'][key]
         for i in range(n):
-            o=bpy.data.objects['%s_%03d'%(kind,i)]
-            if i<len(L): o.matrix_world=ow(L[i]); o.hide_render=False
+            o=bpy.data.objects.get('%s_%03d'%(kind,i))
+            if o is None: break
+            if i<len(L):
+                M=ow(L[i])
+                if kind=='BUB':   # wobble: rising bubbles flatten and jiggle
+                    ph=d['F']*0.9+i*1.7; M=M@Matrix.Diagonal((1+0.12*math.sin(ph),1+0.12*math.cos(ph*1.3),0.82+0.1*math.sin(ph*0.7),1))
+                if kind=='RING':   # ripples fade as they spread
+                    sr=Vector((L[i][0],L[i][1],L[i][2])).length; f=max(0.0,min(1.0,1.15-(sr-0.003)/0.006)); o.color=(f,f,f,1)
+                o.matrix_world=M; o.hide_render=False
             else: o.hide_render=True
