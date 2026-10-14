@@ -24,7 +24,7 @@ b.inputs['Base Color'].default_value=(0.55,0.62,0.55,1); b.inputs['Roughness'].d
 nt=rm.node_tree; out=nt.nodes['Material Output']; b=nt.nodes['Principled BSDF']; b.inputs['Transmission Weight'].default_value=0.0; b.inputs['Base Color'].default_value=(0.05,0.07,0.05,1)
 tr=nt.nodes.new('ShaderNodeBsdfTransparent'); mx=nt.nodes.new('ShaderNodeMixShader'); oi=nt.nodes.new('ShaderNodeObjectInfo')
 fr=nt.nodes.new('ShaderNodeFresnel'); fr.inputs['IOR'].default_value=1.333; mul=nt.nodes.new('ShaderNodeMath'); mul.operation='MULTIPLY'
-sep=nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(oi.outputs['Color'],sep.inputs[0]); nt.links.new(sep.outputs[0],mul.inputs[0]); mul2=nt.nodes.new('ShaderNodeMath'); mul2.operation='MULTIPLY'; mul2.inputs[1].default_value=0.85
+sep=nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(oi.outputs['Color'],sep.inputs[0]); nt.links.new(sep.outputs[0],mul.inputs[0]); mul2=nt.nodes.new('ShaderNodeMath'); mul2.operation='MULTIPLY'; mul2.inputs[1].default_value=1.0
 nt.links.new(fr.outputs[0],mul2.inputs[0]); nt.links.new(mul2.outputs[0],mul.inputs[1]); mx2=nt.nodes.new('ShaderNodeMath'); mx2.operation='MAXIMUM'; mx2.inputs[1].default_value=0.0
 nt.links.new(mul.outputs[0],mx.inputs[0]); nt.links.new(tr.outputs[0],mx.inputs[1]); nt.links.new(b.outputs[0],mx.inputs[2]); nt.links.new(mx.outputs[0],out.inputs[0])
 rm.blend_method='BLEND' if hasattr(rm,'blend_method') else None
@@ -40,7 +40,7 @@ print('ring check: previs ring geometry assumed in XZ plane; mesh now flat in th
 bm_=bpy.data.materials['Bubble']; nt=bm_.node_tree; b=nt.nodes['Principled BSDF']
 b.inputs['IOR'].default_value=0.75; b.inputs['Roughness'].default_value=0.0; b.inputs['Transmission Weight'].default_value=1.0
 lw=nt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.25; em=nt.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(0.85,0.95,0.9,1)
-mul=nt.nodes.new('ShaderNodeMath'); mul.operation='MULTIPLY'; mul.inputs[1].default_value=0.6; nt.links.new(lw.outputs['Facing'],mul.inputs[0]); nt.links.new(mul.outputs[0],em.inputs['Strength'])
+mul=nt.nodes.new('ShaderNodeMath'); mul.operation='MULTIPLY'; mul.inputs[1].default_value=0.0; nt.links.new(lw.outputs['Facing'],mul.inputs[0]); nt.links.new(mul.outputs[0],em.inputs['Strength'])
 ad=nt.nodes.new('ShaderNodeAddShader'); out=nt.nodes['Material Output']; nt.links.new(b.outputs[0],ad.inputs[0]); nt.links.new(em.outputs[0],ad.inputs[1]); nt.links.new(ad.outputs[0],out.inputs[0])
 for o in bpy.data.objects:
     if o.name.startswith(('BUB_','DROP_')): o.visible_shadow=False
@@ -51,4 +51,18 @@ bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=0.0004); f=bpy.conte
 mm=bpy.data.materials.new('MAT_Mote'); mm.use_nodes=True; b=mm.node_tree.nodes['Principled BSDF']; b.inputs['Base Color'].default_value=(0.55,0.5,0.35,1); b.inputs['Roughness'].default_value=0.8
 b.inputs['Emission Color'].default_value=(0.6,0.7,0.55,1); b.inputs['Emission Strength'].default_value=0.15; f.data.materials.append(mm); f.visible_shadow=False
 mo.hide_render=True
+
+# impact crowns: thin flared water wall with spiky rim, placed on young rings (radius in ring units, height 1 -> scaled per frame)
+import math as _m
+cv=[]; cf=[]; N=28
+for i in range(N):
+    a=2*_m.pi*i/N; cv.append((0.42*_m.cos(a),0.42*_m.sin(a),0.0))
+for i in range(N):
+    a=2*_m.pi*i/N; r=0.78+0.08*((i%2)); z=1.0+(0.45 if i%2==0 else 0.0); cv.append((r*_m.cos(a),r*_m.sin(a),z))
+for i in range(N):
+    j=(i+1)%N; cf.append((i,j,N+j,N+i))
+cm=bpy.data.meshes.new('CROWN_ME'); cm.from_pydata(cv,[],cf); cm.materials.append(bpy.data.materials['Drop'])
+for p in cm.polygons: p.use_smooth=True
+for i in range(220):
+    o=bpy.data.objects.new('CROWN_%03d'%i,cm); sc.collection.objects.link(o); o.hide_render=True; o.visible_shadow=False
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('FX_OK')

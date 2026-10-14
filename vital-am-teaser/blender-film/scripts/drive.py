@@ -101,7 +101,7 @@ def apply_farmer(F):
 def set_mode(d):
     sc=bpy.context.scene; w=sc.world; nt=w.node_tree; sk=nt.nodes['SKY']; bg=nt.nodes['Background']
     sunv=Vector((d['sun'][0],-d['sun'][2],d['sun'][1])).normalized()
-    if d['shot']=='s5':   # golden low sun beside the bag (previs disc sits too high for a golden sky)
+    if d['shot']=='s5' and not d['under']:   # golden low sun beside the bag (previs disc sits too high for a golden sky)
         k=max(0.0,min(1.0,(d['f']-318)/42.0)); el=math.radians(2.5+5.0*k); az=math.radians(-16)
         sunv=Vector((math.sin(az)*math.cos(el),math.cos(az)*math.cos(el),math.sin(el)))
     sk.sun_elevation=math.asin(max(-0.2,min(1,sunv.z))); sk.sun_rotation=math.atan2(sunv.x,sunv.y)+SUNROT_OFF
@@ -110,20 +110,42 @@ def set_mode(d):
     lv=sunv if not under else Vector((sunv.x*0.5,sunv.y*0.5,1.2)).normalized()   # underwater: steeper key so light falls through the surface (dykes would shadow a 4 deg sun)
     so.rotation_euler=(-lv).to_track_quat('-Z','Y').to_euler()
     bg.inputs[1].default_value=0.03 if room else 0.27
-    so.data.energy=0 if room else (8.0 if under else 3.2)
+    so.data.energy=0 if room else (10.0 if under else 3.2)
     bpy.data.objects['ROOM_WIN'].data.energy=22 if room else 0
     bpy.data.objects['PHONE_GLOW'].data.energy=0.5 if room else 0
-    uo=bpy.data.objects['UW_FILL']; uo.data.energy=3.5 if under else 0
+    uo=bpy.data.objects['UW_FILL']; uo.data.energy=5.0 if under else 0
     if under:
         cm=sc.camera.matrix_world; fwd=(cm.to_3x3()@Vector((0,0,-1))).normalized(); uo.rotation_euler=(fwd+Vector((0,0,-0.4))).normalized().to_track_quat('-Z','Y').to_euler()
     bpy.data.objects['GOBO'].hide_render=not under
     for o in bpy.data.objects:
         if o.name.startswith(('GROUND_FAR','TREE_','PALM_FAR','WATER_VOLUME')): o.hide_render=room
     sc.node_tree.nodes['HAZE_AMT'].inputs[1].default_value=0.0 if (room or under) else 0.18
-    sc.view_settings.exposure=0.55 if under else 0.0
+    sc.view_settings.exposure=0.95 if under else 0.0
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=60*k
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
+try: CAM_SMOOTH=json.load(open(S+'bt/cam_smooth.json'))
+except Exception: CAM_SMOOTH={}
+try: SHR_KEEP=set(json.load(open(S+'bt/shr_keep.json')))
+except Exception: SHR_KEEP=set(range(999))
+def fix_set(d):
+    # the HF hut replaces the shed: follow the previs shed position, keep the proxy shed + roof hidden
+    sh=bpy.data.objects['SET_Farm_Shed']; hut=bpy.data.objects.get('HF_HUT')
+    if hut: hut.location=(sh.matrix_world.translation.x,sh.matrix_world.translation.y,sh.matrix_world.translation.z-1.2); hut.hide_render=d['room']
+    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof'): bpy.data.objects[n].hide_render=True
+    # bag shot: no palm fronds hanging into the top of the frame
+    cam=bpy.context.scene.camera
+    if d['shot']=='s5' and not d['under']:
+        for o in bpy.data.objects:
+            if o.name.startswith('coconut_palm'):
+                v=o.matrix_world.translation-cam.matrix_world.translation
+                if v.length<22: o.hide_render=True
+    # phone: the 6:30 placeholder reads upright once the camera has turned onto the screen
+    tt=bpy.data.objects.get('PHONE_Time_Text')
+    if tt and d['shot']=='s2':
+        k=max(0.0,min(1.0,(d['F']-102)/10.0)); k=k*k*(3-2*k)
+        tt.matrix_world=tt.matrix_world@Matrix.Rotation(math.radians(PHONE_TXT_ROT)*k,4,'Z')
+PHONE_TXT_ROT=90
 def apply(d, shrimp, pel_scale=0.8):
     sc=bpy.context.scene; idx=json.loads(sc['idxmap']); vis=d['vis']
     for k,name in idx.items():
@@ -144,12 +166,17 @@ def apply(d, shrimp, pel_scale=0.8):
     hn=bpy.data.objects.get('HAND_NEW')
     if hn:
         hs=bpy.data.objects['HAND_Skin']; hn.hide_render=hs.hide_render; hs.hide_render=True; bpy.data.objects['HAND_Forearm_Sleeve'].hide_render=True
-    set_mode(d)
-    cam=sc.camera; cam.matrix_world=C@tm(d['cam']); cam.data.lens=d['mm']
+    cm,mm=CAM_SMOOTH.get(str(d['F']),(d['cam'],d['mm']))
+    cam=sc.camera; cam.matrix_world=C@tm(cm); cam.data.lens=mm
+    cz=cam.matrix_world.translation.z
+    if d['under'] or (not d['room'] and cz<0.004):   # never sit in the thin layer between the volume top and the surface
+        d['under']=True; t=cam.matrix_world.copy(); t.translation.z=min(cz,-0.018); cam.matrix_world=t
     cam.data.clip_start=0.005 if d['room'] or d['under'] else 0.03; cam.data.clip_end=2000
+    set_mode(d)
+    fix_set(d)
     # client shrimp
-    for rig,(v,m,t) in zip(shrimp.rigs,d['shr']):
-        on=bool(v); rig.hide_render=not on
+    for si,(rig,(v,m,t)) in enumerate(zip(shrimp.rigs,d['shr'])):
+        on=bool(v) and (d['F']<279 or si in SHR_KEEP); rig.hide_render=not on
         for ch in rig.children: ch.hide_render=not on
         if on: rig.matrix_world=ow(m); shrimp.pose(rig,t)
     for r in shrimp.rigs[len(d['shr']):]:
@@ -166,6 +193,7 @@ def apply(d, shrimp, pel_scale=0.8):
     for q in pool[j:]: q.hide_render=True
     mo=bpy.data.objects.get('MOTES')
     if mo: mo.hide_render=not d['under']; mo.location=(0.0006*d['F'],0.0002*d['F'],0.0004*d['F'])
+    crowns=[o for o in bpy.data.objects if o.name.startswith('CROWN_')]; nc=0
     for kind,key,n in (('BUB','bub',800),('DROP','drop',900),('RING','ring',400)):
         L=d['inst'][key]
         for i in range(n):
@@ -175,7 +203,13 @@ def apply(d, shrimp, pel_scale=0.8):
                 M=ow(L[i])
                 if kind=='BUB':   # wobble: rising bubbles flatten and jiggle
                     ph=d['F']*0.9+i*1.7; M=M@Matrix.Diagonal((1+0.12*math.sin(ph),1+0.12*math.cos(ph*1.3),0.82+0.1*math.sin(ph*0.7),1))
-                if kind=='RING':   # ripples fade as they spread
+                if kind=='RING':   # ripples fade as they spread; a crown rises on the youngest ones
                     sr=Vector((L[i][0],L[i][1],L[i][2])).length; f=max(0.0,min(1.0,1.15-(sr-0.003)/0.006)); o.color=(f,f,f,1)
+                    a=(sr-0.0028)/0.0018
+                    if a<1.0 and nc<len(crowns):
+                        h=0.009*max(0.0,math.sin(math.pi*max(0.0,min(1.0,a*0.85+0.15))))
+                        if h>0.0006:
+                            cr=crowns[nc]; cr.matrix_world=M@Matrix.Diagonal((0.9,0.9,h,1)); cr.hide_render=False; nc+=1
                 o.matrix_world=M; o.hide_render=False
             else: o.hide_render=True
+    for cr in crowns[nc:]: cr.hide_render=True

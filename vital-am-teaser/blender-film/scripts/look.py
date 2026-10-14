@@ -41,8 +41,8 @@ ws=bpy.data.objects['POND_Water_Surface']; ws.visible_shadow=False
 # ---- water volume (turbid green pond water) filling the ponds
 bpy.ops.mesh.primitive_cube_add(location=(0,0,-0.805)); vol=bpy.context.object; vol.name='WATER_VOLUME'; vol.scale=(66,51,0.8)
 mv=bpy.data.materials.new('MAT_WaterVolume'); mv.use_nodes=True; nt=mv.node_tree; nt.nodes.clear(); o2=nt.nodes.new('ShaderNodeOutputMaterial')
-pv=nt.nodes.new('ShaderNodeVolumePrincipled'); pv.inputs['Color'].default_value=(0.36,0.58,0.42,1); pv.inputs['Density'].default_value=0.30
-pv.inputs['Anisotropy'].default_value=0.7; pv.inputs['Absorption Color'].default_value=(0.32,0.56,0.38,1); nt.links.new(pv.outputs[0],o2.inputs['Volume']); vol.data.materials.append(mv)
+pv=nt.nodes.new('ShaderNodeVolumePrincipled'); pv.inputs['Color'].default_value=(0.32,0.62,0.56,1); pv.inputs['Density'].default_value=0.22
+pv.inputs['Anisotropy'].default_value=0.7; pv.inputs['Absorption Color'].default_value=(0.30,0.62,0.52,1); nt.links.new(pv.outputs[0],o2.inputs['Volume']); vol.data.materials.append(mv)
 vol.visible_shadow=False
 # ---- basin: earthen dykes above the waterline, black HDPE liner on the slopes, soft mud on the floor
 m,n,l,b,out=nm('MAT_HDPE_Liner')
@@ -120,7 +120,8 @@ m,n,l,b,out=nm('MAT_Gobo'); tc=gcoord(n); nz=noise(n,l,1.4,3,0.5,tc.outputs['Obj
 gob.data.materials.append(m); gob.visible_camera=False; gob.visible_diffuse=False; gob.visible_glossy=False; gob.visible_transmission=False; gob.visible_volume_scatter=False; gob.hide_render=True
 uw=bpy.data.lights.new('UW_FILL','SUN'); uw.energy=0; uw.angle=math.radians(20); uw.color=(0.75,0.95,0.85); uo=bpy.data.objects.new('UW_FILL',uw); sc.collection.objects.link(uo)
 # room lights
-rl=bpy.data.lights.new('ROOM_WIN','AREA'); rl.energy=260; rl.size=1.0; rl.color=(0.55,0.68,1.0); ro=bpy.data.objects.new('ROOM_WIN',rl); sc.collection.objects.link(ro)
+# window: first dawn light, same warm key as outside
+rl=bpy.data.lights.new('ROOM_WIN','AREA'); rl.energy=260; rl.size=1.0; rl.color=(1.0,0.70,0.48); ro=bpy.data.objects.new('ROOM_WIN',rl); sc.collection.objects.link(ro)
 ro.location=(100.75,1.45,1.45); ro.rotation_euler=(math.radians(-90),0,0)
 pl=bpy.data.lights.new('PHONE_GLOW','POINT'); pl.energy=4.0; pl.shadow_soft_size=0.25; pl.color=(0.35,0.55,1.0); po=bpy.data.objects.new('PHONE_GLOW',pl); sc.collection.objects.link(po)
 po.location=(100.80,0.55,1.05); po.rotation_euler=(0,0,0)
