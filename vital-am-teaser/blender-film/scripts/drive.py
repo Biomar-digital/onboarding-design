@@ -67,6 +67,12 @@ def two_bone_ik(arm,up,lo,end,T_w,P_w):
     pv=(P-S); pv=(pv-u*pv.dot(u)); pv=pv.normalized() if pv.length>1e-6 else Vector((0,0,-1))
     E=S+u*a+pv*hgt; W=S+u*D
     _swing(arm,up,lo,E); _swing(arm,lo,end,W)
+def SCOOP_ROLL(F):
+    keys=[(0,0),(214,0),(220,-25),(224,70),(230,95),(246,20),(266,0),(600,0)]
+    for (a,va),(b,vb) in zip(keys,keys[1:]):
+        if a<=F<=b: t=(F-a)/(b-a); t=t*t*(3-2*t); return va+(vb-va)*t
+    return 0
+GRIP_IN=0.6; FIST_S=0.13; FIST_WRIST=0.10; GRIP_C=(-0.45,0.0,-0.03); GRIP_SIDE=-1.0
 def apply_farmer(F):
     import throw_anim
     arm=bpy.data.objects.get('FARMER_RIG')
@@ -91,17 +97,42 @@ def apply_farmer(F):
         if b in pb: pb[b].rotation_mode='XYZ'; pb[b].rotation_euler=r
     pb['Hips'].location=(0,throw_anim.hip_drop(F),0)
     bpy.context.view_layer.update()
-    two_bone_ik(arm,'RightArm','RightForeArm','RightHand',base+Vector(throw_anim.hand_target(F)),base+Vector(throw_anim.elbow_pole(F)))
+    T_w=base+Vector(throw_anim.hand_target(F))
+    # clavicle follows the arm (a real shoulder shrugs/protracts when reaching) so the armpit does not balloon
+    Mi=arm.matrix_world.inverted(); pbs=arm.pose.bones; C=pbs['RightShoulder'].head.copy(); A=pbs['RightArm'].head.copy(); T=Mi@T_w
+    up=max(0.0,min(1.0,(T.z-A.z)/40.0+0.4))      # armature units are cm
+    dirA=(A-C).normalized(); dirT=(T-C).normalized(); nd=dirA.lerp(dirT,0.28*up).normalized()
+    _swing(arm,'RightShoulder','RightArm',C+nd*(A-C).length)
+    two_bone_ik(arm,'RightArm','RightForeArm','RightHand',T_w,base+Vector(throw_anim.elbow_pole(F)))
     bpy.context.view_layer.update()
     import sys as _s
     fl=_s.modules.get('farmer_lib')
     if fl is None:
         _s.path.insert(0,S+'bt'); import farmer_lib as fl
-    fl.attach_to_hand(bpy.data.objects['SCOOP'],arm,'RightHand',off=(0,0.06,0),rot=(0,0,0))
+    fist=bpy.data.objects.get('FIST')
+    if fist is None:
+        fl.attach_to_hand(bpy.data.objects['SCOOP'],arm,'RightHand',off=(0,0.06,0),rot=(0,0,0)); return
+    # frame from joint positions (the auto-rig bone axes are unreliable): X back along the forearm, palm toward body/down
+    bpy.context.view_layer.update(); pb=arm.pose.bones
+    wr=arm.matrix_world@pb['RightHand'].head; el=arm.matrix_world@pb['RightForeArm'].head
+    fwd=(wr-el).normalized(); ref=Vector((GRIP_IN,0.0,-1.0)).normalized()
+    pn=(ref-fwd*ref.dot(fwd));
+    if pn.length<1e-4: pn=Vector((0,-1,0))-fwd*fwd.y
+    pn.normalize(); X=-fwd; Z=-pn; Y=Z.cross(X).normalized(); R=Matrix((X,Y,Z)).transposed().to_4x4()
+    fist.matrix_world=Matrix.Translation(wr)@R@Matrix.Scale(FIST_S,4)@Matrix.Translation(Vector((-FIST_WRIST,0,0)))
+    G=fist.matrix_world@Vector(GRIP_C)
+    # scoop: handle (local Y, centre at y=0.06) through the fist across the palm, cup on the thumb side
+    sY=Y*GRIP_SIDE; sZ=X.copy(); sX=sY.cross(sZ).normalized()
+    Rs=Matrix((sX,sY,sZ)).transposed().to_4x4()
+    Rs=Rs@Matrix.Rotation(math.radians(SCOOP_ROLL(F)),4,'Y')
+    bpy.data.objects['SCOOP'].matrix_world=Matrix.Translation(G)@Rs@Matrix.Translation(Vector((0,-0.06,0)))
+    fist.hide_render=bpy.data.objects['FARMER_BODY'].hide_render
 def set_mode(d):
     sc=bpy.context.scene; w=sc.world; nt=w.node_tree; sk=nt.nodes['SKY']; bg=nt.nodes['Background']
     sunv=Vector((d['sun'][0],-d['sun'][2],d['sun'][1])).normalized()
-    if d['shot']=='s5' and not d['under']:   # golden low sun beside the bag (previs disc sits too high for a golden sky)
+    if d['under']:   # one constant sun for every underwater shot (previs sun jumps 4 -> 25 deg at the s4/s5 cut)
+        sunv=Vector((0.0,300.0,22.0)).normalized()
+    elif d['shot']=='s5':   # golden low sun beside the bag (previs disc sits too high for a golden sky)
         k=max(0.0,min(1.0,(d['f']-318)/42.0)); el=math.radians(2.5+5.0*k); az=math.radians(-16)
         sunv=Vector((math.sin(az)*math.cos(el),math.cos(az)*math.cos(el),math.sin(el)))
     sk.sun_elevation=math.asin(max(-0.2,min(1,sunv.z))); sk.sun_rotation=math.atan2(sunv.x,sunv.y)+SUNROT_OFF
@@ -128,24 +159,57 @@ try: CAM_SMOOTH=json.load(open(S+'bt/cam_smooth.json'))
 except Exception: CAM_SMOOTH={}
 try: SHR_KEEP=set(json.load(open(S+'bt/shr_keep.json')))
 except Exception: SHR_KEEP=set(range(999))
+def bubbles(d):
+    # Real air: a short trail of tiny bubbles behind each pellet that just went in, and a plunge cloud when the
+    # camera dives. (The previs scattered ~700 identical bubbles through the whole volume.)
+    import random
+    F=d['F']; out=[]
+    if not d['under'] or F<279: return out
+    cam=bpy.context.scene.camera.matrix_world
+    age=F-279; decay=max(0.0,1.0-age/30.0)
+    for j,e in enumerate(d['inst']['hi']):
+        if decay<=0: break
+        p=ow(e).translation
+        if p.z>-0.004: continue
+        rr=random.Random(j*7+1); n=int(round(6*decay*rr.uniform(0.5,1.0)))
+        for k in range(1,n+1):
+            ph=F*0.8+j*2.3+k*1.7; rise=0.0045*k*(1+0.12*age)
+            q=p+Vector((0.0012*math.sin(ph),0.0012*math.cos(ph*1.3),rise))
+            if q.z>-0.002: continue
+            r=0.00032*rr.uniform(0.6,1.3)*(1-0.08*k)
+            out.append(Matrix.Translation(q)@Matrix.Diagonal((r*(1+0.1*math.sin(ph)),r*(1+0.1*math.cos(ph)),r*0.85,1)))
+    if age<16:   # camera plunge
+        rr=random.Random(99); f=1.0-age/16.0
+        for k in range(int(70*f)+8):
+            x=rr.uniform(-1,1); y=rr.uniform(-0.6,0.9); z=rr.uniform(0.14,0.6); r=rr.uniform(0.0004,0.0016)
+            loc=cam@Vector((x*z*0.55,y*z*0.4+0.012*age*(0.6+r*500),-z))
+            loc.z=min(loc.z+0.004*age,-0.003); ph=F*1.1+k
+            out.append(Matrix.Translation(loc)@Matrix.Diagonal((r*(1+0.12*math.sin(ph)),r*(1+0.12*math.cos(ph)),r*0.8,1)))
+    return out[:800]
+SPLIT=list(range(274,285))+list(range(458,469))   # waterline frames: rendered twice (air / under), joined in post
 def fix_set(d):
     # the HF hut replaces the shed: follow the previs shed position, keep the proxy shed + roof hidden
     sh=bpy.data.objects['SET_Farm_Shed']; hut=bpy.data.objects.get('HF_HUT')
     if hut: hut.location=(sh.matrix_world.translation.x,sh.matrix_world.translation.y,sh.matrix_world.translation.z-1.2); hut.hide_render=d['room']
-    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof'): bpy.data.objects[n].hide_render=True
+    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof','POND_Plankton_Specks'):   # previs specks read as white balls; MOTES replace them
+        o=bpy.data.objects.get(n)
+        if o: o.hide_render=True
     # bag shot: no palm fronds hanging into the top of the frame
     cam=bpy.context.scene.camera
-    if d['shot']=='s5' and not d['under']:
+    if d['under']:   # one constant sun for every underwater shot (previs sun jumps 4 -> 25 deg at the s4/s5 cut)
+        sunv=Vector((0.0,300.0,22.0)).normalized()
+    elif d['shot']=='s5':
         for o in bpy.data.objects:
             if o.name.startswith('coconut_palm'):
                 v=o.matrix_world.translation-cam.matrix_world.translation
                 if v.length<22: o.hide_render=True
     # phone: the 6:30 placeholder reads upright once the camera has turned onto the screen
-    tt=bpy.data.objects.get('PHONE_Time_Text')
-    if tt and d['shot']=='s2':
-        k=max(0.0,min(1.0,(d['F']-102)/10.0)); k=k*k*(3-2*k)
-        tt.matrix_world=tt.matrix_world@Matrix.Rotation(math.radians(PHONE_TXT_ROT)*k,4,'Z')
-PHONE_TXT_ROT=90
+    # phone -> pond match cut: start the drone tighter so the pond has the width of the phone screen, then open up
+    F=d['F']
+    if 118<=F<=146:
+        k=(F-118)/28.0; k=k*k*(3-2*k); cam.data.lens*=MATCH_ZOOM*(1-k)+k; cam.data.shift_y=MATCH_SHY*(1-k)
+    else: cam.data.shift_y=0.0
+MATCH_ZOOM=1.35; MATCH_SHY=0.03
 def apply(d, shrimp, pel_scale=0.8):
     sc=bpy.context.scene; idx=json.loads(sc['idxmap']); vis=d['vis']
     for k,name in idx.items():
@@ -157,7 +221,7 @@ def apply(d, shrimp, pel_scale=0.8):
             o.hide_render = vis[i]!='1'
             for c in o.children_recursive: c.hide_render=o.hide_render
     fv=d['vis'][[k for k,v in idx.items() if v=='FARMER_Root'][0] and int([k for k,v in idx.items() if v=='FARMER_Root'][0])]=='1' and d['shot'] in ('s3','s4')
-    for n in ('FARMER_RIG','FARMER_BODY','SCOOP','BUCKET_FEED','BUCKET_BODY'):
+    for n in ('FARMER_RIG','FARMER_BODY','SCOOP','FIST','BUCKET_FEED','BUCKET_BODY'):
         o=bpy.data.objects.get(n)
         if o:
             o.hide_render=not fv
@@ -169,7 +233,10 @@ def apply(d, shrimp, pel_scale=0.8):
     cm,mm=CAM_SMOOTH.get(str(d['F']),(d['cam'],d['mm']))
     cam=sc.camera; cam.matrix_world=C@tm(cm); cam.data.lens=mm
     cz=cam.matrix_world.translation.z
-    if d['under'] or (not d['room'] and cz<0.004):   # never sit in the thin layer between the volume top and the surface
+    fo=d.get('force')
+    if fo=='air':      # above-water half of a waterline (split) frame
+        d['under']=False; t=cam.matrix_world.copy(); t.translation.z=max(cz,0.008); cam.matrix_world=t
+    elif fo=='under' or d['under'] or (not d['room'] and cz<0.004):   # never sit in the thin layer between the volume top and the surface
         d['under']=True; t=cam.matrix_world.copy(); t.translation.z=min(cz,-0.018); cam.matrix_world=t
     cam.data.clip_start=0.005 if d['room'] or d['under'] else 0.03; cam.data.clip_end=2000
     set_mode(d)
@@ -195,14 +262,12 @@ def apply(d, shrimp, pel_scale=0.8):
     if mo: mo.hide_render=not d['under']; mo.location=(0.0006*d['F'],0.0002*d['F'],0.0004*d['F'])
     crowns=[o for o in bpy.data.objects if o.name.startswith('CROWN_')]; nc=0
     for kind,key,n in (('BUB','bub',800),('DROP','drop',900),('RING','ring',400)):
-        L=d['inst'][key]
+        L=bubbles(d) if kind=='BUB' else d['inst'][key]
         for i in range(n):
             o=bpy.data.objects.get('%s_%03d'%(kind,i))
             if o is None: break
             if i<len(L):
-                M=ow(L[i])
-                if kind=='BUB':   # wobble: rising bubbles flatten and jiggle
-                    ph=d['F']*0.9+i*1.7; M=M@Matrix.Diagonal((1+0.12*math.sin(ph),1+0.12*math.cos(ph*1.3),0.82+0.1*math.sin(ph*0.7),1))
+                M=L[i] if kind=='BUB' else ow(L[i])
                 if kind=='RING':   # ripples fade as they spread; a crown rises on the youngest ones
                     sr=Vector((L[i][0],L[i][1],L[i][2])).length; f=max(0.0,min(1.0,1.15-(sr-0.003)/0.006)); o.color=(f,f,f,1)
                     a=(sr-0.0028)/0.0018

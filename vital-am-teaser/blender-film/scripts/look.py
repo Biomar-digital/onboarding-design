@@ -27,7 +27,9 @@ m,n,l,b,out=nm('MAT_Pond_Water_Surface')
 b.inputs['Base Color'].default_value=(0.20,0.30,0.18,1); b.inputs['Transmission Weight'].default_value=1.0; b.inputs['Roughness'].default_value=0.03; b.inputs['IOR'].default_value=1.333
 tc=gcoord(n); mp=n.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value=(1.0,2.6,1.0); l.new(tc.outputs['Object'],mp.inputs[0])
 n1=noise(n,l,1.6,8,0.6,mp.outputs[0]); n2=noise(n,l,14,4,0.5,mp.outputs[0]); ad=n.new('ShaderNodeMath'); ad.operation='MULTIPLY_ADD'; ad.inputs[1].default_value=0.35
-l.new(n2.outputs['Fac'],ad.inputs[0]); l.new(n1.outputs['Fac'],ad.inputs[2]); bump(n,l,ad.outputs[0],b,0.22,0.015)
+l.new(n2.outputs['Fac'],ad.inputs[0]); l.new(n1.outputs['Fac'],ad.inputs[2])
+n3=noise(n,l,70,3,0.5,mp.outputs[0]); ad2=n.new('ShaderNodeMath'); ad2.operation='MULTIPLY_ADD'; ad2.inputs[1].default_value=0.15; l.new(n3.outputs['Fac'],ad2.inputs[0]); l.new(ad.outputs[0],ad2.inputs[2])
+bump(n,l,ad2.outputs[0],b,0.32,0.015)   # wind ripple + fine cat's-paw texture so the pond is not a perfect mirror
 lp=n.new('ShaderNodeLightPath'); tr=n.new('ShaderNodeBsdfTransparent'); mxs=n.new('ShaderNodeMixShader')
 mxa=n.new('ShaderNodeMath'); mxa.operation='MAXIMUM'; l.new(lp.outputs['Is Camera Ray'],mxa.inputs[0]); l.new(lp.outputs['Is Glossy Ray'],mxa.inputs[1])
 # from above, turbid pond water: part of the glass is replaced by a murky green body colour (front faces only)
@@ -92,7 +94,7 @@ if fb:
     for m in fb.data.materials:
         nt=m.node_tree; pb=[x for x in nt.nodes if x.type=='BSDF_PRINCIPLED'][0]; lk=pb.inputs['Base Color'].links
         if lk:
-            src=lk[0].from_socket; hs=nt.nodes.new('ShaderNodeHueSaturation'); hs.inputs['Saturation'].default_value=1.55; hs.inputs['Value'].default_value=1.05
+            src=lk[0].from_socket; hs=nt.nodes.new('ShaderNodeHueSaturation'); hs.inputs['Saturation'].default_value=1.22; hs.inputs['Value'].default_value=1.05
             nt.links.new(src,hs.inputs['Color']); nt.links.new(hs.outputs[0],pb.inputs['Base Color'])
 # ---- ground beyond the ponds + distant tree line with palms (instances of the scene palm)
 for k,(cx,cy,sx,sy) in enumerate(((0,800,1500,749),(0,-800,1500,749),(800,0,734,51.5),(-800,0,734,51.5))):

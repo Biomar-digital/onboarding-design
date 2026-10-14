@@ -42,14 +42,18 @@ b.inputs['IOR'].default_value=0.75; b.inputs['Roughness'].default_value=0.0; b.i
 lw=nt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.25; em=nt.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(0.85,0.95,0.9,1)
 mul=nt.nodes.new('ShaderNodeMath'); mul.operation='MULTIPLY'; mul.inputs[1].default_value=0.0; nt.links.new(lw.outputs['Facing'],mul.inputs[0]); nt.links.new(mul.outputs[0],em.inputs['Strength'])
 ad=nt.nodes.new('ShaderNodeAddShader'); out=nt.nodes['Material Output']; nt.links.new(b.outputs[0],ad.inputs[0]); nt.links.new(em.outputs[0],ad.inputs[1]); nt.links.new(ad.outputs[0],out.inputs[0])
+sm=bpy.data.objects['SPH_SRC'].data
+import bmesh as _bm
+_b=_bm.new(); _bm.ops.create_uvsphere(_b,u_segments=32,v_segments=16,radius=1.0); _b.to_mesh(sm); _b.free()
+for p in sm.polygons: p.use_smooth=True
 for o in bpy.data.objects:
     if o.name.startswith(('BUB_','DROP_')): o.visible_shadow=False
 # suspended particles: tiny flecks instanced on random verts in a slab under the surface (follows the camera per frame in drive)
 pm=bpy.data.meshes.new('MOTES'); vs=[(random.uniform(-2.0,1.6),random.uniform(2.8,7.5),random.uniform(-1.45,-0.03)) for _ in range(30000)]
 pm.from_pydata(vs,[],[]); mo=bpy.data.objects.new('MOTES',pm); sc.collection.objects.link(mo); mo.instance_type='VERTS'; mo.show_instancer_for_render=False
-bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=0.0004); f=bpy.context.object; f.name='MOTE'; f.parent=mo
-mm=bpy.data.materials.new('MAT_Mote'); mm.use_nodes=True; b=mm.node_tree.nodes['Principled BSDF']; b.inputs['Base Color'].default_value=(0.55,0.5,0.35,1); b.inputs['Roughness'].default_value=0.8
-b.inputs['Emission Color'].default_value=(0.6,0.7,0.55,1); b.inputs['Emission Strength'].default_value=0.15; f.data.materials.append(mm); f.visible_shadow=False
+bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=0.00035); f=bpy.context.object; f.name='MOTE'; f.parent=mo
+mm=bpy.data.materials.new('MAT_Mote'); mm.use_nodes=True; b=mm.node_tree.nodes['Principled BSDF']; b.inputs['Base Color'].default_value=(0.16,0.15,0.09,1); b.inputs['Roughness'].default_value=0.9
+b.inputs['Emission Strength'].default_value=0.0; f.data.materials.append(mm); f.visible_shadow=False
 mo.hide_render=True
 
 # impact crowns: thin flared water wall with spiky rim, placed on young rings (radius in ring units, height 1 -> scaled per frame)
@@ -65,4 +69,17 @@ cm=bpy.data.meshes.new('CROWN_ME'); cm.from_pydata(cv,[],cf); cm.materials.appen
 for p in cm.polygons: p.use_smooth=True
 for i in range(220):
     o=bpy.data.objects.new('CROWN_%03d'%i,cm); sc.collection.objects.link(o); o.hide_render=True; o.visible_shadow=False
+# pellet surface: extruded feed, matte, pitted, slightly mottled
+pm=bpy.data.objects['PEL_000'].active_material
+if pm and pm.use_nodes:
+    nt=pm.node_tree; b=[x for x in nt.nodes if x.type=='BSDF_PRINCIPLED'][0]; L=nt.links
+    tc=nt.nodes.new('ShaderNodeTexCoord'); nz=nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value=9.0; nz.inputs['Detail'].default_value=10; L.new(tc.outputs['Object'],nz.inputs['Vector'])
+    vo=nt.nodes.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value=22; L.new(tc.outputs['Object'],vo.inputs['Vector'])
+    rp=nt.nodes.new('ShaderNodeValToRGB'); rp.color_ramp.elements[0].color=(0.13,0.07,0.035,1); rp.color_ramp.elements[1].color=(0.30,0.18,0.09,1); L.new(nz.outputs['Fac'],rp.inputs[0])
+    L.new(rp.outputs[0],b.inputs['Base Color']); b.inputs['Roughness'].default_value=0.85
+    for nm in ('Specular IOR Level',):
+        if nm in b.inputs: b.inputs[nm].default_value=0.3
+    bp=nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value=0.6; bp.inputs['Distance'].default_value=0.05
+    mx=nt.nodes.new('ShaderNodeMath'); mx.operation='ADD'; L.new(nz.outputs['Fac'],mx.inputs[0]); L.new(vo.outputs['Distance'],mx.inputs[1])
+    L.new(mx.outputs[0],bp.inputs['Height']); L.new(bp.outputs[0],b.inputs['Normal'])
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('FX_OK')

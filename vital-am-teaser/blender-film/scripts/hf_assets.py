@@ -44,9 +44,13 @@ for o in (shed,roof): o.hide_render=True; o.hide_viewport=True
 tx=bpy.data.textures.new('CANOPY','CLOUDS'); tx.noise_scale=1.2; tx.noise_depth=3
 for o in bpy.data.objects:
     if o.name.startswith('TREE_'):
-        o.modifiers.clear(); sd=o.modifiers.new('sub','SUBSURF'); sd.levels=1; sd.render_levels=2
-        d=o.modifiers.new('disp','DISPLACE'); d.texture=tx; d.strength=2.2; d.mid_level=0.45; d.texture_coords='GLOBAL'
+        o.modifiers.clear()
+        for p in o.data.polygons: p.use_smooth=True
+        sd=o.modifiers.new('sub','SUBSURF'); sd.levels=1; sd.render_levels=2
+        d=o.modifiers.new('disp','DISPLACE'); d.texture=tx; d.strength=2.6; d.mid_level=0.45; d.texture_coords='GLOBAL'
 mt=bpy.data.materials['MAT_TreeLine']; n=mt.node_tree.nodes; l=mt.node_tree.links; b=[x for x in n if x.type=='BSDF_PRINCIPLED'][0]
 nz=n.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value=0.6; r=n.new('ShaderNodeValToRGB'); r.color_ramp.elements[0].color=(0.035,0.06,0.025,1); r.color_ramp.elements[1].color=(0.09,0.12,0.045,1)
 l.new(nz.outputs['Fac'],r.inputs[0]); l.new(r.outputs[0],b.inputs['Base Color'])
+lf=n.new('ShaderNodeTexVoronoi'); lf.inputs['Scale'].default_value=3.5; bp=n.new('ShaderNodeBump'); bp.inputs['Strength'].default_value=0.8; bp.inputs['Distance'].default_value=0.4
+l.new(lf.outputs['Distance'],bp.inputs['Height']); l.new(bp.outputs[0],b.inputs['Normal'])   # leaf-clump relief on the canopies
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('HF_OK')

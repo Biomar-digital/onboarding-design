@@ -9,6 +9,19 @@ os.makedirs(OUT,exist_ok=True)
 todo=[F for F in range(A,Bf+1) if not os.path.exists(OUT+'/f%04d.jpg'%F)]
 if not todo: print('NOTHING'); sys.exit()
 st=drive.states(todo); sh=drive.Shrimp()
+import json, copy
 for F in todo:
-    t=time.time(); drive.apply(st[F],sh); sc.render.filepath=OUT+'/f%04d.jpg'%F
-    bpy.ops.render.render(write_still=True); print('FRAME',F,st[F]['shot'],round(time.time()-t,1),flush=True)
+    t=time.time()
+    if F in drive.SPLIT:
+        meta={}
+        for fo in ('air','under'):
+            d=copy.deepcopy(st[F]); d['force']=fo; drive.apply(d,sh)
+            sc.render.filepath=OUT+'/f%04d_%s.jpg'%(F,fo[0]); bpy.ops.render.render(write_still=True)
+        cm=bpy.context.scene.camera.matrix_world
+        cz=drive.CAM_SMOOTH.get(str(F),(st[F]['cam'],0))[0][13]
+        right=cm.to_3x3()@drive.Vector((1,0,0))
+        json.dump({'z':cz,'roll':__import__('math').atan2(right.z,(right.x**2+right.y**2)**0.5)},open(OUT+'/f%04d.json'%F,'w'))
+        import shutil; shutil.copy(OUT+'/f%04d_u.jpg'%F,OUT+'/f%04d.jpg'%F)
+    else:
+        drive.apply(st[F],sh); sc.render.filepath=OUT+'/f%04d.jpg'%F; bpy.ops.render.render(write_still=True)
+    print('FRAME',F,st[F]['shot'],round(time.time()-t,1),flush=True)

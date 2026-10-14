@@ -1,4 +1,4 @@
-# Post: dissolve phone->drone (118-131 from 117), water drops on the lens as the camera leaves the water, encode.
+# Post: dissolve phone->drone (118-131 from 117), waterline split frames (camera crossing the surface), encode.
 import sys, os, math, random, shutil, subprocess
 import numpy as np
 from PIL import Image, ImageFilter
@@ -31,14 +31,34 @@ def lens_drops(img,t,k):
         col=col+hl; blk=out[y1:y2,x1:x2]; al=(m[...,None]*k*0.8)
         out[y1:y2,x1:x2]=blk*(1-al)+col*al
     return Image.fromarray(np.clip(out,0,255).astype(np.uint8))
-n=len([f for f in os.listdir(SRC) if f.endswith('.jpg')])
+import json
+ZR=0.05
+def split(F):
+    m=json.load(open(f'{SRC}/f{F:04d}.json')); z=m['z']; zz=z*abs(z)/ZR if abs(z)<ZR else z
+    s=max(-1.0,min(1.0,zz/ZR))
+    air=np.asarray(Image.open(f'{SRC}/f{F:04d}_a.jpg').convert('RGB')).astype(np.float32)
+    und=np.asarray(Image.open(f'{SRC}/f{F:04d}_u.jpg').convert('RGB')).astype(np.float32)
+    yy,xx=np.mgrid[0:H,0:W].astype(np.float32)
+    wave=(3.0*np.sin(xx/(40*sc)+F*0.6)+1.5*np.sin(xx/(13*sc)-F*1.1))*sc
+    yl=H*(0.5+0.5*s)+(xx-W/2)*math.tan(m['roll'])+wave
+    dist=yy-yl                                   # >0 below the waterline
+    # underwater side: light refraction wobble right under the line + a bright total-reflection band
+    off=np.clip(6*sc*np.exp(-np.clip(dist,0,None)/(18*sc)),0,None)
+    sy=np.clip((yy+off).astype(int),0,H-1); und2=und[sy,xx.astype(int)]
+    und2=und2*(1+0.18*np.exp(-np.clip(dist,0,None)/(22*sc))[...,None])
+    a=np.clip(0.5-dist/(1.5*sc),0,1)[...,None]   # soft edge
+    out=air*a+und2*(1-a)
+    # meniscus: dark wet line with a thin bright rim on top
+    band=np.exp(-((dist-1.5*sc)/(2.2*sc))**2)[...,None]; out=out*(1-0.45*band)
+    rim=np.exp(-((dist+1.2*sc)/(0.9*sc))**2)[...,None]; out=out+60*rim
+    return Image.fromarray(np.clip(out,0,255).astype(np.uint8))
+n=len([f for f in os.listdir(SRC) if f.endswith('.jpg') and '_' not in f])
 for F in range(1,n+1):
     src=f'{SRC}/f{F:04d}.jpg'; dst=f'{OUT}/f{F:04d}.jpg'
     if 118<=F<=131:
         t=(F-117)/15; t=t*t*(3-2*t); Image.blend(a117,Image.open(src).convert('RGB'),t).save(dst,quality=94)
-    elif EXIT<=F<EXIT+DUR:
-        t=F-EXIT; k=1.0 if t<DUR-8 else (DUR-t)/8.0
-        lens_drops(Image.open(src).convert('RGB'),t,k).save(dst,quality=94)
+    elif os.path.exists(f'{SRC}/f{F:04d}.json'):
+        split(F).save(dst,quality=94)
     else: shutil.copy(src,dst)
 subprocess.run(['ffmpeg','-y','-loglevel','error','-framerate','24','-i',f'{OUT}/f%04d.jpg','-c:v','libx264','-pix_fmt','yuv420p','-crf','18','-movflags','+faststart',MP4],check=True)
 print('POST_OK',n)
