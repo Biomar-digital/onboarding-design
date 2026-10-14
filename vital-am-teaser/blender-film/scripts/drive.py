@@ -149,7 +149,7 @@ def set_mode(d):
         cm=sc.camera.matrix_world; fwd=(cm.to_3x3()@Vector((0,0,-1))).normalized(); uo.rotation_euler=(fwd+Vector((0,0,-0.4))).normalized().to_track_quat('-Z','Y').to_euler()
     bpy.data.objects['GOBO'].hide_render=not under
     for o in bpy.data.objects:
-        if o.name.startswith(('GROUND_FAR','TREE_','PALM_FAR','WATER_VOLUME')): o.hide_render=room
+        if o.name.startswith(('GROUND_FAR','TREE_','PALM_FAR','WATER_VOLUME','GRASS_')): o.hide_render=room
     sc.node_tree.nodes['HAZE_AMT'].inputs[1].default_value=0.0 if (room or under) else 0.18
     sc.view_settings.exposure=0.95 if under else 0.0
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=60*k
