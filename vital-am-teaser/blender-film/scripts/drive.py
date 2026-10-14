@@ -17,7 +17,8 @@ def states(frames):
     return out
 class Shrimp:
     def __init__(self):
-        self.act=bpy.data.actions[0] if bpy.data.actions else None
+        sw=[a for a in bpy.data.actions if 'Shrimp' in a.name]   # the client's swim clip (actions[0] became the farmer's after he was loaded)
+        self.act=sw[0] if sw else (bpy.data.actions[0] if bpy.data.actions else None)
         self.rigs=sorted([o for o in bpy.data.objects if o.name.startswith('SHR_')],key=lambda o:o.name)
         self.ch=[]
         if self.act:
@@ -142,7 +143,12 @@ def set_mode(d):
     so.rotation_euler=(-lv).to_track_quat('-Z','Y').to_euler()
     bg.inputs[1].default_value=0.03 if room else 0.27
     so.data.energy=0 if room else (10.0 if under else 3.2)
-    bpy.data.objects['ROOM_WIN'].data.energy=22 if room else 0
+    bpy.data.objects['ROOM_WIN'].data.energy=10 if room else 0
+    sb=bpy.data.objects.get('ROOM_SUNBEAM')
+    if sb:   # the sun comes up while the alarm rings: the ray fades in, then stays
+        k=max(0.0,min(1.0,(d['F']-66)/22.0)); k=k*k*(3-2*k); sb.data.energy=(110*k) if room else 0
+    hz=bpy.data.objects.get('ROOM_HAZE')
+    if hz: hz.hide_render=not room
     bpy.data.objects['PHONE_GLOW'].data.energy=0.5 if room else 0
     uo=bpy.data.objects['UW_FILL']; uo.data.energy=5.0 if under else 0
     if under:

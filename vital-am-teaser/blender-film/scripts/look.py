@@ -68,7 +68,7 @@ def wood(name,c0,c1,scale=(1,9,1),rough=0.75):
     wv=n.new('ShaderNodeTexWave'); wv.wave_type='BANDS'; wv.inputs['Scale'].default_value=3.0; wv.inputs['Distortion'].default_value=7; wv.inputs['Detail'].default_value=8; l.new(mp.outputs[0],wv.inputs[0])
     r=ramp(n,l,wv.outputs['Fac'],c0,c1); l.new(r.outputs[0],b.inputs['Base Color']); b.inputs['Roughness'].default_value=rough; bump(n,l,wv.outputs['Fac'],b,0.12,0.005)
 wood('MAT_Walkway_Wood_Weathered',(0.16,0.11,0.07),(0.36,0.27,0.18))
-m,n,l,b,out=nm('MAT_Room_Dark_Wood'); nz=noise(n,l,40,8,0.6); r=ramp(n,l,nz.outputs['Fac'],(0.05,0.028,0.016),(0.11,0.065,0.038)); l.new(r.outputs[0],b.inputs['Base Color']); b.inputs['Roughness'].default_value=0.35; b.inputs['Coat Weight'].default_value=0.4
+m,n,l,b,out=nm('MAT_Room_Dark_Wood'); nz=noise(n,l,40,8,0.6); r=ramp(n,l,nz.outputs['Fac'],(0.05,0.028,0.016),(0.11,0.065,0.038)); l.new(r.outputs[0],b.inputs['Base Color']); b.inputs['Roughness'].default_value=0.5; b.inputs['Coat Weight'].default_value=0.08
 wood('MAT_Shed_Wall',(0.20,0.14,0.08),(0.40,0.30,0.18),scale=(1,1,6))
 m,n,l,b,out=nm('MAT_Tin_Roof'); tc=gcoord(n); wv=n.new('ShaderNodeTexWave'); wv.inputs['Scale'].default_value=25; l.new(tc.outputs['Object'],wv.inputs[0])
 nz=noise(n,l,4,8); r=ramp(n,l,nz.outputs['Fac'],(0.30,0.15,0.07),(0.55,0.55,0.56),0.35,0.7); l.new(r.outputs[0],b.inputs['Base Color'])
@@ -125,6 +125,15 @@ uw=bpy.data.lights.new('UW_FILL','SUN'); uw.energy=0; uw.angle=math.radians(20);
 # window: first dawn light, same warm key as outside
 rl=bpy.data.lights.new('ROOM_WIN','AREA'); rl.energy=260; rl.size=1.0; rl.color=(1.0,0.70,0.48); ro=bpy.data.objects.new('ROOM_WIN',rl); sc.collection.objects.link(ro)
 ro.location=(100.75,1.45,1.45); ro.rotation_euler=(math.radians(-90),0,0)
+# first ray of the sunrise: a low, sharp, golden slit of light through the window, lying across the phone (fixed in the world)
+sb=bpy.data.lights.new('ROOM_SUNBEAM','SPOT'); sb.energy=0; sb.color=(1.0,0.58,0.30); sb.spot_size=math.radians(9); sb.spot_blend=0.12; sb.shadow_soft_size=0.008; sb.specular_factor=0.04
+sbo=bpy.data.objects.new('ROOM_SUNBEAM',sb); sc.collection.objects.link(sbo); sbo.location=(100.76,1.50,1.00)
+tgt=Vector((100.94,0.70,0.545)); sbo.rotation_euler=(tgt-sbo.location).to_track_quat('-Z','Y').to_euler(); sbo.scale=(0.32,1.0,1.0)   # slit: narrow across, long along the table
+# dust in the room air so the shaft itself reads
+bpy.ops.mesh.primitive_cube_add(location=(100.88,0.85,0.75)); hz=bpy.context.object; hz.name='ROOM_HAZE'; hz.scale=(0.35,0.3,0.22)
+hm=bpy.data.materials.new('MAT_RoomHaze'); hm.use_nodes=True; ht=hm.node_tree; ht.nodes.clear(); ho=ht.nodes.new('ShaderNodeOutputMaterial'); hv=ht.nodes.new('ShaderNodeVolumePrincipled')
+hv.inputs['Density'].default_value=0.18; hv.inputs['Color'].default_value=(1,0.95,0.9,1); hv.inputs['Anisotropy'].default_value=0.3; ht.links.new(hv.outputs[0],ho.inputs['Volume']); hz.data.materials.append(hm)
+hz.visible_shadow=False; hz.hide_render=True
 pl=bpy.data.lights.new('PHONE_GLOW','POINT'); pl.energy=4.0; pl.shadow_soft_size=0.25; pl.color=(0.35,0.55,1.0); po=bpy.data.objects.new('PHONE_GLOW',pl); sc.collection.objects.link(po)
 po.location=(100.80,0.55,1.05); po.rotation_euler=(0,0,0)
 # bag fill (s5 reveal)
