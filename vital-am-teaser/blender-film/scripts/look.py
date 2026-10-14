@@ -162,4 +162,36 @@ m,n,l,b,t,mu=photo('MAT_HDPE_Liner','mud.png',0.6,(0.85,0.85,0.8))
 mx=[x for x in n if x.type=='MIX' and x.data_type=='RGBA' and x.inputs['A'].is_linked and x!=mu][0]; l.new(mu.outputs['Result'],mx.inputs['A'])
 m,n,l,b,t,mu=photo('MAT_Walkway_Wood_Weathered','wood.png',0.9,(0.9,0.82,0.72))
 l.new(mu.outputs['Result'],b.inputs['Base Color']); bump(n,l,t.outputs['Color'],b,0.3,0.004)
+
+# ---- pond edge: wet algae band at the waterline + dusty, wrinkled HDPE above; eroded earth on dyke slopes
+def _src(n,sock):
+    return sock.links[0].from_socket if sock.is_linked else None
+m=bpy.data.materials['MAT_HDPE_Liner']; n=m.node_tree.nodes; l=m.node_tree.links; b=[x for x in n if x.type=='BSDF_PRINCIPLED'][0]
+base=_src(n,b.inputs['Base Color'])
+geo=n.new('ShaderNodeNewGeometry'); sz=n.new('ShaderNodeSeparateXYZ'); l.new(geo.outputs['Position'],sz.inputs[0])
+wob=noise(n,l,1.2,4,0.5); wz=n.new('ShaderNodeMath'); wz.operation='MULTIPLY_ADD'; wz.inputs[1].default_value=0.08; l.new(wob.outputs['Fac'],wz.inputs[0]); l.new(sz.outputs['Z'],wz.inputs[2])
+band=n.new('ShaderNodeMapRange'); band.inputs['From Min'].default_value=0.30; band.inputs['From Max'].default_value=0.04; l.new(wz.outputs[0],band.inputs['Value'])   # 1 at/below waterline, 0 above ~25 cm
+dry=n.new('ShaderNodeMapRange'); dry.inputs['From Min'].default_value=0.25; dry.inputs['From Max'].default_value=0.75; l.new(sz.outputs['Z'],dry.inputs['Value'])
+dust=noise(n,l,6,6,0.6); dcol=ramp(n,l,dust.outputs['Fac'],(0.035,0.036,0.034),(0.11,0.10,0.085),0.45,0.8)
+m1=n.new('ShaderNodeMix'); m1.data_type='RGBA'; l.new(dry.outputs[0],m1.inputs['Factor']); l.new(base,m1.inputs['A']); l.new(dcol.outputs[0],m1.inputs['B'])
+alg=noise(n,l,14,8,0.6); acol=ramp(n,l,alg.outputs['Fac'],(0.035,0.045,0.02),(0.10,0.11,0.045),0.3,0.75)
+m2=n.new('ShaderNodeMix'); m2.data_type='RGBA'; l.new(band.outputs[0],m2.inputs['Factor']); l.new(m1.outputs['Result'],m2.inputs['A']); l.new(acol.outputs[0],m2.inputs['B'])
+l.new(m2.outputs['Result'],b.inputs['Base Color'])
+rg=n.new('ShaderNodeMapRange'); rg.inputs['To Min'].default_value=0.6; rg.inputs['To Max'].default_value=0.18; l.new(band.outputs[0],rg.inputs['Value']); l.new(rg.outputs[0],b.inputs['Roughness'])
+wv=n.new('ShaderNodeTexWave'); wv.inputs['Scale'].default_value=0.9; wv.inputs['Distortion'].default_value=6; wv.inputs['Detail'].default_value=3; wv.wave_profile='SIN'
+bp2=n.new('ShaderNodeBump'); bp2.inputs['Strength'].default_value=0.25; bp2.inputs['Distance'].default_value=0.03; l.new(wv.outputs['Fac'],bp2.inputs['Height'])
+old_n=_src(n,b.inputs['Normal'])
+if old_n: l.new(old_n,bp2.inputs['Normal'])
+l.new(bp2.outputs[0],b.inputs['Normal'])
+m=bpy.data.materials['MAT_Dyke_Earth']; n=m.node_tree.nodes; l=m.node_tree.links; b=[x for x in n if x.type=='BSDF_PRINCIPLED'][0]
+base=_src(n,b.inputs['Base Color']); geo=n.new('ShaderNodeNewGeometry'); sn=n.new('ShaderNodeSeparateXYZ'); l.new(geo.outputs['Normal'],sn.inputs[0])
+slope=n.new('ShaderNodeMapRange'); slope.inputs['From Min'].default_value=0.97; slope.inputs['From Max'].default_value=0.8; l.new(sn.outputs['Z'],slope.inputs['Value'])
+tc=n.new('ShaderNodeTexCoord'); mp=n.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value=(3.0,3.0,0.6); l.new(tc.outputs['Object'],mp.inputs[0])
+gul=noise(n,l,2.5,8,0.65,mp.outputs[0]); ecol=ramp(n,l,gul.outputs['Fac'],(0.16,0.10,0.055),(0.32,0.22,0.13),0.35,0.7)
+mf=n.new('ShaderNodeMath'); mf.operation='MULTIPLY'; l.new(slope.outputs[0],mf.inputs[0]); l.new(gul.outputs['Fac'],mf.inputs[1]); mf2=n.new('ShaderNodeMath'); mf2.operation='MULTIPLY'; mf2.inputs[1].default_value=1.8; l.new(mf.outputs[0],mf2.inputs[0])
+mx3=n.new('ShaderNodeMix'); mx3.data_type='RGBA'; mx3.clamp_factor=True; l.new(mf2.outputs[0],mx3.inputs['Factor']); l.new(base,mx3.inputs['A']); l.new(ecol.outputs[0],mx3.inputs['B']); l.new(mx3.outputs['Result'],b.inputs['Base Color'])
+bp3=n.new('ShaderNodeBump'); bp3.inputs['Strength'].default_value=0.6; bp3.inputs['Distance'].default_value=0.06; l.new(gul.outputs['Fac'],bp3.inputs['Height'])
+old_n=_src(n,b.inputs['Normal'])
+if old_n: l.new(old_n,bp3.inputs['Normal'])
+l.new(bp3.outputs[0],b.inputs['Normal'])
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('LOOK_SAVED')
