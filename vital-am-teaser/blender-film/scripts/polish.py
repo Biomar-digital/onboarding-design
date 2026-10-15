@@ -142,7 +142,11 @@ fl.data.materials.append(bpy.data.materials['MAT_NegFill']); fl.visible_camera=F
 
 # ---- a small warm light inside each shrimp (healthy shots): it glows through the translucent body
 src=bpy.data.objects['SHRM_000']; vs=[v.co for v in src.data.vertices]
-cl=sum(vs,Vector())/len(vs)                                   # body centre in mesh space
+import statistics as _st
+_ylo=min(v.y for v in vs); _yhi=max(v.y for v in vs); _ym=_ylo+(_yhi-_ylo)*0.55
+_sl=[v for v in vs if abs(v.y-_ym)<(_yhi-_ylo)*0.04]
+_zs=sorted(v.z for v in _sl); _zc=_zs[int(len(_zs)*0.72)]              # upper part of the slice = the trunk, above the legs
+_core=[v for v in _sl if v.z>_zc-0.6]; cl=Vector((_st.median(v.x for v in _core),_ym,_st.median(v.z for v in _core)))   # trunk centre in mesh space
 SHRL_LOCAL=src.matrix_parent_inverse@src.matrix_basis@cl        # in rig space
 for r in [o for o in bpy.data.objects if o.name.startswith('SHR_') and o.type=='ARMATURE']:
     ld=bpy.data.lights.new(r.name.replace('SHR_','SHRL_'),'POINT'); ld.energy=0.0; ld.color=(1.0,0.6,0.3); ld.shadow_soft_size=0.035; ld.use_shadow=False
@@ -150,4 +154,26 @@ for r in [o for o in bpy.data.objects if o.name.startswith('SHR_') and o.type=='
 print('SHRL',tuple(round(x,3) for x in SHRL_LOCAL))
 _b=[x for x in bpy.data.objects['SHRM_000'].data.materials[0].node_tree.nodes if x.type=='BSDF_PRINCIPLED'][0]
 _b.inputs['Subsurface Weight'].default_value=0.55; _b.inputs['Subsurface Radius'].default_value=(0.012,0.009,0.006); _b.inputs['Subsurface Scale'].default_value=1.0   # light spreads through the shell walls
+# ---- subtle inner glow on the trunk walls (no legs/antennae): soft core weight x view-through factor, warm, low
+_me=bpy.data.objects['SHRM_000'].data; _co=[v.co for v in _me.vertices]; _ylo=min(c.y for c in _co); _yhi=max(c.y for c in _co); _NS=36; _cen={}
+for k in range(_NS):
+    a0=_ylo+(_yhi-_ylo)*k/_NS; a1=_ylo+(_yhi-_ylo)*(k+1)/_NS; sl=[c for c in _co if a0<=c.y<a1]
+    if len(sl)<12: continue
+    zs=sorted(c.z for c in sl); zc=zs[int(len(zs)*0.65)]; core=[c for c in sl if c.z>=zs[int(len(zs)*0.35)]]
+    cx=_st.median(c.x for c in core); r=_st.median(abs(c.x-cx) for c in core)+1e-6; _cen[k]=(cx,zc,r)
+_ca=_me.color_attributes.get('Core') or _me.color_attributes.new('Core','FLOAT_COLOR','POINT')
+for i,c in enumerate(_co):
+    k=min(_NS-1,int((c.y-_ylo)/(_yhi-_ylo)*_NS)); w=0.0
+    if k in _cen and 4<=k<=_NS-6:
+        cx,zc,r=_cen[k]; d2=((c.x-cx)/(1.6*r))**2+((c.z-zc)/(1.6*r))**2; w=math.exp(-d2)
+    _ca.data[i].color=(w,w,w,1)
+_mt=_me.materials[0]; _nt=_mt.node_tree; _n=_nt.nodes; _l=_nt.links
+_out=[x for x in _n if x.type=='OUTPUT_MATERIAL'][0]; _src=_out.inputs['Surface'].links[0].from_socket
+_at=_n.new('ShaderNodeAttribute'); _at.attribute_name='Core'
+_lw=_n.new('ShaderNodeLayerWeight'); _lw.inputs['Blend'].default_value=0.6
+_iv=_n.new('ShaderNodeMath'); _iv.operation='SUBTRACT'; _iv.inputs[0].default_value=1.0; _l.new(_lw.outputs['Facing'],_iv.inputs[1])
+_mu=_n.new('ShaderNodeMath'); _mu.operation='MULTIPLY'; _l.new(_at.outputs['Fac'],_mu.inputs[0]); _l.new(_iv.outputs[0],_mu.inputs[1])
+_st2=_n.new('ShaderNodeMath'); _st2.name='SHR_GLOW_STR'; _st2.operation='MULTIPLY'; _st2.inputs[1].default_value=0.0; _l.new(_mu.outputs[0],_st2.inputs[0])
+_em=_n.new('ShaderNodeEmission'); _em.inputs['Color'].default_value=(1.0,0.62,0.3,1); _l.new(_st2.outputs[0],_em.inputs['Strength'])
+_ad=_n.new('ShaderNodeAddShader'); _l.new(_src,_ad.inputs[0]); _l.new(_em.outputs[0],_ad.inputs[1]); _l.new(_ad.outputs[0],_out.inputs['Surface'])
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('POLISH_OK')

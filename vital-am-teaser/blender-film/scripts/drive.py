@@ -187,6 +187,7 @@ def set_mode(d):
     m0=bpy.data.objects['SHRM_000'].data.materials[0]; nn=m0.node_tree.nodes
     healthy=d['shot'] in ('s4','s5')
     if 'SHR_BSDF' in nn: nn['SHR_BSDF'].inputs['Emission Strength'].default_value=0.0 if healthy else 0.03
+    if 'SHR_GLOW_STR' in nn: nn['SHR_GLOW_STR'].inputs[1].default_value=SHR_GLOW if healthy else 0.0
     if 'SHR_RIM' in nn: nn['SHR_RIM'].inputs[1].default_value=0.06 if healthy else 0.12
     # packaging teased with light: bag back-lit (silhouette), a narrow warm band of light reveals only the top / logo and creeps down slightly
     br=bpy.data.objects.get('BAG_REVEAL'); jb=bpy.data.objects['JS_BAG']
@@ -226,7 +227,8 @@ def set_mode(d):
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
-SHRL_W=0.018   # watts: a subtle inner glow spread through the shell
+SHR_GLOW=0.22   # subtle warm inner glow on the trunk walls (healthy shots)
+SHRL_W=0.0   # watts: a subtle inner glow spread through the shell
 try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
 except Exception: PUSH={}
 PUSH_DIST=0.55; PUSH_MM=38.0; PUSH_HOLD=438
