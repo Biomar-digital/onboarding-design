@@ -193,6 +193,8 @@ def set_mode(d):
     if br:
         on=d['shot']=='s5' and not under
         br.data.energy=0.0
+        _fl=bpy.data.objects.get('BAG_FLAG')
+        if _fl: _fl.hide_render=True
         nf=bpy.data.objects.get('NEG_FILL')
         if nf:
             nf.hide_render=not on
@@ -207,8 +209,20 @@ def set_mode(d):
             if top is None:
                 cs=[c.matrix_world@Vector(v) for c in jb.children_recursive if c.type=='MESH' for v in c.bound_box]
                 BAG_TOP['z']=max(v.z for v in cs); BAG_TOP['c']=sum(cs,Vector())/len(cs); top=BAG_TOP['z']
-            c=BAG_TOP['c']; tgt=Vector((c.x,c.y,top-0.09))   # the light band stays on the top of the bag
-            br.location=tgt+Vector((-0.35,-1.6,0.55)); br.rotation_euler=(tgt-br.location).to_track_quat('-Z','Y').to_euler(); br.data.energy=95*k
+            c=BAG_TOP['c']; H=BAG_TOP.setdefault('h',None)
+            if H is None:
+                cs=[o.matrix_world@Vector(v) for o in jb.children_recursive if o.type=='MESH' for v in o.bound_box]
+                BAG_TOP['h']=top-min(v.z for v in cs); BAG_TOP['ymin']=min(v.y for v in cs); H=BAG_TOP['h']
+            # warm key from the front-left; a flag between light and bag casts a level shadow line that drops from the top
+            # of the pack (100% in shade) to 30% below the top (70% still in shade) by the end of the shot
+            br.location=Vector((c.x-0.35,c.y-1.5,top+0.18)); br.rotation_euler=(Vector((c.x,c.y,top-0.3*H))-br.location).to_track_quat('-Z','Y').to_euler()
+            br.data.energy=140.0
+            rev=max(0.0,min(1.0,(F-472)/60.0)); rev=rev*rev*(3-2*rev)
+            e=top+0.02-0.32*H*rev                      # height of the shadow edge on the bag face
+            face=Vector((c.x,BAG_TOP['ymin'],e)); Lp=br.location; a_=0.25        # flag 25 cm in front of the bag face
+            t_=a_/max(1e-4,(face.y-Lp.y)); fz=e+(Lp.z-e)*t_; fy=face.y-a_
+            fl=bpy.data.objects.get('BAG_FLAG')
+            if fl: fl.hide_render=False; fl.rotation_euler=(math.radians(90),0,0); fl.location=(c.x,fy,fz-0.5)
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0

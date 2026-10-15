@@ -41,7 +41,7 @@ tint=n.new('ShaderNodeMix'); tint.name='SHR_TINT'; tint.data_type='RGBA'; tint.b
 if _src: l.new(_src,tint.inputs['A'])
 else: tint.inputs['A'].default_value=bs.inputs['Base Color'].default_value
 l.new(tint.outputs['Result'],bs.inputs['Base Color'])
-bs.name='SHR_BSDF'; bs.inputs['Emission Strength'].default_value=0.07; bs.inputs['Emission Color'].default_value=(0.75,0.78,0.7,1)
+bs.name='SHR_BSDF'; bs.inputs['Alpha'].default_value=0.9; bs.inputs['Emission Strength'].default_value=0.07; bs.inputs['Emission Color'].default_value=(0.75,0.78,0.7,1)
 out=[x for x in n if x.type=='OUTPUT_MATERIAL'][0]; src=out.inputs['Surface'].links[0].from_socket
 lw=n.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.35; em=n.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(0.9,0.95,0.9,1)
 mu=n.new('ShaderNodeMath'); mu.name='SHR_RIM'; mu.operation='MULTIPLY'; mu.inputs[1].default_value=0.32; l.new(lw.outputs['Fresnel'],mu.inputs[0]); l.new(mu.outputs[0],em.inputs['Strength'])
@@ -128,12 +128,15 @@ pv.inputs['Color'].default_value=(0.42,0.70,0.50,1); pv.inputs['Absorption Color
 wm=bpy.data.materials['MAT_Pond_Water_Surface']
 for i,nd in enumerate([x for x in wm.node_tree.nodes if x.type=='TEX_NOISE']):
     nd.noise_dimensions='4D'; nd.name='WAVE_%d'%i
-bl=bpy.data.lights.new('BAG_REVEAL','SPOT'); bl.energy=0; bl.color=(1.0,0.72,0.42); bl.spot_size=math.radians(11); bl.spot_blend=0.4; bl.shadow_soft_size=0.05
+bl=bpy.data.lights.new('BAG_REVEAL','SPOT'); bl.energy=0; bl.color=(1.0,0.72,0.42); bl.spot_size=math.radians(30); bl.spot_blend=0.3; bl.shadow_soft_size=0.01
 bpy.ops.mesh.primitive_uv_sphere_add(radius=2.2,segments=48,ring_count=24); nf=bpy.context.object; nf.name='NEG_FILL'
 import bmesh as _bm2
 _b=_bm2.new(); _b.from_mesh(nf.data); _bm2.ops.delete(_b,geom=[v for v in _b.verts if v.co.y>0.35],context='VERTS'); _b.to_mesh(nf.data); _b.free()   # keep the camera-side half: a black shell that shades the bag from the sky
 nm_=bpy.data.materials.new('MAT_NegFill'); nm_.use_nodes=True; nb=nm_.node_tree.nodes['Principled BSDF']; nb.inputs['Base Color'].default_value=(0,0,0,1); nb.inputs['Roughness'].default_value=1.0; nf.data.materials.append(nm_)
 nf.visible_camera=False; nf.visible_glossy=False; nf.visible_transmission=False; nf.hide_render=True   # black flag behind the camera for the bag silhouette
-blo=bpy.data.objects.new('BAG_REVEAL',bl); sc.collection.objects.link(blo); blo.scale=(1.0,0.42,1.0); blo.visible_camera=False
+blo=bpy.data.objects.new('BAG_REVEAL',bl); sc.collection.objects.link(blo); blo.scale=(1.0,1.0,1.0); blo.visible_camera=False
 sc.cycles.volume_step_rate=6.0; sc.cycles.volume_max_steps=48   # render-time: sun shadow rays through the water volume
+# shadow flag in front of the bag: its top edge drops so the light reveals only the top of the pack (shadow line, not a spot)
+bpy.ops.mesh.primitive_plane_add(size=1); fl=bpy.context.object; fl.name='BAG_FLAG'; fl.scale=(1.6,1.0,1)
+fl.data.materials.append(bpy.data.materials['MAT_NegFill']); fl.visible_camera=False; fl.visible_glossy=False; fl.visible_transmission=False; fl.hide_render=True
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('POLISH_OK')
