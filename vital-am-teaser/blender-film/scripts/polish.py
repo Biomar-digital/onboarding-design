@@ -94,8 +94,17 @@ tc=n.new('ShaderNodeTexCoord'); mp=n.new('ShaderNodeMapping'); mp.inputs['Scale'
 for lk in list(old_nz.inputs['Vector'].links): l.remove(lk)
 l.new(mp.outputs[0],old_nz.inputs['Vector']); old_nz.inputs['Scale'].default_value=0.9; old_nz.inputs['Detail'].default_value=2
 rp_old.color_ramp.elements[0].position=0.44; rp_old.color_ramp.elements[1].position=0.56
-vo=n.new('ShaderNodeTexVoronoi'); vo.name='CAUSTIC_VOR'; vo.voronoi_dimensions='4D'; vo.feature='DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value=2.0; l.new(mp.outputs[0],vo.inputs['Vector'])
-cr=n.new('ShaderNodeMapRange'); cr.inputs['From Min'].default_value=0.0; cr.inputs['From Max'].default_value=0.11; cr.inputs['To Min'].default_value=1.0; cr.inputs['To Max'].default_value=0.12; l.new(vo.outputs['Distance'],cr.inputs['Value'])   # light passes on the bright caustic lines
+# organic caustics: two noise-warped voronoi edge layers (curvy, uneven lines), brightest where they cross
+wn=n.new('ShaderNodeTexNoise'); wn.name='CAUSTIC_WARP'; wn.noise_dimensions='4D'; wn.inputs['Scale'].default_value=0.8; wn.inputs['Detail'].default_value=2; l.new(mp.outputs[0],wn.inputs['Vector'])
+wsub=n.new('ShaderNodeVectorMath'); wsub.operation='SUBTRACT'; l.new(wn.outputs['Color'],wsub.inputs[0]); wsub.inputs[1].default_value=(0.5,0.5,0.5)
+wsc=n.new('ShaderNodeVectorMath'); wsc.operation='SCALE'; wsc.inputs['Scale'].default_value=0.55; l.new(wsub.outputs[0],wsc.inputs[0])
+wadd=n.new('ShaderNodeVectorMath'); wadd.operation='ADD'; l.new(mp.outputs[0],wadd.inputs[0]); l.new(wsc.outputs[0],wadd.inputs[1])
+def edge_layer(name,scale,width):
+    v=n.new('ShaderNodeTexVoronoi'); v.name=name; v.voronoi_dimensions='4D'; v.feature='DISTANCE_TO_EDGE'; v.inputs['Scale'].default_value=scale; l.new(wadd.outputs[0],v.inputs['Vector'])
+    r=n.new('ShaderNodeMapRange'); r.interpolation_type='SMOOTHSTEP'; r.inputs['From Min'].default_value=0.0; r.inputs['From Max'].default_value=width; r.inputs['To Min'].default_value=1.0; r.inputs['To Max'].default_value=0.0; l.new(v.outputs['Distance'],r.inputs['Value']); return r
+la=edge_layer('CAUSTIC_VOR',1.6,0.09); lb=edge_layer('CAUSTIC_VOR2',2.3,0.06)
+cs=n.new('ShaderNodeMath'); cs.operation='ADD'; cs.use_clamp=True; l.new(la.outputs[0],cs.inputs[0]); l.new(lb.outputs[0],cs.inputs[1])
+cr=n.new('ShaderNodeMapRange'); cr.inputs['From Min'].default_value=0.0; cr.inputs['From Max'].default_value=1.0; cr.inputs['To Min'].default_value=0.14; cr.inputs['To Max'].default_value=1.0; l.new(cs.outputs[0],cr.inputs['Value'])   # light passes on the bright caustic lines
 inv=n.new('ShaderNodeMath'); inv.operation='SUBTRACT'; inv.inputs[0].default_value=1.0; l.new(rp_old.outputs[0],inv.inputs[1])     # shaft pass
 mul=n.new('ShaderNodeMath'); mul.operation='MULTIPLY'; l.new(inv.outputs[0],mul.inputs[0]); l.new(cr.outputs[0],mul.inputs[1])
 al=n.new('ShaderNodeMath'); al.operation='SUBTRACT'; al.inputs[0].default_value=1.0; l.new(mul.outputs[0],al.inputs[1]); l.new(al.outputs[0],b.inputs['Alpha'])

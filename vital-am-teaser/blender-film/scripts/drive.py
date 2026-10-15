@@ -229,7 +229,8 @@ def animate_fx(d):
     gm=bpy.data.materials.get('MAT_Gobo')
     if gm:
         n=gm.node_tree.nodes
-        if 'CAUSTIC_VOR' in n: n['CAUSTIC_VOR'].inputs['W'].default_value=F*0.05
+        for nm,sp in (('CAUSTIC_VOR',0.035),('CAUSTIC_VOR2',0.05),('CAUSTIC_WARP',0.02)):
+            if nm in n: n[nm].inputs['W'].default_value=F*sp
         if 'GOBO_SHAFT' in n: n['GOBO_SHAFT'].inputs['W'].default_value=F*0.012
     wm=bpy.data.materials.get('MAT_Pond_Water_Surface')
     if wm:
@@ -255,7 +256,7 @@ def fix_set(d):
     # the HF hut replaces the shed: follow the previs shed position, keep the proxy shed + roof hidden
     sh=bpy.data.objects['SET_Farm_Shed']; hut=bpy.data.objects.get('HF_HUT')
     if hut: hut.location=(sh.matrix_world.translation.x,sh.matrix_world.translation.y,sh.matrix_world.translation.z-1.2); hut.hide_render=d['room']
-    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof','POND_Plankton_Specks','PHONE_Stop_Button','PHONE_Ring_Pulse'):   # previs specks read as white balls; MOTES replace them
+    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof','POND_Plankton_Specks','PHONE_Ring_Pulse'):   # previs specks read as white balls; MOTES replace them
         o=bpy.data.objects.get(n)
         if o: o.hide_render=True
     # bag shot: no palm fronds hanging into the top of the frame
@@ -268,12 +269,18 @@ def fix_set(d):
                 v=o.matrix_world.translation-cam.matrix_world.translation
                 if v.length<22: o.hide_render=True
     # phone: the 6:30 placeholder reads upright once the camera has turned onto the screen
+    # the single orange stop button: pops away when the finger presses it
+    btn=bpy.data.objects.get('PHONE_Stop_Button')
+    if btn and d['shot']=='s2':
+        F=d['F']; k=max(0.0,min(1.0,(F-TAP_F)/4.0))
+        if k>=1.0: btn.hide_render=True
+        elif k>0: btn.matrix_world=btn.matrix_world@Matrix.Scale(1.0-0.85*k*k,4)
     # phone -> pond match cut: start the drone tighter so the pond has the width of the phone screen, then open up
     F=d['F']
     if 118<=F<=146:
         k=(F-118)/28.0; k=k*k*(3-2*k); cam.data.lens*=MATCH_ZOOM*(1-k)+k; cam.data.shift_y=MATCH_SHY*(1-k)
     else: cam.data.shift_y=0.0
-MATCH_ZOOM=1.35; MATCH_SHY=0.03
+TAP_F=101; MATCH_ZOOM=1.35; MATCH_SHY=0.03
 def apply(d, shrimp, pel_scale=0.8):
     sc=bpy.context.scene; idx=json.loads(sc['idxmap']); vis=d['vis']
     for k,name in idx.items():
