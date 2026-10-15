@@ -227,6 +227,7 @@ def set_mode(d):
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
+BAG_WIDEN=0.3
 SHR_GLOW=0.0   # subtle warm inner glow on the trunk walls (healthy shots)
 SHRL_W=0.0   # watts: a subtle inner glow spread through the shell
 try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
@@ -240,6 +241,8 @@ def PUSH_W(F):
 BAG_TOP={}
 try: CAM_SMOOTH=json.load(open(S+'bt/cam_smooth.json'))
 except Exception: CAM_SMOOTH={}
+try: S1_OFFSET=json.load(open(S+'bt/s1_offset.json'))
+except Exception: S1_OFFSET={}
 try: S1_BASE=json.load(open(S+'bt/s1_base.json'))
 except Exception: S1_BASE={}
 try: SHR_HIDE_S1=set(json.load(open(S+'bt/shr_hide_s1.json')))
@@ -374,6 +377,8 @@ def apply(d, shrimp, pel_scale=0.8):
             P=P0+PUSH['off']*w; look=(tgt-P).normalized().lerp(fwd,1-w).normalized()
         f2=fwd.lerp(look,w).normalized()
         q=f2.to_track_quat('-Z','Y'); cam.matrix_world=Matrix.Translation(P)@q.to_matrix().to_4x4(); cam.data.lens=mm*(1-w)+PUSH_MM*w
+    if d['shot']=='s5' and F>=455:   # final bag shot: open the frame up a little (more air around the pack)
+        kk=max(0.0,min(1.0,(F-455)/15.0)); kk=kk*kk*(3-2*kk); cam.data.lens*=1.0-BAG_WIDEN*kk
     cz=cam.matrix_world.translation.z
     fo=d.get('force')
     if fo=='air':      # above-water half of a waterline (split) frame
@@ -399,7 +404,7 @@ def apply(d, shrimp, pel_scale=0.8):
                 lift=rr.uniform(0.03,0.09); ph=rr.uniform(0,6.28)
                 dx=0.0006*F+0.004*math.sin(F*0.03+ph); dz=lift+0.007*math.sin(F*0.09+ph)
                 sway=Matrix.Rotation(math.radians(3.0*math.sin(F*0.05+ph)),4,'Z')
-                loc=M.translation+Vector((dx,0.0,dz)); R=M.to_3x3().to_4x4()
+                loc=M.translation+Vector((dx,0.0,dz))+Vector(S1_OFFSET.get(str(si),(0,0,0))); R=M.to_3x3().to_4x4()   # per-shrimp nudge so none sit glued together
                 rig.matrix_world=Matrix.Translation(loc)@sway@R
                 shrimp.pose(rig,F/24.0*0.55+(si*0.731)%7.0)   # tired: 55% speed, each shrimp at its own phase
             else:

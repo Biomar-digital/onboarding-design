@@ -8,9 +8,9 @@ for o in new:
     if o is not f: bpy.data.objects.remove(o)
 mw=f.matrix_world.copy(); f.parent=None; f.matrix_world=mw; f.name='FIST'
 b=bpy.data.objects['FARMER_BODY']
-m=b.modifiers.new('HideRightHand','MASK'); m.vertex_group='RightHand'; m.invert_vertex_group=True; m.threshold=0.8
 # soften the auto-rig's pinching at shoulder / armpit / elbow
 cs=b.modifiers.new('CorrectiveSmooth','CORRECTIVE_SMOOTH'); cs.factor=0.6; cs.iterations=12; cs.smooth_type='LENGTH_WEIGHTED'; cs.rest_source='ORCO'
+m=b.modifiers.new('HideRightHand','MASK'); m.vertex_group='RightHand'; m.invert_vertex_group=True; m.threshold=0.8   # mask AFTER the smooth (CorrectiveSmooth needs the full vertex count)
 # feed in the bucket: heap of brown pellets instead of a flat black disc; bucket gets moulded-plastic micro texture
 bf=bpy.data.objects['BUCKET_FEED']; fm=bpy.data.materials.new('MAT_FeedHeap'); fm.use_nodes=True; nt=fm.node_tree; b2=nt.nodes['Principled BSDF']; L=nt.links
 tc=nt.nodes.new('ShaderNodeTexCoord'); vo=nt.nodes.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value=260; L.new(tc.outputs['Object'],vo.inputs['Vector'])
