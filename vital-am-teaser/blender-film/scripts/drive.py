@@ -180,12 +180,43 @@ def set_mode(d):
     for o in bpy.data.objects:
         if o.name.startswith(('GROUND_FAR','TREE_','PALM_FAR','WATER_VOLUME','GRASS_')): o.hide_render=room
     sc.node_tree.nodes['HAZE_AMT'].inputs[1].default_value=0.0 if (room or under) else 0.18
-    sc.view_settings.exposure=0.95 if under else 0.0
-    bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=60*k
+    sc.view_settings.exposure=(0.6 if d['shot']=='s1' else (0.85 if d['shot'] in ('s4','s5') else 0.85)) if under else 0.0
+    if under:   # sky seen through the surface: clear blue overhead with warm sunrise colour, brighter
+        sk.sun_elevation=math.radians(11); bg.inputs[1].default_value=0.24
+    sb_=bpy.data.materials['MAT_Shrimp'] if 'MAT_Shrimp' in bpy.data.materials else None
+    m0=bpy.data.objects['SHRM_000'].data.materials[0]; nn=m0.node_tree.nodes
+    healthy=d['shot'] in ('s4','s5')
+    if 'SHR_BSDF' in nn: nn['SHR_BSDF'].inputs['Emission Strength'].default_value=0.12 if healthy else (0.04 if d['shot']=='s1' else 0.07)
+    if 'SHR_RIM' in nn: nn['SHR_RIM'].inputs[1].default_value=0.5 if healthy else (0.2 if d['shot']=='s1' else 0.32)
+    # packaging teased with light: bag back-lit (silhouette), a narrow warm band of light reveals only the top / logo and creeps down slightly
+    br=bpy.data.objects.get('BAG_REVEAL'); jb=bpy.data.objects['JS_BAG']
+    if br:
+        on=d['shot']=='s5' and not under
+        br.data.energy=0.0
+        nf=bpy.data.objects.get('NEG_FILL')
+        if nf:
+            nf.hide_render=not on
+            if on:
+                if 'c' not in BAG_TOP:
+                    cs=[c.matrix_world@Vector(v) for c in jb.children_recursive if c.type=='MESH' for v in c.bound_box]
+                    BAG_TOP['z']=max(v.z for v in cs); BAG_TOP['c']=sum(cs,Vector())/len(cs)
+                nf.location=BAG_TOP['c']; nf.rotation_euler=(0,0,0)
+        if on:
+            F=d['F']; k=max(0.0,min(1.0,(F-468)/14.0)); k=k*k*(3-2*k); slide=max(0.0,min(1.0,(F-470)/70.0))
+            top=BAG_TOP.get('z'); 
+            if top is None:
+                cs=[c.matrix_world@Vector(v) for c in jb.children_recursive if c.type=='MESH' for v in c.bound_box]
+                BAG_TOP['z']=max(v.z for v in cs); BAG_TOP['c']=sum(cs,Vector())/len(cs); top=BAG_TOP['z']
+            c=BAG_TOP['c']; tgt=Vector((c.x,c.y,top-0.06-0.12*slide))
+            br.location=tgt+Vector((-0.35,-1.6,0.55)); br.rotation_euler=(tgt-br.location).to_track_quat('-Z','Y').to_euler(); br.data.energy=95*k
+    bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
+BAG_TOP={}
 try: CAM_SMOOTH=json.load(open(S+'bt/cam_smooth.json'))
 except Exception: CAM_SMOOTH={}
+try: S1_BASE=json.load(open(S+'bt/s1_base.json'))
+except Exception: S1_BASE={}
 try: SHR_HIDE_S1=set(json.load(open(S+'bt/shr_hide_s1.json')))
 except Exception: SHR_HIDE_S1=set()
 try: SHR_KEEP=set(json.load(open(S+'bt/shr_keep.json')))
@@ -239,9 +270,9 @@ def animate_fx(d):
             if nd: nd.inputs['W'].default_value=F*sp
     # depth of field on the close underwater / pellet shots, focused on the subject nearest the view axis
     dof=cam.data.dof; dof.use_dof=False
-    if d['under'] or (d['shot']=='s3' and F>=255):
+    if d['shot']=='s3' and F>=255:   # pellet macro only; shrimp shots stay sharp
         cm=cam.matrix_world; P=cm.translation; fwd=(cm.to_3x3()@Vector((0,0,-1))).normalized(); best=None
-        cands=[o.matrix_world.translation for o in bpy.data.objects if (o.name.startswith('PEL_') and not o.hide_render and d['shot']=='s3') or (o.name.startswith('SHR_') and not o.hide_render)]
+        cands=[o.matrix_world.translation for o in bpy.data.objects if o.name.startswith('PEL_') and not o.hide_render]
         for q in cands:
             v=q-P; dist=v.dot(fwd)
             if dist<0.08: continue
@@ -317,7 +348,20 @@ def apply(d, shrimp, pel_scale=0.8):
     for si,(rig,(v,m,t)) in enumerate(zip(shrimp.rigs,d['shr'])):
         on=bool(v) and ((d['F']<279 and si not in SHR_HIDE_S1) or (d['F']>=279 and si in SHR_KEEP)); rig.hide_render=not on
         for ch in rig.children: ch.hide_render=not on
-        if on: rig.matrix_world=ow(m); shrimp.pose(rig,t)
+        if on:
+            F=d['F']
+            if F<61 and str(si) in S1_BASE:
+                # tired shrimp: suspended a few cm above the bottom, drifting slowly with the water, gentle bob/sway, no turning
+                import random as _r
+                rr=_r.Random(si); M=ow(S1_BASE[str(si)])
+                lift=rr.uniform(0.03,0.09); ph=rr.uniform(0,6.28)
+                dx=0.0006*F+0.004*math.sin(F*0.03+ph); dz=lift+0.007*math.sin(F*0.09+ph)
+                sway=Matrix.Rotation(math.radians(3.0*math.sin(F*0.05+ph)),4,'Z')
+                loc=M.translation+Vector((dx,0.0,dz)); R=M.to_3x3().to_4x4()
+                rig.matrix_world=Matrix.Translation(loc)@sway@R
+                shrimp.pose(rig,t*0.5)
+            else:
+                rig.matrix_world=ow(m); shrimp.pose(rig,t*(1.35 if d['shot'] in ('s4','s5') else 1.0))
     for r in shrimp.rigs[len(d['shr']):]:
         r.hide_render=True
         for ch in r.children: ch.hide_render=True
