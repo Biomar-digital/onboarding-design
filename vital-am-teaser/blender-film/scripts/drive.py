@@ -227,7 +227,7 @@ def set_mode(d):
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
-SHR_GLOW=0.22   # subtle warm inner glow on the trunk walls (healthy shots)
+SHR_GLOW=0.0   # subtle warm inner glow on the trunk walls (healthy shots)
 SHRL_W=0.0   # watts: a subtle inner glow spread through the shell
 try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
 except Exception: PUSH={}

@@ -153,7 +153,7 @@ for r in [o for o in bpy.data.objects if o.name.startswith('SHR_') and o.type=='
     lo=bpy.data.objects.new(ld.name,ld); sc.collection.objects.link(lo); lo.parent=r; lo.location=SHRL_LOCAL; lo.visible_camera=False
 print('SHRL',tuple(round(x,3) for x in SHRL_LOCAL))
 _b=[x for x in bpy.data.objects['SHRM_000'].data.materials[0].node_tree.nodes if x.type=='BSDF_PRINCIPLED'][0]
-_b.inputs['Subsurface Weight'].default_value=0.55; _b.inputs['Subsurface Radius'].default_value=(0.012,0.009,0.006); _b.inputs['Subsurface Scale'].default_value=1.0   # light spreads through the shell walls
+_b.inputs['Subsurface Weight'].default_value=0.25   # light spreads through the shell walls
 # ---- subtle inner glow on the trunk walls (no legs/antennae): soft core weight x view-through factor, warm, low
 _me=bpy.data.objects['SHRM_000'].data; _co=[v.co for v in _me.vertices]; _ylo=min(c.y for c in _co); _yhi=max(c.y for c in _co); _NS=36; _cen={}
 for k in range(_NS):
