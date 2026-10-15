@@ -45,7 +45,7 @@ bpy.ops.mesh.primitive_cube_add(location=(0,0,-0.805)); vol=bpy.context.object; 
 mv=bpy.data.materials.new('MAT_WaterVolume'); mv.use_nodes=True; nt=mv.node_tree; nt.nodes.clear(); o2=nt.nodes.new('ShaderNodeOutputMaterial')
 pv=nt.nodes.new('ShaderNodeVolumePrincipled'); pv.inputs['Color'].default_value=(0.32,0.62,0.56,1); pv.inputs['Density'].default_value=0.22
 pv.inputs['Anisotropy'].default_value=0.7; pv.inputs['Absorption Color'].default_value=(0.30,0.62,0.52,1); nt.links.new(pv.outputs[0],o2.inputs['Volume']); vol.data.materials.append(mv)
-vol.visible_shadow=False
+vol.visible_shadow=True   # must stay True: with it off Cycles lets no sunlight into the water
 # ---- basin: earthen dykes above the waterline, black HDPE liner on the slopes, soft mud on the floor
 m,n,l,b,out=nm('MAT_HDPE_Liner')
 geo=n.new('ShaderNodeNewGeometry'); sep=n.new('ShaderNodeSeparateXYZ'); l.new(geo.outputs['Position'],sep.inputs[0])

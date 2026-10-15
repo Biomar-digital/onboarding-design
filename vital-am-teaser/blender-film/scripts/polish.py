@@ -39,4 +39,69 @@ out=[x for x in n if x.type=='OUTPUT_MATERIAL'][0]; src=out.inputs['Surface'].li
 lw=n.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.35; em=n.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(0.9,0.95,0.9,1)
 mu=n.new('ShaderNodeMath'); mu.operation='MULTIPLY'; mu.inputs[1].default_value=0.32; l.new(lw.outputs['Fresnel'],mu.inputs[0]); l.new(mu.outputs[0],em.inputs['Strength'])
 ad=n.new('ShaderNodeAddShader'); l.new(src,ad.inputs[0]); l.new(em.outputs[0],ad.inputs[1]); l.new(ad.outputs[0],out.inputs['Surface'])
+
+# ---- iPhone: rounded titanium body, black glass, rounded screen with iOS alarm wallpaper, Dynamic Island
+def rrect(w,h,r,seg=10):
+    pts=[]
+    for cx,cy,a0 in ((w/2-r,h/2-r,0),(-w/2+r,h/2-r,90),(-w/2+r,-h/2+r,180),(w/2-r,-h/2+r,270)):
+        for k in range(seg+1):
+            a=math.radians(a0+90*k/seg); pts.append((cx+r*math.cos(a),cy+r*math.sin(a)))
+    return pts
+def unit_prism(name,w,h,r,t,S3,z0=0.0):
+    bm=bmesh.new(); bot=[bm.verts.new((x/S3[0],y/S3[1],(z0-t/2)/S3[2])) for x,y in rrect(w,h,r)]; top=[bm.verts.new((x/S3[0],y/S3[1],(z0+t/2)/S3[2])) for x,y in rrect(w,h,r)]
+    fb=bm.faces.new(bot[::-1]); ft=bm.faces.new(top); n=len(bot)
+    for i in range(n): bm.faces.new((bot[i],bot[(i+1)%n],top[(i+1)%n],top[i]))
+    me=bpy.data.meshes.new(name); bm.to_mesh(me); bm.free(); return me
+BODY=(0.075,0.158,0.008)
+body=bpy.data.objects['PHONE_Body']; me=unit_prism('IPHONE_BODY',0.0716,0.1476,0.0105,0.0078,BODY)
+ti=bpy.data.materials.new('MAT_Titanium'); ti.use_nodes=True; tb=ti.node_tree.nodes['Principled BSDF']; tb.inputs['Base Color'].default_value=(0.42,0.40,0.37,1); tb.inputs['Metallic'].default_value=1.0; tb.inputs['Roughness'].default_value=0.32
+gl=bpy.data.materials.new('MAT_BlackGlass'); gl.use_nodes=True; gb=gl.node_tree.nodes['Principled BSDF']; gb.inputs['Base Color'].default_value=(0.005,0.005,0.006,1); gb.inputs['Roughness'].default_value=0.04; gb.inputs['Coat Weight'].default_value=1.0
+me.materials.append(ti); me.materials.append(gl)
+for p in me.polygons:
+    p.material_index=1 if abs(p.normal.z)>0.9 else 0
+    p.use_smooth=abs(p.normal.z)<0.9
+body.data=me
+scr=bpy.data.objects['PHONE_Screen']; SCR=(0.069,0.15,1.0)
+bm=bmesh.new(); uv=bm.loops.layers.uv.new('UVMap')
+vs=[bm.verts.new((x/SCR[0],y/SCR[1],0.0)) for x,y in rrect(0.0672,0.1445,0.0095)]
+f=bm.faces.new(vs)
+for lp in f.loops: lp[uv].uv=(lp.vert.co.x*SCR[0]/0.0672+0.5,lp.vert.co.y*SCR[1]/0.1445+0.5)
+sm2=bpy.data.meshes.new('IPHONE_SCREEN'); bm.to_mesh(sm2); bm.free()
+sm_=bpy.data.materials['MAT_Phone_Screen']; nt=sm_.node_tree; nt.nodes.clear(); o=nt.nodes.new('ShaderNodeOutputMaterial')
+it=nt.nodes.new('ShaderNodeTexImage'); it.image=bpy.data.images.load(S+'tex/ios_alarm.png')
+em=nt.nodes.new('ShaderNodeEmission'); em.inputs['Strength'].default_value=1.4; nt.links.new(it.outputs['Color'],em.inputs['Color'])
+gs=nt.nodes.new('ShaderNodeBsdfGlossy'); gs.inputs['Roughness'].default_value=0.03; gs.inputs['Color'].default_value=(1,1,1,1)
+fr=nt.nodes.new('ShaderNodeFresnel'); fr.inputs['IOR'].default_value=1.5; mx=nt.nodes.new('ShaderNodeMixShader'); nt.links.new(fr.outputs[0],mx.inputs[0]); nt.links.new(em.outputs[0],mx.inputs[1]); nt.links.new(gs.outputs[0],mx.inputs[2]); nt.links.new(mx.outputs[0],o.inputs['Surface'])
+sm2.materials.append(sm_); scr.data=sm2
+# Dynamic Island pill, parented to the body (built in the body's unit space)
+di=unit_prism('IPHONE_ISLAND',0.0126,0.0037,0.00184,0.0003,BODY,z0=0.0041)
+dio=bpy.data.objects.new('PHONE_Island',di); sc.collection.objects.link(dio); di.materials.append(gl)
+for v in di.vertices: v.co.y+=0.0655/BODY[1]
+dio.parent=body; dio.matrix_parent_inverse=Matrix.Identity(4)
+# stop button: iOS orange, pulse ring soft white
+sb=bpy.data.materials['MAT_Phone_Stop_Button']
+if sb.use_nodes:
+    for nd in sb.node_tree.nodes:
+        if nd.type=='BSDF_PRINCIPLED': nd.inputs['Base Color'].default_value=(1.0,0.32,0.0,1); nd.inputs['Emission Color'].default_value=(1.0,0.32,0.0,1); nd.inputs['Emission Strength'].default_value=1.2
+        if nd.type=='EMISSION': nd.inputs['Color'].default_value=(1.0,0.32,0.0,1)
+
+# ---- underwater caustics + moving light shafts through the gobo (animated in drive via W)
+gm=bpy.data.materials['MAT_Gobo']; nt=gm.node_tree; n=nt.nodes; l=nt.links; b=[x for x in n if x.type=='BSDF_PRINCIPLED'][0]
+old_nz=[x for x in n if x.type=='TEX_NOISE'][0]; old_nz.name='GOBO_SHAFT'; old_nz.noise_dimensions='4D'
+rp_old=[x for x in n if x.type=='VALTORGB'][0]
+tc=n.new('ShaderNodeTexCoord'); mp=n.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value=(140,110,1); l.new(tc.outputs['Object'],mp.inputs[0])
+# light shafts: ~1 m patches in metres (the old noise ran on the 140 m plane's unit coords -> 100 m blobs, i.e. no shafts)
+for lk in list(old_nz.inputs['Vector'].links): l.remove(lk)
+l.new(mp.outputs[0],old_nz.inputs['Vector']); old_nz.inputs['Scale'].default_value=0.9; old_nz.inputs['Detail'].default_value=2
+rp_old.color_ramp.elements[0].position=0.44; rp_old.color_ramp.elements[1].position=0.56
+vo=n.new('ShaderNodeTexVoronoi'); vo.name='CAUSTIC_VOR'; vo.voronoi_dimensions='4D'; vo.feature='DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value=2.0; l.new(mp.outputs[0],vo.inputs['Vector'])
+cr=n.new('ShaderNodeMapRange'); cr.inputs['From Min'].default_value=0.0; cr.inputs['From Max'].default_value=0.11; cr.inputs['To Min'].default_value=1.0; cr.inputs['To Max'].default_value=0.12; l.new(vo.outputs['Distance'],cr.inputs['Value'])   # light passes on the bright caustic lines
+inv=n.new('ShaderNodeMath'); inv.operation='SUBTRACT'; inv.inputs[0].default_value=1.0; l.new(rp_old.outputs[0],inv.inputs[1])     # shaft pass
+mul=n.new('ShaderNodeMath'); mul.operation='MULTIPLY'; l.new(inv.outputs[0],mul.inputs[0]); l.new(cr.outputs[0],mul.inputs[1])
+al=n.new('ShaderNodeMath'); al.operation='SUBTRACT'; al.inputs[0].default_value=1.0; l.new(mul.outputs[0],al.inputs[1]); l.new(al.outputs[0],b.inputs['Alpha'])
+# ---- water surface: 4D noise so ripples move with time (W driven per frame)
+vm=bpy.data.materials['MAT_WaterVolume']; pv=[x for x in vm.node_tree.nodes if x.type=='PRINCIPLED_VOLUME'][0]; pv.inputs['Anisotropy'].default_value=0.82   # strong forward scatter -> visible shafts
+wm=bpy.data.materials['MAT_Pond_Water_Surface']
+for i,nd in enumerate([x for x in wm.node_tree.nodes if x.type=='TEX_NOISE']):
+    nd.noise_dimensions='4D'; nd.name='WAVE_%d'%i
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('POLISH_OK')

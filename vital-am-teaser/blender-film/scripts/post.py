@@ -53,12 +53,34 @@ def split(F):
     rim=np.exp(-((dist+1.2*sc)/(0.9*sc))**2)[...,None]; out=out+60*rim
     return Image.fromarray(np.clip(out,0,255).astype(np.uint8))
 n=len([f for f in os.listdir(SRC) if f.endswith('.jpg') and '_' not in f])
+yy0,xx0=np.mgrid[0:H,0:W].astype(np.float32)
+VIG=(1.0-0.28*np.clip(((xx0-W/2)/(W/2))**2*0.8+((yy0-H/2)/(H/2))**2*0.9-0.25,0,1))[...,None]
+def flare(a):
+    L=a.mean(2); m=L.max()
+    if m<245: return a
+    ys,xs=np.nonzero(L>m-6)
+    if len(xs)<12: return a
+    sx,sy=xs.mean(),ys.mean(); cx,cy=W/2,H/2; out=a.copy()
+    # soft anamorphic streak through the sun
+    st=np.exp(-((yy0-sy)/(3.5*sc))**2)*np.exp(-np.abs(xx0-sx)/(260*sc)); out+=st[...,None]*np.array([90,60,30],np.float32)
+    # ghosts along the sun -> centre line
+    for k,(t,r,col) in enumerate(((0.55,26,(40,30,18)),(0.95,14,(28,32,40)),(1.35,44,(20,26,30)),(1.7,9,(40,28,16)))):
+        gx=sx+(cx-sx)*t*1.0; gy=sy+(cy-sy)*t*1.0
+        d2=((xx0-gx)**2+(yy0-gy)**2)/(r*sc)**2; out+=(np.clip(1-d2,0,1)**1.5)[...,None]*np.array(col,np.float32)
+    return out
+def finish(img,F):
+    a=np.asarray(img.convert('RGB')).astype(np.float32)
+    if F>=465: a=flare(a)
+    a=a*VIG
+    rng=np.random.default_rng(F); g=rng.normal(0,3.2,(H,W,1)).astype(np.float32)
+    a=a+g*(0.6+0.4*(1-a.mean(2,keepdims=True)/255))     # fine grain, a bit stronger in the shadows
+    return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
 for F in range(1,n+1):
     src=f'{SRC}/f{F:04d}.jpg'; dst=f'{OUT}/f{F:04d}.jpg'
     if 118<=F<=131:
-        t=(F-117)/15; t=t*t*(3-2*t); Image.blend(a117,Image.open(src).convert('RGB'),t).save(dst,quality=94)
+        t=(F-117)/15; t=t*t*(3-2*t); finish(Image.blend(a117,Image.open(src).convert('RGB'),t),F).save(dst,quality=94)
     elif os.path.exists(f'{SRC}/f{F:04d}.json'):
-        split(F).save(dst,quality=94)
-    else: shutil.copy(src,dst)
+        finish(split(F),F).save(dst,quality=94)
+    else: finish(Image.open(src),F).save(dst,quality=94)
 subprocess.run(['ffmpeg','-y','-loglevel','error','-framerate','24','-i',f'{OUT}/f%04d.jpg','-c:v','libx264','-pix_fmt','yuv420p','-crf','18','-movflags','+faststart',MP4],check=True)
 print('POST_OK',n)

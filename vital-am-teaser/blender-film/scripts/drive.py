@@ -160,10 +160,12 @@ def set_mode(d):
     sk.sun_elevation=math.asin(max(-0.2,min(1,sunv.z))); sk.sun_rotation=math.atan2(sunv.x,sunv.y)+SUNROT_OFF
     room=d['room']; under=d['under']
     so=bpy.data.objects['SUN']
-    lv=sunv if not under else Vector((sunv.x*0.5,sunv.y*0.5,1.2)).normalized()   # underwater: steeper key so light falls through the surface (dykes would shadow a 4 deg sun)
+    lv=sunv if not under else Vector((sunv.x*0.7,sunv.y*0.7,1.0)).normalized()   # slanted shafts read better than vertical ones   # underwater: steeper key so light falls through the surface (dykes would shadow a 4 deg sun)
     so.rotation_euler=(-lv).to_track_quat('-Z','Y').to_euler()
     bg.inputs[1].default_value=0.03 if room else 0.27
-    so.data.energy=0 if room else (10.0 if under else 3.2)
+    so.data.energy=0 if room else (13.0 if under else 3.2)
+    so.data.angle=math.radians(0.25 if under else 1.2)   # crisp sun under water: sharp shafts and caustic lines
+    so.data.angle=math.radians(0.25 if under else 1.2)   # crisp sun under water so the caustic lines survive
     bpy.data.objects['ROOM_WIN'].data.energy=10 if room else 0
     sb=bpy.data.objects.get('ROOM_SUNBEAM')
     if sb:   # the sun comes up while the alarm rings: the ray fades in, then stays
@@ -216,11 +218,44 @@ def bubbles(d):
             out.append(Matrix.Translation(loc)@Matrix.Diagonal((r*(1+0.12*math.sin(ph)),r*(1+0.12*math.cos(ph)),r*0.8,1)))
     return out[:800]
 SPLIT=list(range(274,285))+list(range(458,469))   # waterline frames: rendered twice (air / under), joined in post
+GRADES={   # lift, gamma, gain per look
+ 'room':((0.97,0.99,1.05),(1.0,0.99,0.98),(1.05,1.0,0.93)),
+ 'pond':((0.99,0.99,1.0),(1.0,0.99,0.96),(1.08,1.0,0.90)),
+ 'under':((0.96,1.0,1.02),(1.0,1.0,1.0),(0.95,1.02,1.03)),
+ 'bag':((0.99,0.98,1.0),(1.0,0.98,0.93),(1.12,1.0,0.86))}
+def animate_fx(d):
+    import math as _m
+    F=d['F']; sc=bpy.context.scene; cam=sc.camera
+    gm=bpy.data.materials.get('MAT_Gobo')
+    if gm:
+        n=gm.node_tree.nodes
+        if 'CAUSTIC_VOR' in n: n['CAUSTIC_VOR'].inputs['W'].default_value=F*0.05
+        if 'GOBO_SHAFT' in n: n['GOBO_SHAFT'].inputs['W'].default_value=F*0.012
+    wm=bpy.data.materials.get('MAT_Pond_Water_Surface')
+    if wm:
+        for i,sp in enumerate((0.02,0.06,0.12)):
+            nd=wm.node_tree.nodes.get('WAVE_%d'%i)
+            if nd: nd.inputs['W'].default_value=F*sp
+    # depth of field on the close underwater / pellet shots, focused on the subject nearest the view axis
+    dof=cam.data.dof; dof.use_dof=False
+    if d['under'] or (d['shot']=='s3' and F>=255):
+        cm=cam.matrix_world; P=cm.translation; fwd=(cm.to_3x3()@Vector((0,0,-1))).normalized(); best=None
+        cands=[o.matrix_world.translation for o in bpy.data.objects if (o.name.startswith('PEL_') and not o.hide_render and d['shot']=='s3') or (o.name.startswith('SHR_') and not o.hide_render)]
+        for q in cands:
+            v=q-P; dist=v.dot(fwd)
+            if dist<0.08: continue
+            off=(v-fwd*dist).length/dist
+            if off<0.22 and (best is None or dist<best): best=dist
+        if best:
+            dof.use_dof=True; dof.focus_distance=best; dof.aperture_fstop=2.0 if cam.data.lens>40 else 2.8
+    key='room' if d['room'] else ('under' if d['under'] else ('bag' if d['shot']=='s5' else 'pond'))
+    g=sc.node_tree.nodes.get('GRADE')
+    if g: g.lift,g.gamma,g.gain=GRADES[key]
 def fix_set(d):
     # the HF hut replaces the shed: follow the previs shed position, keep the proxy shed + roof hidden
     sh=bpy.data.objects['SET_Farm_Shed']; hut=bpy.data.objects.get('HF_HUT')
     if hut: hut.location=(sh.matrix_world.translation.x,sh.matrix_world.translation.y,sh.matrix_world.translation.z-1.2); hut.hide_render=d['room']
-    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof','POND_Plankton_Specks'):   # previs specks read as white balls; MOTES replace them
+    for n in ('SET_Farm_Shed','SET_Farm_Shed_Roof','POND_Plankton_Specks','PHONE_Stop_Button','PHONE_Ring_Pulse'):   # previs specks read as white balls; MOTES replace them
         o=bpy.data.objects.get(n)
         if o: o.hide_render=True
     # bag shot: no palm fronds hanging into the top of the frame
@@ -270,6 +305,7 @@ def apply(d, shrimp, pel_scale=0.8):
     cam.data.clip_start=0.005 if d['room'] or d['under'] else 0.03; cam.data.clip_end=2000
     set_mode(d)
     fix_set(d)
+    animate_fx(d)
     # client shrimp
     for si,(rig,(v,m,t)) in enumerate(zip(shrimp.rigs,d['shr'])):
         on=bool(v) and ((d['F']<279 and si not in SHR_HIDE_S1) or (d['F']>=279 and si in SHR_KEEP)); rig.hide_render=not on
