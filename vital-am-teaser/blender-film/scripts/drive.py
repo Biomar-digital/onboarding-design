@@ -163,9 +163,9 @@ def set_mode(d):
     lv=sunv if not under else Vector((sunv.x*0.7,sunv.y*0.7,1.0)).normalized()   # slanted shafts read better than vertical ones   # underwater: steeper key so light falls through the surface (dykes would shadow a 4 deg sun)
     so.rotation_euler=(-lv).to_track_quat('-Z','Y').to_euler()
     bg.inputs[1].default_value=0.03 if room else 0.27
-    so.data.energy=0 if room else (13.0 if under else 3.2)
-    so.data.angle=math.radians(0.25 if under else 1.2)   # crisp sun under water: sharp shafts and caustic lines
-    so.data.angle=math.radians(0.25 if under else 1.2)   # crisp sun under water so the caustic lines survive
+    so.data.energy=0 if room else (10.0 if under else 3.2)
+    so.data.angle=math.radians(0.7 if under else 1.2)   # crisp sun under water: sharp shafts and caustic lines
+    so.data.angle=math.radians(0.7 if under else 1.2)   # crisp sun under water so the caustic lines survive
     bpy.data.objects['ROOM_WIN'].data.energy=10 if room else 0
     sb=bpy.data.objects.get('ROOM_SUNBEAM')
     if sb:   # the sun comes up while the alarm rings: the ray fades in, then stays
@@ -229,8 +229,8 @@ def animate_fx(d):
     gm=bpy.data.materials.get('MAT_Gobo')
     if gm:
         n=gm.node_tree.nodes
-        for nm,sp in (('CAUSTIC_VOR',0.035),('CAUSTIC_VOR2',0.05),('CAUSTIC_WARP',0.02)):
-            if nm in n: n[nm].inputs['W'].default_value=F*sp
+        for nd in n:
+            if nd.name.startswith('CAUSTIC_H_'): nd.inputs['W'].default_value=F*0.03
         if 'GOBO_SHAFT' in n: n['GOBO_SHAFT'].inputs['W'].default_value=F*0.012
     wm=bpy.data.materials.get('MAT_Pond_Water_Surface')
     if wm:
