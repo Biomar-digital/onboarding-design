@@ -85,7 +85,7 @@ def GRIP_ANG_AT(F):
     for (a,va),(b,vb) in zip(keys,keys[1:]):
         if a<=F<=b: t=(F-a)/(b-a); t=t*t*(3-2*t); return va+(vb-va)*t
     return 70
-GRIP_ANG=70.0; GRIP_Y=0.025; GRIP_IN=0.6; FIST_S=0.13; FIST_WRIST=0.10; GRIP_C=(-0.45,0.0,-0.03); GRIP_SIDE=-1.0
+GRIP_ANG=70.0; GRIP_Y=0.025; GRIP_IN=0.6; FIST_S=0.13; FIST_WRIST=0.10; GRIP_C=(-0.45,0.0,-0.15); GRIP_SIDE=-1.0
 def apply_farmer(F):
     import throw_anim
     arm=bpy.data.objects.get('FARMER_RIG')
