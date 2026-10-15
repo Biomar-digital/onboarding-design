@@ -186,8 +186,8 @@ def set_mode(d):
     sb_=bpy.data.materials['MAT_Shrimp'] if 'MAT_Shrimp' in bpy.data.materials else None
     m0=bpy.data.objects['SHRM_000'].data.materials[0]; nn=m0.node_tree.nodes
     healthy=d['shot'] in ('s4','s5')
-    if 'SHR_BSDF' in nn: nn['SHR_BSDF'].inputs['Emission Strength'].default_value=0.12 if healthy else (0.04 if d['shot']=='s1' else 0.07)
-    if 'SHR_RIM' in nn: nn['SHR_RIM'].inputs[1].default_value=0.5 if healthy else (0.2 if d['shot']=='s1' else 0.32)
+    if 'SHR_BSDF' in nn: nn['SHR_BSDF'].inputs['Emission Strength'].default_value=0.0 if healthy else 0.03
+    if 'SHR_RIM' in nn: nn['SHR_RIM'].inputs[1].default_value=0.06 if healthy else 0.12
     # packaging teased with light: bag back-lit (silhouette), a narrow warm band of light reveals only the top / logo and creeps down slightly
     br=bpy.data.objects.get('BAG_REVEAL'); jb=bpy.data.objects['JS_BAG']
     if br:
@@ -207,11 +207,19 @@ def set_mode(d):
             if top is None:
                 cs=[c.matrix_world@Vector(v) for c in jb.children_recursive if c.type=='MESH' for v in c.bound_box]
                 BAG_TOP['z']=max(v.z for v in cs); BAG_TOP['c']=sum(cs,Vector())/len(cs); top=BAG_TOP['z']
-            c=BAG_TOP['c']; tgt=Vector((c.x,c.y,top-0.06-0.12*slide))
+            c=BAG_TOP['c']; tgt=Vector((c.x,c.y,top-0.09))   # the light band stays on the top of the bag
             br.location=tgt+Vector((-0.35,-1.6,0.55)); br.rotation_euler=(tgt-br.location).to_track_quat('-Z','Y').to_euler(); br.data.energy=95*k
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
+try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
+except Exception: PUSH={}
+PUSH_DIST=0.55; PUSH_MM=38.0; PUSH_HOLD=438
+def PUSH_W(F):
+    keys=[(0,0),(338,0),(425,1),(438,1),(462,0),(600,0)]
+    for (a,va),(b,vb) in zip(keys,keys[1:]):
+        if a<=F<=b: t=(F-a)/(b-a); t=t*t*(3-2*t); return va+(vb-va)*t
+    return 0
 BAG_TOP={}
 try: CAM_SMOOTH=json.load(open(S+'bt/cam_smooth.json'))
 except Exception: CAM_SMOOTH={}
@@ -252,7 +260,7 @@ SPLIT=list(range(274,285))+list(range(458,469))   # waterline frames: rendered t
 GRADES={   # lift, gamma, gain per look
  'room':((0.97,0.99,1.05),(1.0,0.99,0.98),(1.05,1.0,0.93)),
  'pond':((0.99,0.99,1.0),(1.0,0.99,0.96),(1.08,1.0,0.90)),
- 'under':((0.96,1.0,1.02),(1.0,1.0,1.0),(0.95,1.02,1.03)),
+ 'under':((0.90,0.93,0.94),(0.97,0.98,0.98),(1.05,1.07,1.06)),   # more contrast: deeper shadows, brighter water
  'bag':((0.99,0.98,1.0),(1.0,0.98,0.93),(1.12,1.0,0.86))}
 def animate_fx(d):
     import math as _m
@@ -334,6 +342,21 @@ def apply(d, shrimp, pel_scale=0.8):
         hs=bpy.data.objects['HAND_Skin']; hn.hide_render=hs.hide_render; hs.hide_render=True; bpy.data.objects['HAND_Forearm_Sleeve'].hide_render=True
     cm,mm=CAM_SMOOTH.get(str(d['F']),(d['cam'],d['mm']))
     cam=sc.camera; cam.matrix_world=C@tm(cm); cam.data.lens=mm
+    F=d['F']; w=PUSH_W(F)
+    if w>0 and PUSH.get('c') is not None:
+        # push in toward the healthy shrimp; from the hold on, keep that offset while the previs camera rises, fading it out before the surface
+        M=cam.matrix_world.copy(); P0=M.translation.copy(); fwd=(M.to_3x3()@Vector((0,0,-1))).normalized()
+        tgt=PUSH['c']
+        if F<=PUSH_HOLD:
+            dirv=(tgt-P0); P1=tgt-dirv.normalized()*PUSH_DIST; P=P0.lerp(P1,w); look=(tgt-P).normalized()
+        else:
+            if 'off' not in PUSH:
+                c0=CAM_SMOOTH.get(str(PUSH_HOLD),None)
+                Mh=C@tm(c0[0]) if c0 else M
+                ph=Mh.translation; PUSH['off']=(tgt-(tgt-ph).normalized()*PUSH_DIST)-ph
+            P=P0+PUSH['off']*w; look=(tgt-P).normalized().lerp(fwd,1-w).normalized()
+        f2=fwd.lerp(look,w).normalized()
+        q=f2.to_track_quat('-Z','Y'); cam.matrix_world=Matrix.Translation(P)@q.to_matrix().to_4x4(); cam.data.lens=mm*(1-w)+PUSH_MM*w
     cz=cam.matrix_world.translation.z
     fo=d.get('force')
     if fo=='air':      # above-water half of a waterline (split) frame
