@@ -139,4 +139,15 @@ sc.cycles.volume_step_rate=6.0; sc.cycles.volume_max_steps=48   # render-time: s
 # shadow flag in front of the bag: its top edge drops so the light reveals only the top of the pack (shadow line, not a spot)
 bpy.ops.mesh.primitive_plane_add(size=1); fl=bpy.context.object; fl.name='BAG_FLAG'; fl.scale=(1.6,1.0,1)
 fl.data.materials.append(bpy.data.materials['MAT_NegFill']); fl.visible_camera=False; fl.visible_glossy=False; fl.visible_transmission=False; fl.hide_render=True
+
+# ---- a small warm light inside each shrimp (healthy shots): it glows through the translucent body
+src=bpy.data.objects['SHRM_000']; vs=[v.co for v in src.data.vertices]
+cl=sum(vs,Vector())/len(vs)                                   # body centre in mesh space
+SHRL_LOCAL=src.matrix_parent_inverse@src.matrix_basis@cl        # in rig space
+for r in [o for o in bpy.data.objects if o.name.startswith('SHR_') and o.type=='ARMATURE']:
+    ld=bpy.data.lights.new(r.name.replace('SHR_','SHRL_'),'POINT'); ld.energy=0.0; ld.color=(1.0,0.6,0.3); ld.shadow_soft_size=0.035; ld.use_shadow=False
+    lo=bpy.data.objects.new(ld.name,ld); sc.collection.objects.link(lo); lo.parent=r; lo.location=SHRL_LOCAL; lo.visible_camera=False
+print('SHRL',tuple(round(x,3) for x in SHRL_LOCAL))
+_b=[x for x in bpy.data.objects['SHRM_000'].data.materials[0].node_tree.nodes if x.type=='BSDF_PRINCIPLED'][0]
+_b.inputs['Subsurface Weight'].default_value=0.55; _b.inputs['Subsurface Radius'].default_value=(0.012,0.009,0.006); _b.inputs['Subsurface Scale'].default_value=1.0   # light spreads through the shell walls
 bpy.ops.wm.save_as_mainfile(filepath=S+'film/film.blend'); print('POLISH_OK')

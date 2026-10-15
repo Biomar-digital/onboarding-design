@@ -226,6 +226,7 @@ def set_mode(d):
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
+SHRL_W=0.018   # watts: a subtle inner glow spread through the shell
 try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
 except Exception: PUSH={}
 PUSH_DIST=0.55; PUSH_MM=38.0; PUSH_HOLD=438
@@ -385,6 +386,8 @@ def apply(d, shrimp, pel_scale=0.8):
     for si,(rig,(v,m,t)) in enumerate(zip(shrimp.rigs,d['shr'])):
         on=bool(v) and ((d['F']<279 and si not in SHR_HIDE_S1) or (d['F']>=279 and si in SHR_KEEP)); rig.hide_render=not on
         for ch in rig.children: ch.hide_render=not on
+        sl=bpy.data.objects.get(rig.name.replace('SHR_','SHRL_'))
+        if sl: sl.data.energy=SHRL_W if (on and d['shot'] in ('s4','s5') and d['under']) else 0.0
         if on:
             F=d['F']
             if F<61 and str(si) in S1_BASE:
