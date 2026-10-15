@@ -216,7 +216,7 @@ def set_mode(d):
             # warm key from the front-left; a flag between light and bag casts a level shadow line that drops from the top
             # of the pack (100% in shade) to 30% below the top (70% still in shade) by the end of the shot
             br.location=Vector((c.x-0.35,c.y-1.5,top+0.18)); br.rotation_euler=(Vector((c.x,c.y,top-0.3*H))-br.location).to_track_quat('-Z','Y').to_euler()
-            br.data.energy=140.0
+            br.data.energy=65.0
             rev=max(0.0,min(1.0,(F-472)/60.0)); rev=rev*rev*(3-2*rev)
             e=top+0.02-0.32*H*rev                      # height of the shadow edge on the bag face
             face=Vector((c.x,BAG_TOP['ymin'],e)); Lp=br.location; a_=0.25        # flag 25 cm in front of the bag face
