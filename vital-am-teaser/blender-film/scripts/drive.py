@@ -401,9 +401,9 @@ def apply(d, shrimp, pel_scale=0.8):
                 sway=Matrix.Rotation(math.radians(3.0*math.sin(F*0.05+ph)),4,'Z')
                 loc=M.translation+Vector((dx,0.0,dz)); R=M.to_3x3().to_4x4()
                 rig.matrix_world=Matrix.Translation(loc)@sway@R
-                shrimp.pose(rig,t*0.5)
+                shrimp.pose(rig,F/24.0*0.55+(si*0.731)%7.0)   # tired: 55% speed, each shrimp at its own phase
             else:
-                rig.matrix_world=ow(m); shrimp.pose(rig,t*(1.35 if d['shot'] in ('s4','s5') else 1.0))
+                rig.matrix_world=ow(m); shrimp.pose(rig,F/24.0+(si*0.731)%7.0)   # real speed, own phase
     for r in shrimp.rigs[len(d['shr']):]:
         r.hide_render=True
         for ch in r.children: ch.hide_render=True
