@@ -69,11 +69,23 @@ def two_bone_ik(arm,up,lo,end,T_w,P_w):
     E=S+u*a+pv*hgt; W=S+u*D
     _swing(arm,up,lo,E); _swing(arm,lo,end,W)
 def SCOOP_ROLL(F):
-    keys=[(0,0),(214,0),(220,-25),(224,70),(230,95),(246,20),(266,0),(600,0)]
+    keys=[(0,0),(600,0)]   # scoop stays mouth-up the whole time
     for (a,va),(b,vb) in zip(keys,keys[1:]):
         if a<=F<=b: t=(F-a)/(b-a); t=t*t*(3-2*t); return va+(vb-va)*t
     return 0
-GRIP_IN=0.6; FIST_S=0.13; FIST_WRIST=0.10; GRIP_C=(-0.45,0.0,-0.03); GRIP_SIDE=-1.0
+def SCOOP_PITCH(F):
+    # degrees above (+) / below (-) the horizon for the shovel axis
+    keys=[(0,-8),(198,-8),(204,-55),(209,-50),(214,-5),(219,2),(224,6),(232,4),(246,-8),(600,-8)]
+    for (a,va),(b,vb) in zip(keys,keys[1:]):
+        if a<=F<=b: t=(F-a)/(b-a); t=t*t*(3-2*t); return va+(vb-va)*t
+    return -8
+def GRIP_ANG_AT(F):
+    # wrist straightens through the throw: at full extension the scoop continues the arm
+    keys=[(0,70),(214,70),(220,45),(224,10),(246,10),(266,70),(600,70)]
+    for (a,va),(b,vb) in zip(keys,keys[1:]):
+        if a<=F<=b: t=(F-a)/(b-a); t=t*t*(3-2*t); return va+(vb-va)*t
+    return 70
+GRIP_ANG=70.0; GRIP_Y=0.025; GRIP_IN=0.6; FIST_S=0.13; FIST_WRIST=0.10; GRIP_C=(-0.45,0.0,-0.03); GRIP_SIDE=-1.0
 def apply_farmer(F):
     import throw_anim
     arm=bpy.data.objects.get('FARMER_RIG')
@@ -123,11 +135,20 @@ def apply_farmer(F):
     fist.matrix_world=Matrix.Translation(wr)@R@Matrix.Scale(FIST_S,4)@Matrix.Translation(Vector((-FIST_WRIST,0,0)))
     G=fist.matrix_world@Vector(GRIP_C)
     # scoop: handle (local Y, centre at y=0.06) through the fist across the palm, cup on the thumb side
-    sY=Y*GRIP_SIDE; sZ=X.copy(); sX=sY.cross(sZ).normalized()
+    # dagger/ladle grip: the handle lies diagonally in the fist and the shovel points forward, continuing the forearm
+    ga=math.radians(GRIP_ANG_AT(F)); sY=(-X*math.cos(ga)+Y*GRIP_SIDE*math.sin(ga)).normalized()
+    # keep the feed in: the shovel stays nearly level while carrying / winding up, dips into the bucket while scooping
+    hz=Vector((sY.x,sY.y,0)); hz=hz.normalized() if hz.length>1e-4 else Vector((0,-1,0))
+    pz=SCOOP_PITCH(F); sY=(hz*math.cos(math.radians(pz))+Vector((0,0,math.sin(math.radians(pz))))).normalized()
+    up=Vector((0,0,1)); sZ=(up-sY*up.dot(sY));
+    if sZ.length<1e-4: sZ=Z.copy()
+    sZ.normalize(); sX=sY.cross(sZ).normalized()
     Rs=Matrix((sX,sY,sZ)).transposed().to_4x4()
     Rs=Rs@Matrix.Rotation(math.radians(SCOOP_ROLL(F)),4,'Y')
-    bpy.data.objects['SCOOP'].matrix_world=Matrix.Translation(G)@Rs@Matrix.Translation(Vector((0,-0.06,0)))
+    bpy.data.objects['SCOOP'].matrix_world=Matrix.Translation(G)@Rs@Matrix.Translation(Vector((0,-GRIP_Y,0)))
     fist.hide_render=bpy.data.objects['FARMER_BODY'].hide_render
+    ld=bpy.data.objects.get('SCOOP_LOAD')
+    if ld: ld.hide_render=fist.hide_render or not (209<=F<=223)   # loaded from the dip until the release
 def set_mode(d):
     sc=bpy.context.scene; w=sc.world; nt=w.node_tree; sk=nt.nodes['SKY']; bg=nt.nodes['Background']
     sunv=Vector((d['sun'][0],-d['sun'][2],d['sun'][1])).normalized()
@@ -163,6 +184,8 @@ def set_mode(d):
 SUNROT_OFF=0.0
 try: CAM_SMOOTH=json.load(open(S+'bt/cam_smooth.json'))
 except Exception: CAM_SMOOTH={}
+try: SHR_HIDE_S1=set(json.load(open(S+'bt/shr_hide_s1.json')))
+except Exception: SHR_HIDE_S1=set()
 try: SHR_KEEP=set(json.load(open(S+'bt/shr_keep.json')))
 except Exception: SHR_KEEP=set(range(999))
 def bubbles(d):
@@ -249,7 +272,7 @@ def apply(d, shrimp, pel_scale=0.8):
     fix_set(d)
     # client shrimp
     for si,(rig,(v,m,t)) in enumerate(zip(shrimp.rigs,d['shr'])):
-        on=bool(v) and (d['F']<279 or si in SHR_KEEP); rig.hide_render=not on
+        on=bool(v) and ((d['F']<279 and si not in SHR_HIDE_S1) or (d['F']>=279 and si in SHR_KEEP)); rig.hide_render=not on
         for ch in rig.children: ch.hide_render=not on
         if on: rig.matrix_world=ow(m); shrimp.pose(rig,t)
     for r in shrimp.rigs[len(d['shr']):]:
