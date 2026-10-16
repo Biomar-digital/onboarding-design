@@ -14,6 +14,11 @@ def states(frames):
             if d['F'] in want:
                 d['all']=dict(cur); out[d['F']]=d
             if len(out)==len(want): break
+            last=d
+    for F in sorted(want):   # tail past the previs (END_HOLD frames): hold the last state, the camera only zooms in
+        if F not in out and F>LAST_F:
+            import copy as _cp
+            e=_cp.deepcopy(out.get(LAST_F) or dict(last,all=dict(cur))); e['F']=F; e['f']=e['f']+(F-LAST_F)*0.5; out[F]=e
     return out
 class Shrimp:
     def __init__(self):
@@ -217,17 +222,27 @@ def set_mode(d):
             # warm key from the front-left; a flag between light and bag casts a level shadow line that drops from the top
             # of the pack (100% in shade) to 30% below the top (70% still in shade) by the end of the shot
             br.location=Vector((c.x-0.35,c.y-1.5,top+0.18)); br.rotation_euler=(Vector((c.x,c.y,top-0.3*H))-br.location).to_track_quat('-Z','Y').to_euler()
-            br.data.energy=65.0
+            br.data.energy=BAG_KEY
             rev=max(0.0,min(1.0,(F-472)/60.0)); rev=rev*rev*(3-2*rev)
             e=top+0.02-0.32*H*rev                      # height of the shadow edge on the bag face
             face=Vector((c.x,BAG_TOP['ymin'],e)); Lp=br.location; a_=0.25        # flag 25 cm in front of the bag face
             t_=a_/max(1e-4,(face.y-Lp.y)); fz=e+(Lp.z-e)*t_; fy=face.y-a_
             fl=bpy.data.objects.get('BAG_FLAG')
             if fl: fl.hide_render=False; fl.rotation_euler=(math.radians(90),0,0); fl.location=(c.x,fy,fz-0.5)
+            if fl and fl.data.materials[0].name!='MAT_FlagScrim':   # scrim, not a solid flag: the shaded lower pack keeps BAG_SCRIM of the key
+                m=bpy.data.materials.new('MAT_FlagScrim'); m.use_nodes=True; nt=m.node_tree; nt.nodes.clear()
+                o_=nt.nodes.new('ShaderNodeOutputMaterial'); mx=nt.nodes.new('ShaderNodeMixShader'); tr=nt.nodes.new('ShaderNodeBsdfTransparent'); bk=nt.nodes.new('ShaderNodeBsdfDiffuse')
+                bk.inputs['Color'].default_value=(0,0,0,1); mx.inputs[0].default_value=BAG_SCRIM
+                nt.links.new(bk.outputs[0],mx.inputs[1]); nt.links.new(tr.outputs[0],mx.inputs[2]); nt.links.new(mx.outputs[0],o_.inputs['Surface'])
+                fl.data.materials[0]=m
     bf=bpy.data.objects['BAG_FILL']; f=d['f']; k=max(0,min(1,(f-334)/22.0)); bf.data.energy=0.0*k   # no fill of fill: the bag reads as a back-lit silhouette
     jb=bpy.data.objects['JS_BAG']; bf.location=jb.matrix_world.translation+Vector((0.4,-1.9,0.9)); bf.rotation_euler=(Vector((0,0,0.35))+jb.matrix_world.translation-bf.location).to_track_quat('-Z','Y').to_euler()
 SUNROT_OFF=0.0
+USE_DOF=False
 BAG_WIDEN=0.3
+LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
+BAG_KEY=90.0     # warm key on the pack top
+BAG_SCRIM=0.012   # light let through the flag: lower pack 85% dark, not black
 SHR_GLOW=0.0   # subtle warm inner glow on the trunk walls (healthy shots)
 SHRL_W=0.0   # watts: a subtle inner glow spread through the shell
 try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
@@ -298,7 +313,7 @@ def animate_fx(d):
             if nd: nd.inputs['W'].default_value=F*sp
     # depth of field on the close underwater / pellet shots, focused on the subject nearest the view axis
     dof=cam.data.dof; dof.use_dof=False
-    if d['shot']=='s3' and F>=255:   # pellet macro only; shrimp shots stay sharp
+    if USE_DOF and d['shot']=='s3' and F>=255:   # disabled: focus pulls missed the pellet and blurred the frame
         cm=cam.matrix_world; P=cm.translation; fwd=(cm.to_3x3()@Vector((0,0,-1))).normalized(); best=None
         cands=[o.matrix_world.translation for o in bpy.data.objects if o.name.startswith('PEL_') and not o.hide_render]
         for q in cands:
@@ -379,6 +394,8 @@ def apply(d, shrimp, pel_scale=0.8):
         q=f2.to_track_quat('-Z','Y'); cam.matrix_world=Matrix.Translation(P)@q.to_matrix().to_4x4(); cam.data.lens=mm*(1-w)+PUSH_MM*w
     if d['shot']=='s5' and F>=455:   # final bag shot: open the frame up a little (more air around the pack)
         kk=max(0.0,min(1.0,(F-455)/15.0)); kk=kk*kk*(3-2*kk); cam.data.lens*=1.0-BAG_WIDEN*kk
+    if F>LAST_F:   # extra 2 s at the end: a very slow push into the pack (eases in from the stopped camera)
+        u=min(1.0,(F-LAST_F)/float(END_HOLD)); cam.data.lens*=1.0+END_ZOOM*u*u*(3-2*u)
     cz=cam.matrix_world.translation.z
     fo=d.get('force')
     if fo=='air':      # above-water half of a waterline (split) frame
