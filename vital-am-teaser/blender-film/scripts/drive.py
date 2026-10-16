@@ -242,6 +242,7 @@ USE_DOF=False
 BAG_WIDEN=0.3
 H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.json') else {}
 SHR_FEED_SPEED=1.6   # healthy/feeding shrimp: livelier swim cycle
+RIPPLE_W=0.2; RIPPLE_GAIN=0.015; PEL_UNDER_DARK=0.45   # splash shot: ripple crest visibility, pellet tone under water
 EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
 BAG_SOFT=0.3; BAG_FLAG_D=0.45
@@ -273,21 +274,26 @@ def bubbles(d):
     # camera dives. (The previs scattered ~700 identical bubbles through the whole volume.)
     import random
     F=d['F']; out=[]
-    if not d['under'] or F<279: return out
+    if not d['under'] or F<272: return out
     cam=bpy.context.scene.camera.matrix_world
-    age=F-279; decay=max(0.0,1.0-age/30.0)
+    import splash as _sp
+    age=F-279
+    pels={j:ow(e).translation for j,e in enumerate(d['inst']['hi'])}
+    if d['shot']=='s3': out+=_sp.cavity(F,pels,S)
     for j,e in enumerate(d['inst']['hi']):
-        if decay<=0: break
-        p=ow(e).translation
+        pa=_sp.cross_age(F,j,S); pa=age if pa is None else pa
+        decay=max(0.0,1.0-pa/30.0)
+        if decay<=0 or pa<1.0: continue
+        p=pels[j]
         if p.z>-0.004: continue
         rr=random.Random(j*7+1); n=int(round(6*decay*rr.uniform(0.5,1.0)))
         for k in range(1,n+1):
-            ph=F*0.8+j*2.3+k*1.7; rise=0.0045*k*(1+0.12*age)
+            ph=F*0.8+j*2.3+k*1.7; rise=0.0045*k*(1+0.12*pa)
             q=p+Vector((0.0012*math.sin(ph),0.0012*math.cos(ph*1.3),rise))
             if q.z>-0.002: continue
             r=0.00032*rr.uniform(0.6,1.3)*(1-0.08*k)
             out.append(Matrix.Translation(q)@Matrix.Diagonal((r*(1+0.1*math.sin(ph)),r*(1+0.1*math.cos(ph)),r*0.85,1)))
-    if age<16:   # camera plunge
+    if 0<=age<16:   # camera plunge
         rr=random.Random(99); f=1.0-age/16.0
         for k in range(int(70*f)+8):
             x=rr.uniform(-1,1); y=rr.uniform(-0.6,0.9); z=rr.uniform(0.14,0.6); r=rr.uniform(0.0004,0.0016)
@@ -453,20 +459,48 @@ def apply(d, shrimp, pel_scale=0.8):
     mo=bpy.data.objects.get('MOTES')
     if mo: mo.hide_render=not d['under']; mo.location=(0.0006*d['F'],0.0002*d['F'],0.0004*d['F'])
     crowns=[o for o in bpy.data.objects if o.name.startswith('CROWN_')]; nc=0
+    if crowns:
+        import splash as _sp; _sp.smooth_crown(crowns[0].data)
+    rmat=bpy.data.materials.get('MAT_Ripple')
+    if rmat and not rmat.get('water_ok'):   # ripple crests: clear refracting water (was a dark fresnel line)
+        b_=[x for x in rmat.node_tree.nodes if x.type=='BSDF_PRINCIPLED'][0]
+        b_.inputs['Base Color'].default_value=(0.9,0.97,0.94,1); b_.inputs['Transmission Weight'].default_value=1.0
+        b_.inputs['Roughness'].default_value=0.03; b_.inputs['IOR'].default_value=1.333; rmat['water_ok']=1
+        for x in rmat.node_tree.nodes:
+            if x.type=='MATH' and x.operation=='MULTIPLY' and abs(x.inputs[1].default_value-1.0)<1e-6 and not x.inputs[1].links: x.inputs[1].default_value=RIPPLE_W
+    pm_=bpy.data.objects['PEL_000'].active_material
+    if pm_ and pm_.use_nodes:   # same brown pellet above and below the surface (under water it read beige)
+        rp_=[x for x in pm_.node_tree.nodes if x.type=='VALTORGB']
+        if rp_:
+            k_=PEL_UNDER_DARK if d['under'] else 1.0; e_=rp_[0].color_ramp.elements
+            e_[0].color=(0.13*k_,0.07*k_,0.035*k_,1); e_[1].color=(0.30*k_,0.18*k_,0.09*k_,1)
+    wmat=bpy.data.materials.get('MAT_Pond_Water_Surface')
+    if wmat:
+        import splash as _sp
+        _sp.build_ripples(wmat); _sp.set_ripples(wmat,d['F'],bpy.context.scene.camera.matrix_world.translation,S,RIPPLE_GAIN if d['shot']=='s3' else 0.0)
+    sp_drops=sp_crowns=None
+    if d['shot']=='s3' and not d['under']:
+        import splash as _sp
+        sp_drops,sp_crowns=_sp.splash(d['F'],bpy.context.scene.camera.matrix_world.translation,S)
     for kind,key,n in (('BUB','bub',800),('DROP','drop',900),('RING','ring',400)):
-        L=bubbles(d) if kind=='BUB' else d['inst'][key]
+        L=bubbles(d) if kind=='BUB' else (sp_drops if (kind=='DROP' and sp_drops is not None) else d['inst'][key])
+        if kind=='RING' and d['shot']=='s3': L=[]   # s3 ripples live in the water surface shader now
         for i in range(n):
             o=bpy.data.objects.get('%s_%03d'%(kind,i))
             if o is None: break
             if i<len(L):
-                M=L[i] if kind=='BUB' else ow(L[i])
+                M=L[i] if (kind=='BUB' or (kind=='DROP' and sp_drops is not None)) else ow(L[i])
                 if kind=='RING':   # ripples fade as they spread; a crown rises on the youngest ones
                     sr=Vector((L[i][0],L[i][1],L[i][2])).length; f=max(0.0,min(1.0,1.15-(sr-0.003)/0.006)); o.color=(f,f,f,1)
                     a=(sr-0.0028)/0.0018
-                    if a<1.0 and nc<len(crowns):
+                    if sp_crowns is None and a<1.0 and nc<len(crowns):
                         h=0.009*max(0.0,math.sin(math.pi*max(0.0,min(1.0,a*0.85+0.15))))
                         if h>0.0006:
                             cr=crowns[nc]; cr.matrix_world=M@Matrix.Diagonal((0.9,0.9,h,1)); cr.hide_render=False; nc+=1
                 o.matrix_world=M; o.hide_render=False
             else: o.hide_render=True
+    if sp_crowns:
+        for M in sp_crowns:
+            if nc>=len(crowns): break
+            crowns[nc].matrix_world=M; crowns[nc].hide_render=False; nc+=1
     for cr in crowns[nc:]: cr.hide_render=True
