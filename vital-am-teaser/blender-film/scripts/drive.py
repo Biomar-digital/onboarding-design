@@ -241,6 +241,7 @@ SUNROT_OFF=0.0
 USE_DOF=False
 BAG_WIDEN=0.3
 H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.json') else {}
+SHR_FEED_SPEED=1.6   # healthy/feeding shrimp: livelier swim cycle
 EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
 BAG_SOFT=0.3; BAG_FLAG_D=0.45
@@ -428,7 +429,7 @@ def apply(d, shrimp, pel_scale=0.8):
                 rig.matrix_world=Matrix.Translation(loc)@sway@R
                 shrimp.pose(rig,F/24.0*0.55+(si*0.731)%7.0)   # tired: 55% speed, each shrimp at its own phase
             else:
-                rig.matrix_world=Matrix.Translation(Vector(H_OFFSET.get(str(si),(0,0,0))))@ow(m); shrimp.pose(rig,F/24.0+(si*0.731)%7.0)   # real speed, own phase; nudged so none overlap on screen
+                rig.matrix_world=Matrix.Translation(Vector(H_OFFSET.get(str(si),(0,0,0))))@ow(m); shrimp.pose(rig,F/24.0*(SHR_FEED_SPEED if d['shot'] in ('s4','s5') else 1.0)+(si*0.731)%7.0)   # feeding shrimp move faster; own phase; nudged so none overlap on screen
     for r in shrimp.rigs[len(d['shr']):]:
         r.hide_render=True
         for ch in r.children: ch.hide_render=True
