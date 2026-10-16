@@ -1,5 +1,5 @@
 # Apply previs state for output frame F to the Blender film scene
-import bpy, json, math
+import bpy, json, math, os
 from mathutils import Matrix, Vector, Quaternion
 S='/tmp/claude-0/-home-user-onboarding-design/47d2e554-3fba-5f2b-903d-37793a6dfe1a/scratchpad/'
 C=Matrix.Rotation(math.radians(90),4,'X'); Ci=C.inverted()
@@ -240,6 +240,8 @@ def set_mode(d):
 SUNROT_OFF=0.0
 USE_DOF=False
 BAG_WIDEN=0.3
+H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.json') else {}
+EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
 BAG_SOFT=0.3; BAG_FLAG_D=0.45
 BAG_KEY=90.0     # warm key on the pack top
@@ -426,7 +428,7 @@ def apply(d, shrimp, pel_scale=0.8):
                 rig.matrix_world=Matrix.Translation(loc)@sway@R
                 shrimp.pose(rig,F/24.0*0.55+(si*0.731)%7.0)   # tired: 55% speed, each shrimp at its own phase
             else:
-                rig.matrix_world=ow(m); shrimp.pose(rig,F/24.0+(si*0.731)%7.0)   # real speed, own phase
+                rig.matrix_world=Matrix.Translation(Vector(H_OFFSET.get(str(si),(0,0,0))))@ow(m); shrimp.pose(rig,F/24.0+(si*0.731)%7.0)   # real speed, own phase; nudged so none overlap on screen
     for r in shrimp.rigs[len(d['shr']):]:
         r.hide_render=True
         for ch in r.children: ch.hide_render=True
@@ -439,6 +441,14 @@ def apply(d, shrimp, pel_scale=0.8):
         if j>=len(pool): break
         pool[j].matrix_world=ow(e)@Matrix.Scale(0.002*pel_scale,4); pool[j].hide_render=False; j+=1
     for q in pool[j:]: q.hide_render=True
+    if d['under'] and d['shot'] in ('s4','s5'):   # healthy shrimp eat everything: no pellet gets past the shrimp line
+        R=[r.matrix_world.translation for r in shrimp.rigs if not r.hide_render]
+        if R:
+            zmin=sorted(r.z for r in R)[len(R)//2]   # away from any shrimp: the middle of the shrimp layer
+            for q in pool[:j]:
+                p_=q.matrix_world.translation; near=[r for r in R if (r.x-p_.x)**2+(r.y-p_.y)**2<EAT_XY**2]
+                line=(min(r.z for r in near) if near else zmin)
+                if p_.z<line-0.01 or any(p_.z<r.z+0.03 and (r-p_).length<EAT_R for r in near): q.hide_render=True
     mo=bpy.data.objects.get('MOTES')
     if mo: mo.hide_render=not d['under']; mo.location=(0.0006*d['F'],0.0002*d['F'],0.0004*d['F'])
     crowns=[o for o in bpy.data.objects if o.name.startswith('CROWN_')]; nc=0
