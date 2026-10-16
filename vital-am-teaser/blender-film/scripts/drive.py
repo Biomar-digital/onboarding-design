@@ -222,10 +222,10 @@ def set_mode(d):
             # warm key from the front-left; a flag between light and bag casts a level shadow line that drops from the top
             # of the pack (100% in shade) to 30% below the top (70% still in shade) by the end of the shot
             br.location=Vector((c.x-0.35,c.y-1.5,top+0.18)); br.rotation_euler=(Vector((c.x,c.y,top-0.3*H))-br.location).to_track_quat('-Z','Y').to_euler()
-            br.data.energy=BAG_KEY
+            br.data.energy=BAG_KEY; br.data.shadow_soft_size=BAG_SOFT   # big source = soft shadow edge
             rev=max(0.0,min(1.0,(F-472)/60.0)); rev=rev*rev*(3-2*rev)
             e=top+0.02-0.32*H*rev                      # height of the shadow edge on the bag face
-            face=Vector((c.x,BAG_TOP['ymin'],e)); Lp=br.location; a_=0.25        # flag 25 cm in front of the bag face
+            face=Vector((c.x,BAG_TOP['ymin'],e)); Lp=br.location; a_=BAG_FLAG_D   # flag distance in front of the bag face (further = softer edge)
             t_=a_/max(1e-4,(face.y-Lp.y)); fz=e+(Lp.z-e)*t_; fy=face.y-a_
             fl=bpy.data.objects.get('BAG_FLAG')
             if fl: fl.hide_render=False; fl.rotation_euler=(math.radians(90),0,0); fl.location=(c.x,fy,fz-0.5)
@@ -241,8 +241,9 @@ SUNROT_OFF=0.0
 USE_DOF=False
 BAG_WIDEN=0.3
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
+BAG_SOFT=0.3; BAG_FLAG_D=0.45
 BAG_KEY=90.0     # warm key on the pack top
-BAG_SCRIM=0.012   # light let through the flag: lower pack 85% dark, not black
+BAG_SCRIM=0.03   # light let through the flag: lower pack 85% dark, not black
 SHR_GLOW=0.0   # subtle warm inner glow on the trunk walls (healthy shots)
 SHRL_W=0.0   # watts: a subtle inner glow spread through the shell
 try: PUSH={'c':Vector(json.load(open(S+'bt/push.json'))['c'])}
