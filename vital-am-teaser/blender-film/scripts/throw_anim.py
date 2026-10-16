@@ -8,18 +8,18 @@ import math
 IDLE={'Hips':(0,0,0),'Spine01':(3,0,0),'Spine02':(2,0,0),'RightArm':(8,0,22),'RightForeArm':(42,0,0),'RightHand':(0,0,0),
       'LeftArm':(5,0,-24),'LeftForeArm':(12,0,0),'Head':(6,0,0),'neck':(2,0,0)}
 DIP={'Hips':(40,-8,0),'Spine01':(10,-6,12),'Spine02':(4,-4,3),'RightArm':(45,0,25),'RightForeArm':(20,0,0),'RightHand':(-10,0,0),
-     'LeftArm':(20,0,-18),'LeftForeArm':(25,0,0),'Head':(-8,-8,0),'neck':(-4,0,0)}
+     'LeftArm':(14,0,-24),'LeftForeArm':(40,0,0),'Head':(-8,-8,0),'neck':(-4,0,0)}
 LIFT={'Hips':(16,-10,0),'Spine01':(4,-10,2),'Spine02':(2,-8,0),'RightArm':(25,0,18),'RightForeArm':(55,0,0),'RightHand':(0,0,0),
-      'LeftArm':(10,0,-20),'LeftForeArm':(18,0,0),'Head':(2,-6,0),'neck':(1,0,0)}
-WIND={'Hips':(4,-18,0),'Spine01':(2,-16,0),'Spine02':(0,-10,0),'RightArm':(-32,0,20),'RightForeArm':(25,0,0),'RightHand':(15,0,0),
-      'LeftArm':(25,0,-16),'LeftForeArm':(30,0,0),'Head':(0,12,0),'neck':(0,6,0)}
-REL={'Hips':(8,14,0),'Spine01':(6,12,0),'Spine02':(3,8,0),'RightArm':(98,0,8),'RightForeArm':(8,0,0),'RightHand':(-20,0,0),
-     'LeftArm':(-18,0,-20),'LeftForeArm':(20,0,0),'Head':(-6,-8,0),'neck':(-2,-4,0)}
-FOLLOW={'Hips':(10,22,0),'Spine01':(8,18,0),'Spine02':(4,12,0),'RightArm':(112,0,16),'RightForeArm':(14,0,0),'RightHand':(-28,0,0),
-        'LeftArm':(-22,0,-18),'LeftForeArm':(18,0,0),'Head':(-4,-10,0),'neck':(-2,-4,0)}
+      'LeftArm':(10,0,-26),'LeftForeArm':(18,0,0),'Head':(2,-6,0),'neck':(1,0,0)}
+WIND={'Hips':(8,-26,0),'Spine01':(4,-22,0),'Spine02':(2,-12,0),'RightArm':(-32,0,20),'RightForeArm':(25,0,0),'RightHand':(15,0,0),
+      'LeftArm':(18,0,-28),'LeftForeArm':(28,0,0),'Head':(0,12,0),'neck':(0,6,0)}
+REL={'Hips':(12,16,0),'Spine01':(10,14,0),'Spine02':(5,9,0),'RightArm':(98,0,8),'RightForeArm':(8,0,0),'RightHand':(-20,0,0),
+     'LeftArm':(-14,0,-28),'LeftForeArm':(22,0,0),'Head':(-6,-8,0),'neck':(-2,-4,0)}
+FOLLOW={'Hips':(12,28,0),'Spine01':(10,22,0),'Spine02':(5,14,0),'RightArm':(112,0,16),'RightForeArm':(14,0,0),'RightHand':(-28,0,0),
+        'LeftArm':(-18,0,-28),'LeftForeArm':(20,0,0),'Head':(-4,-10,0),'neck':(-2,-4,0)}
 SETTLE={'Hips':(3,6,0),'Spine01':(3,4,0),'Spine02':(2,3,0),'RightArm':(45,0,18),'RightForeArm':(45,0,0),'RightHand':(-6,0,0),
         'LeftArm':(4,0,-24),'LeftForeArm':(12,0,0),'Head':(3,-4,0),'neck':(1,0,0)}
-KEYS=[(0,IDLE),(196,IDLE),(205,DIP),(209,DIP),(214,LIFT),(219,WIND),(224,REL),(231,FOLLOW),(246,SETTLE),(266,IDLE),(600,IDLE)]
+KEYS=[(0,IDLE),(196,IDLE),(205,DIP),(209,DIP),(214,LIFT),(219,WIND),(224,REL),(231,FOLLOW),(242,SETTLE),(266,IDLE),(600,IDLE)]
 LAG={'Hips':-1.5,'Spine01':-1.0,'Spine02':-0.5,'neck':0.0,'Head':0.5,'RightArm':0.5,'RightForeArm':1.5,'RightHand':2.5,'LeftArm':1.0,'LeftForeArm':2.0}
 def _hermite(ts,vs,t):
     n=len(ts)
@@ -47,7 +47,7 @@ def pose_at(F):
     return out
 def hip_drop(F):
     # hips lower (cm, bone units) when bending to the bucket and loading into the throw
-    ts=[k[0] for k in KEYS]; vs={0:0,196:0,205:-30,209:-30,214:-12,219:-4,224:-3,231:-4,246:-1,266:0,600:0}
+    ts=[k[0] for k in KEYS]; vs={0:0,196:0,205:-30,209:-30,214:-12,219:-10,224:-7,231:-5,242:-1,266:0,600:0}
     return _hermite(ts,[vs[t] for t in ts],F-1.5)
 def root_offset(F):
     # weight shifts forward (-Y) into the throw and back
@@ -56,9 +56,9 @@ def root_offset(F):
 # ---- right arm by IK: hand target + explicit elbow pole, in the farmer's root frame
 # (x: + = his left, -X = his right; y: -Y = forward; z: up from the feet)
 HAND={0:(-0.24,-0.20,0.92),196:(-0.24,-0.20,0.92),205:(-0.42,-0.24,0.44),209:(-0.42,-0.24,0.42),214:(-0.33,-0.16,0.82),
-      219:(-0.40,0.26,0.92),224:(-0.36,-0.50,1.16),231:(-0.04,-0.64,1.24),246:(-0.22,-0.36,1.00),266:(-0.24,-0.20,0.92),600:(-0.24,-0.20,0.92)}
+      219:(-0.40,0.26,0.84),224:(-0.36,-0.50,1.06),231:(-0.10,-0.62,1.14),239:(-0.22,-0.44,0.98),250:(-0.26,-0.26,0.93),266:(-0.24,-0.20,0.92),600:(-0.24,-0.20,0.92)}
 POLE={0:(-0.34,0.30,0.95),196:(-0.34,0.30,0.95),205:(-0.70,0.05,0.85),209:(-0.70,0.05,0.85),214:(-0.55,0.25,0.95),
-      219:(-0.40,0.65,1.05),224:(-0.62,-0.05,0.95),231:(-0.40,-0.20,0.90),246:(-0.38,0.20,0.85),266:(-0.34,0.30,0.95),600:(-0.34,0.30,0.95)}
+      219:(-0.40,0.65,1.05),224:(-0.62,-0.05,0.95),231:(-0.40,-0.20,0.90),239:(-0.42,0.05,0.85),250:(-0.36,0.25,0.88),266:(-0.34,0.30,0.95),600:(-0.34,0.30,0.95)}
 def _vec_at(D,F,lag):
     ts=sorted(D); return tuple(_hermite(ts,[D[t][c] for t in ts],F-lag) for c in range(3))
 def hand_target(F): return _vec_at(HAND,F,1.0)
