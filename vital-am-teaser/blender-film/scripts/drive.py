@@ -186,6 +186,8 @@ def set_mode(d):
         if o.name.startswith(('GROUND_FAR','TREE_','PALM_FAR','WATER_VOLUME','GRASS_')): o.hide_render=room
     sc.node_tree.nodes['HAZE_AMT'].inputs[1].default_value=0.0 if (room or under) else 0.18
     sc.view_settings.exposure=(0.6 if d['shot']=='s1' else (0.85 if d['shot'] in ('s4','s5') else 0.85)) if under else 0.0
+    if under and CAM_FIX and 442<=d['F']<=468:   # rising toward the bright surface: hold detail (no milky white-out)
+        u_=max(0.0,min(1.0,(d['F']-442)/8.0))*(1.0-max(0.0,min(1.0,(d['F']-462)/6.0))); sc.view_settings.exposure-=RISE_DIM*u_
     if under:   # sky seen through the surface: clear blue overhead with warm sunrise colour, brighter
         sk.sun_elevation=math.radians(11); bg.inputs[1].default_value=0.24
     sb_=bpy.data.materials['MAT_Shrimp'] if 'MAT_Shrimp' in bpy.data.materials else None
@@ -243,6 +245,8 @@ BAG_WIDEN=0.3
 H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.json') else {}
 SHR_FEED_SPEED=1.6   # healthy/feeding shrimp: livelier swim cycle
 RIPPLE_W=0.2; RIPPLE_GAIN=0.015; PEL_UNDER_DARK=0.45   # splash shot: ripple crest visibility, pellet tone under water
+RISE_DIM=1.1
+CAM_FIX=True   # hand-built camera for the farmer orbit and the rise to the pack (camfix.py)
 EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
 BAG_SOFT=0.3; BAG_FLAG_D=0.45
@@ -402,6 +406,13 @@ def apply(d, shrimp, pel_scale=0.8):
             P=P0+PUSH['off']*w; look=(tgt-P).normalized().lerp(fwd,1-w).normalized()
         f2=fwd.lerp(look,w).normalized()
         q=f2.to_track_quat('-Z','Y'); cam.matrix_world=Matrix.Translation(P)@q.to_matrix().to_4x4(); cam.data.lens=mm*(1-w)+PUSH_MM*w
+    import camfix
+    pel_=(sum((ow(e).translation for e in d['inst']['hi']),Vector())/len(d['inst']['hi'])) if d['inst']['hi'] else None   # feed-cloud centre
+    ov=camfix.override(F,cam,cam.matrix_world.copy(),cam.data.lens,pel_) if CAM_FIX else None
+    if ov:
+        cam.matrix_world=ov[0]
+        if ov[1] is not None: cam.data.lens=ov[1]
+        if 440<=F<=490 and not d.get('force') and not d['room']: d['under']=cam.matrix_world.translation.z<0.0
     if d['shot']=='s5' and F>=455:   # final bag shot: open the frame up a little (more air around the pack)
         kk=max(0.0,min(1.0,(F-455)/15.0)); kk=kk*kk*(3-2*kk); cam.data.lens*=1.0-BAG_WIDEN*kk
     if F>LAST_F:   # extra 2 s at the end: a very slow push into the pack (eases in from the stopped camera)
