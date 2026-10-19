@@ -245,7 +245,7 @@ BAG_WIDEN=0.3
 H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.json') else {}
 SHR_FEED_SPEED=1.6   # healthy/feeding shrimp: livelier swim cycle
 RIPPLE_W=0.2; RIPPLE_GAIN=0.015; PEL_UNDER_DARK=0.45   # splash shot: ripple crest visibility, pellet tone under water
-RISE_DIM=1.1
+RISE_DIM=0.6
 CAM_FIX=True   # hand-built camera for the farmer orbit and the rise to the pack (camfix.py)
 EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
