@@ -16,21 +16,21 @@ def _blend(A,B,w):
     return Matrix.Translation(A.translation.lerp(B.translation,w))@A.to_quaternion().slerp(B.to_quaternion(),w).to_matrix().to_4x4()
 def _bez(p0,p1,p2,p3,t): u=1-t; return p0*u*u*u+p1*3*u*u*t+p2*3*u*t*t+p3*t*t*t
 # ---------------- A ----------------
-R_ORB=2.4; H_ORB=1.85
-F0,F1,F2,F3=140,178,232,276          # dive start, orbit start (behind him), orbit end (360 later), hand-off
+R_ORB=2.4; H_ORB=1.85; PHI0=math.radians(-90)   # in front of him, over the water
+F0,F1,F2,F3=140,178,232,326          # dive start, orbit start (behind him), orbit end (360 later), hand-off
 W0,W1=0.150,0.082                    # orbit angular speed (rad/frame): enters fast, eases down; integral = 2*pi
 def _omega(F): return W0+(W1-W0)*_ease((F-F1)/(F2-F1))
 _TOT=sum(_omega(F1+(i+0.5)*(F2-F1)/400.0) for i in range(400))*(F2-F1)/400.0
 def _orbit_phi(F):
     F=max(F1,min(F2,F)); n=max(1,int((F-F1)*8)); dt=(F-F1)/n
     acc=sum(_omega(F1+(i+0.5)*dt) for i in range(n))*dt
-    return math.radians(90)+2*math.pi*acc/_TOT
+    return PHI0+2*math.pi*acc/_TOT
 def _orbit_pos(phi,F):
     h=H_ORB+0.12*math.sin(phi*1.0)       # a gentle rise and fall around him
     return FARMER+Vector((R_ORB*math.cos(phi),R_ORB*math.sin(phi),h-FARMER.z))
 # dive: cubic bezier from the hovering drone to the orbit entry, arriving tangent to the orbit (moving -X behind him)
-D_P0=Vector((0.005,0.14,58.5)); D_P3=_orbit_pos(math.radians(90),F1)
-D_P1=Vector((2.0,4.0,40.0)); D_P2=D_P3+Vector((4.2,0.0,1.6))
+D_P0=Vector((0.005,0.14,58.5)); D_P3=_orbit_pos(PHI0,F1)
+D_P1=D_P0.lerp(D_P3,0.35); D_P2=D_P3+Vector((-1.1,-0.25,1.4))   # straight line; bends only into the orbit tangent at the end
 def _bez_len_param(F):
     # speed profile: from the hover (~0.3 m/f) up to a fast dive and down to the orbit entry speed (R*W0), arc-length based
     import functools
@@ -48,6 +48,8 @@ REL=Vector((-0.36,9.32,1.25)); F_REL=226.0
 TR_FROM=254   # previs 'hi[0]' is the same pellet only from here on (it swaps identity before)
 def hero(F):
     """hero pellet: previs track from 254 on; before that a cubic flight from the scoop (release 226) joining it with matching velocity"""
+    last=max(int(k) for k in TR)
+    if F>=last: return Vector(TR[str(last)])
     if F>=TR_FROM and str(int(F)) in TR:
         a=Vector(TR[str(int(F))]); b=Vector(TR.get(str(int(F)+1),TR[str(int(F))])); return a.lerp(b,F-int(F))
     if F<=F_REL: return REL.copy()
@@ -55,27 +57,24 @@ def hero(F):
     h=TR_FROM-F_REL; s_=(F-F_REL)/h
     h00=2*s_**3-3*s_**2+1; h10=s_**3-2*s_**2+s_; h01=-2*s_**3+3*s_**2; h11=s_**3-s_**2
     return REL*h00+m0*(h*h10)+p1*h01+m1*(h*h11)
-def cam_A(F):
+def cam_A(F,prev_M=None):
     if F<F1:
-        P=_bez_len_param(F)
-        T=FARMER.lerp(Vector((0.0,6.0,0.0)),1.0-_ease((F-F0)/(F1-F0)))   # looks down the dive, then onto him
-        if F<F0+10: T=T.lerp(P+Vector((0,0.6,-10)),1.0-_ease((F-F0)/10.0))
-        L=25.0
-        return _look(P,T+Vector((0,0,0.2))),L
+        P=_bez_len_param(F); k=_ease((F-F0)/(F1-F0))
+        T=(P+Vector((0,0.3,-10))).lerp(FARMER+Vector((0,0,0.2)),k)       # looking down the drop, then straight at him
+        return _look(P,T),25.0
     phi=_orbit_phi(min(F,F2))
-    if F>F2: phi+= (F-F2)*W1*max(0.0,1.0-(F-F2)/10.0)*0.5
-    P_orb=_orbit_pos(phi,F)
-    # look: the farmer, then the hero pellet once it leaves the scoop
-    k=_ease((F-218)/14.0); tgt=(FARMER+Vector((0,0,0.1))).lerp(hero(F),k)
-    # ride: behind the pellet along its flight, closing in until it matches the previs pellet camera
+    if F>F2: x_=min(F-F2,12.0); phi+=W1*(x_-x_*x_/24.0)   # keeps the orbit's last angular speed and lets it die out
+    P=_orbit_pos(phi,F)
+    k=_ease((F-214)/24.0); tgt=(FARMER+Vector((0,0,0.1))).lerp(hero(F),k)
     if F>=F_REL:
-        h=hero(F); v=(hero(F+1)-hero(F-1)); dirv=v.normalized() if v.length>1e-5 else Vector((0,-1,0))
-        back=max(0.08,1.6-1.52*_ease((F-232)/36.0))
-        P_ride=h-dirv*back+Vector((0,0,0.12*back))
-        w=_ease((F-228)/18.0)
-        P=P_orb.lerp(P_ride,w)
-    else: P=P_orb
-    L=25.0+(26.0-25.0)*_ease((F-F1)/20.0)+24.0*_ease((F-236)/34.0)
+        # ride with the pellet from in front of it: it flies toward the lens with the farmer behind it, down to the water
+        h=hero(F); Fv=min(F,266.0); v=hero(Fv+1)-hero(Fv-1); vh=Vector((v.x,v.y,0)); dh=vh.normalized() if vh.length>1e-6 else Vector((0,-1,0))
+        ahead=1.35-1.0*_ease((F-250)/22.0)
+        P_ride=h+dh*ahead+Vector((0,0,0.10+0.25*(1-_ease((F-246)/24.0))))
+        P=P.lerp(P_ride,_ease((F-224)/24.0))
+        if F>=268 and prev_M is not None:   # at the surface follow the previs height exactly (waterline frames, dive)
+            P.z=P.z+(prev_M.translation.z-P.z)*_ease((F-268)/6.0)
+    L=25.0+1.0*_ease((F-F1)/20.0)+22.0*_ease((F-238)/34.0)
     return _look(P,tgt),L
 # ---------------- B ----------------
 B_P500=Vector((0.312,6.597,0.373)); B_ANCHOR=Vector((0.064,5.262,-0.786)); B_ANCHOR_DIR=Vector((0.725,0.669,0.165)).normalized()
@@ -93,7 +92,7 @@ def cam_B(F,M0=None):
     return _look(P,P+f)
 def override(F,cam,prev_M,prev_L,pel=None):
     if F0<=F<=F3:
-        M,L=cam_A(F); w=_ease((F-F0)/6.0)*(1.0-_ease((F-(F3-14))/14.0))
+        M,L=cam_A(F,prev_M); w=_ease((F-F0)/6.0)*(1.0-_ease((F-280)/46.0))   # hands back to the previs pellet camera under water
         return _blend(prev_M,M,w),prev_L+(L-prev_L)*w
     if 440<=F<=500:
         M=cam_B(F); w=_ease((F-440)/6.0)*(1.0-_ease((F-494)/6.0))
