@@ -1,0 +1,70 @@
+<title>Report It Storyboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one scene band per section, each frame a two-column row (frame left, script right), stacking on phones */
+:root{
+  --bg:#f3f6fa; --surface:#ffffff; --ink:#0f2440; --muted:#52627a; --line:#d7e0ec;
+  --brand:#0b3c7d; --brand-soft:#e3edf9; --hivis:#e3d100; --ph:#eaf1fa;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1522; --surface:#122033; --ink:#e7eef8; --muted:#9db0c8; --line:#22344d;
+  --brand:#7fb2f0; --brand-soft:#17304f; --hivis:#e8d84a; --ph:#16283f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1522; --surface:#122033; --ink:#e7eef8; --muted:#9db0c8; --line:#22344d;
+  --brand:#7fb2f0; --brand-soft:#17304f; --hivis:#e8d84a; --ph:#16283f; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.top{display:grid;gap:8px;margin-bottom:28px}
+.eyebrow{font-family:var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--brand);font-weight:700;font-size:15px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,6vw,54px);line-height:1;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+.facts{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:8px;font-size:13px;color:var(--muted)}
+.facts b{color:var(--ink);font-weight:600}
+.slogan{display:inline-flex;gap:10px;margin-top:6px;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.02em}
+.slogan span{background:var(--hivis);color:#14233a;padding:2px 10px}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 6px}
+nav.toc a{font-size:13px;text-decoration:none;color:var(--brand);border:1px solid var(--line);padding:4px 10px;border-radius:999px;background:var(--surface)}
+nav.toc a:focus-visible,nav.toc a:hover{border-color:var(--brand)}
+.scene{margin-top:36px;display:grid;gap:14px}
+.sh{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;border-bottom:3px solid var(--brand);padding-bottom:8px}
+.sn{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--brand);font-weight:700}
+.sh h2{font-family:var(--display);font-size:30px;margin:0;font-weight:700;line-height:1.05;text-wrap:balance}
+.sr{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+.frame{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px}
+.media img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:3px}
+.ph{aspect-ratio:16/9;max-width:100%;border:2px dashed var(--brand);border-radius:3px;background:var(--ph);display:grid;place-content:center;gap:8px;padding:16px;text-align:center}
+.ph-k{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--brand)}
+.ph-t{font-size:14px;color:var(--ink);max-width:46ch}
+.meta{display:grid;gap:10px;align-content:start;min-width:0}
+.fh{display:flex;justify-content:space-between;align-items:baseline}
+.fid{font-family:var(--display);font-weight:700;font-size:26px;color:var(--brand)}
+.tc{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);background:var(--brand-soft);padding:2px 8px;border-radius:3px}
+.row{display:grid;gap:2px}
+.k{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.vo{margin:0;font-size:16px;line-height:1.45;border-left:3px solid var(--hivis);padding-left:10px}
+.vo.none{color:var(--muted);font-style:italic;border-left-color:var(--line)}
+.notes{margin-top:44px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px}
+.notes h2{font-family:var(--display);font-size:24px;margin:0 0 8px}
+.notes ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:80ch}
+@media (max-width:760px){.frame{grid-template-columns:1fr}.sr{margin-left:0}}
+</style>
+<div class="wrap">
+<header class="top">
+<span class="eyebrow">BioMar · Health &amp; Safety training</span>
+<h1>Reporting incidents, hazards and near misses in Workday</h1>
+<p class="lede">Storyboard v1 for the employee training video. Each frame shows the illustration, the voice-over that plays over it, the action and the camera move. Dashed frames are motion graphics or the Workday screen recording.</p>
+<div class="facts"><span><b>Length</b> ≈ 3:55</span><span><b>Language</b> English</span><span><b>Frames</b> 15 illustrations, 4 screen-recording beats, 3 graphics</span><span><b>Audience</b> all employees, operations first</span></div>
+<div class="slogan"><span>See it.</span><span>Report it.</span><span>Prevent it.</span></div>
+<nav class="toc" aria-label="Scenes"><a href="#scene-1">1 · Why it matters</a><a href="#scene-2">2 · What is an incident</a><a href="#scene-3">3 · What to do</a><a href="#scene-4">4 · Report in Workday</a><a href="#scene-5">5 · Closing</a><a href="#notes">Open points</a></nav>
+</header>
+%%BODY%%
+<section class="notes" id="notes"><h2>Open points before animation</h2><ul>
+<li>Voice-over follows the approved script word for word, with one grammar fix in 4A: “As employee” → “As an employee”.</li>
+<li>3A and 3B run in the order the voice-over gives the actions: make the area safe, then seek assistance, then inform the supervisor.</li>
+<li>Illustration fixes pending: no safety glasses or vest in the office (4C, 5B); 4A operator fully inside the safe zone; same skin tone for the maintenance operator in 2A and 3B.</li>
+<li>Workday beats 4·1 to 4·4 come from your own screen recording, on phone; personal data will be blurred.</li>
+<li>Timecodes are estimates at about 150 words per minute and will be locked once the voice-over is recorded.</li>
+</ul></section>
+</div>
