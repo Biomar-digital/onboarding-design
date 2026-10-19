@@ -245,7 +245,7 @@ BAG_WIDEN=0.3
 H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.json') else {}
 SHR_FEED_SPEED=1.6   # healthy/feeding shrimp: livelier swim cycle
 RIPPLE_W=0.2; RIPPLE_GAIN=0.015; PEL_UNDER_DARK=0.45   # splash shot: ripple crest visibility, pellet tone under water
-RISE_DIM=0.6
+RISE_DIM=0.0
 CAM_FIX=True   # hand-built camera for the farmer orbit and the rise to the pack (camfix.py)
 EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
@@ -413,6 +413,7 @@ def apply(d, shrimp, pel_scale=0.8):
         cam.matrix_world=ov[0]
         if ov[1] is not None: cam.data.lens=ov[1]
         if 440<=F<=490 and not d.get('force') and not d['room']: d['under']=cam.matrix_world.translation.z<0.0
+        if 262<=F<=332 and not d.get('force') and not d['room']: d['under']=cam.matrix_world.translation.z<0.0   # pellet ride crosses the surface with the pellet
     if d['shot']=='s5' and F>=455:   # final bag shot: open the frame up a little (more air around the pack)
         kk=max(0.0,min(1.0,(F-455)/15.0)); kk=kk*kk*(3-2*kk); cam.data.lens*=1.0-BAG_WIDEN*kk
     if F>LAST_F:   # extra 2 s at the end: a very slow push into the pack (eases in from the stopped camera)
