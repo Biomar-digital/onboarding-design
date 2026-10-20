@@ -19,6 +19,15 @@ def use_gpu():
     print('GPU: none found, rendering on CPU',flush=True)
 use_gpu()
 sc.render.resolution_x=W; sc.render.resolution_y=W*9//16; sc.cycles.samples=SAMP
+def rend():
+    # an 8 GB card can run out of memory on a heavy frame (more so with other apps open): render that one frame on the CPU and carry on
+    try: bpy.ops.render.render(write_still=True)
+    except RuntimeError as e:
+        if sc.cycles.device!='GPU': raise
+        print('GPU sin memoria, este cuadro va por CPU:',str(e).splitlines()[0],flush=True)
+        sc.cycles.device='CPU'
+        try: bpy.ops.render.render(write_still=True)
+        finally: sc.cycles.device='GPU'
 os.makedirs(OUT,exist_ok=True)
 todo=[F for F in range(A,Bf+1) if not os.path.exists(OUT+'/f%04d.jpg'%F)]
 if not todo: print('NOTHING'); sys.exit()
@@ -30,7 +39,7 @@ for F in todo:
         meta={}
         for fo in ('air','under'):
             d=copy.deepcopy(st[F]); d['force']=fo; drive.apply(d,sh)
-            sc.render.filepath=OUT+'/f%04d_%s.jpg'%(F,fo[0]); bpy.ops.render.render(write_still=True)
+            sc.render.filepath=OUT+'/f%04d_%s.jpg'%(F,fo[0]); rend()
         cm=bpy.context.scene.camera.matrix_world
         cz=drive.CAM_SMOOTH.get(str(F),(st[F]['cam'],0))[0][13]
         if drive.CAM_FIX and 262<=F<=332:   # pellet ride: waterline from the new camera height
@@ -41,5 +50,5 @@ for F in todo:
         json.dump({'z':cz,'roll':__import__('math').atan2(right.z,(right.x**2+right.y**2)**0.5)},open(OUT+'/f%04d.json'%F,'w'))
         import shutil; shutil.copy(OUT+'/f%04d_u.jpg'%F,OUT+'/f%04d.jpg'%F)
     else:
-        drive.apply(st[F],sh); sc.render.filepath=OUT+'/f%04d.jpg'%F; bpy.ops.render.render(write_still=True)
+        drive.apply(st[F],sh); sc.render.filepath=OUT+'/f%04d.jpg'%F; rend()
     print('FRAME',F,st[F]['shot'],round(time.time()-t,1),flush=True)
