@@ -160,7 +160,7 @@ def set_mode(d):
     if d['under']:   # one constant sun for every underwater shot (previs sun jumps 4 -> 25 deg at the s4/s5 cut)
         sunv=Vector((0.0,300.0,22.0)).normalized()
     elif d['shot']=='s5':   # golden low sun beside the bag (previs disc sits too high for a golden sky)
-        k=max(0.0,min(1.0,(d['f']-318)/42.0)); el=math.radians(2.5+5.0*k); az=math.radians(-16)
+        k=max(0.0,min(1.0,(d['F']-458)/131.0)); k=k*k*(3-2*k); el=math.radians(BAG_SUN_EL0+(BAG_SUN_EL1-BAG_SUN_EL0)*k); az=math.radians(BAG_SUN_AZ)   # orange sun rising right behind the pack (justifies the backlight)
         sunv=Vector((math.sin(az)*math.cos(el),math.cos(az)*math.cos(el),math.sin(el)))
     sk.sun_elevation=math.asin(max(-0.2,min(1,sunv.z))); sk.sun_rotation=math.atan2(sunv.x,sunv.y)+SUNROT_OFF
     room=d['room']; under=d['under']
@@ -185,6 +185,13 @@ def set_mode(d):
     for o in bpy.data.objects:
         if o.name.startswith(('GROUND_FAR','TREE_','PALM_FAR','WATER_VOLUME','GRASS_')): o.hide_render=room
     sc.node_tree.nodes['HAZE_AMT'].inputs[1].default_value=0.0 if (room or under) else 0.18
+    if d['shot']=='s5' and not under and not room:   # launch look: clear blue morning sky, brighter, less haze
+        if 'col0' not in so: so['col0']=list(so.data.color)
+        so.data.color=BAG_SUN_COL
+        bg.inputs[1].default_value=BAG_SKY_BG; so.data.energy=BAG_SUN_E; sc.node_tree.nodes['HAZE_AMT'].inputs[1].default_value=BAG_HAZE
+        if hasattr(sk,'dust_density'): sk.dust_density=BAG_DUST; sk.ozone_density=BAG_OZONE
+    elif hasattr(sk,'dust_density'): sk.dust_density=1.0; sk.ozone_density=1.0
+    if not (d['shot']=='s5' and not under and not room) and 'col0' in so: so.data.color=so['col0']
     sc.view_settings.exposure=(0.6 if d['shot']=='s1' else (0.85 if d['shot'] in ('s4','s5') else 0.85)) if under else 0.0
     if under and CAM_FIX and 442<=d['F']<=468:   # rising toward the bright surface: hold detail (no milky white-out)
         u_=max(0.0,min(1.0,(d['F']-442)/8.0))*(1.0-max(0.0,min(1.0,(d['F']-462)/6.0))); sc.view_settings.exposure-=RISE_DIM*u_
@@ -246,6 +253,7 @@ H_OFFSET=json.load(open(S+'bt/h_offset.json')) if os.path.exists(S+'bt/h_offset.
 SHR_FEED_SPEED=1.6   # healthy/feeding shrimp: livelier swim cycle
 RIPPLE_W=0.2; RIPPLE_GAIN=0.015; PEL_UNDER_DARK=0.45   # splash shot: ripple crest visibility, pellet tone under water
 RISE_DIM=0.0
+BAG_SUN_EL0=3.0; BAG_SUN_EL1=11.5; BAG_SUN_COL=(1.0,0.62,0.32); BAG_SUN_AZ=1.5; BAG_SKY_BG=0.45; BAG_SUN_E=5.5; BAG_HAZE=0.04; BAG_DUST=0.2; BAG_OZONE=4.0   # final pack shot: early-morning clear sky
 CAM_FIX=False   # hand-built camera for the farmer orbit and the rise to the pack (camfix.py)
 EAT_XY=0.35; EAT_R=0.07   # feeding: pellets reaching a shrimp (or below the shrimp layer) are eaten
 LAST_F=541; END_HOLD=48; END_ZOOM=0.16   # 2 s tail after the previs, slow zoom-in on the pack
@@ -310,7 +318,7 @@ GRADES={   # lift, gamma, gain per look
  'room':((0.97,0.99,1.05),(1.0,0.99,0.98),(1.05,1.0,0.93)),
  'pond':((0.99,0.99,1.0),(1.0,0.99,0.96),(1.08,1.0,0.90)),
  'under':((0.90,0.93,0.94),(0.97,0.98,0.98),(1.05,1.07,1.06)),   # more contrast: deeper shadows, brighter water
- 'bag':((0.99,0.98,1.0),(1.0,0.98,0.93),(1.12,1.0,0.86))}
+ 'bag':((0.99,0.99,1.0),(1.0,0.99,0.98),(1.08,1.03,1.0))}   # brighter, neutral-cool morning (was warm/dark dusk look)
 def animate_fx(d):
     import math as _m
     F=d['F']; sc=bpy.context.scene; cam=sc.camera
