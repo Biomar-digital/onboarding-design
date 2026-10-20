@@ -14,13 +14,13 @@ body{font-family:Avenir,sans-serif;color:var(--navy);-webkit-print-color-adjust:
 .page{position:relative;width:210mm;height:297mm;overflow:hidden;background:var(--ice);display:flex;flex-direction:column}
 
 /* hero: storyboard frame, fading into the title panel */
-.hero{position:relative;height:98mm;flex:none}
+.hero{position:relative;height:94mm;flex:none}
 .hero img.bg{width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block}
-.hero::after{content:"";position:absolute;inset:auto 0 0 0;height:34mm;background:linear-gradient(to bottom,rgba(31,62,119,0),var(--navy))}
+.hero{border-bottom:1.6mm solid var(--green)}
 .logo{position:absolute;top:9mm;right:11mm;width:24mm;border-radius:3mm;box-shadow:0 1mm 4mm rgba(0,0,0,.25);z-index:2}
 .tag{display:inline-block;margin-bottom:3mm;background:var(--yellow);color:var(--navy);font-weight:700;font-size:8.5pt;letter-spacing:.14em;text-transform:uppercase;padding:1.6mm 3.2mm;border-radius:1mm}
 
-.title{background:var(--navy);color:#fff;padding:0 12mm 6.5mm;flex:none;margin-top:-1px}
+.title{background:var(--navy);color:#fff;padding:5mm 12mm 6.5mm;flex:none;margin-top:-1px}
 .title h1{font-weight:800;font-size:46pt;line-height:.95;letter-spacing:-.01em}
 .title h1 span{color:var(--sky)}
 .title p{margin-top:4mm;font-size:13pt;font-weight:600;line-height:1.3}
