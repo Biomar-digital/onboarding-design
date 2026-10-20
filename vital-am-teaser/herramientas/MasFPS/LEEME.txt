@@ -1,0 +1,12 @@
+Mas FPS - sube los cuadros por segundo de un video con IA (RIFE), en tu compu
+
+1. Copia tu video (ej. VitalAM_1080p.mp4) en esta carpeta.
+2. Doble clic en MAS_FPS.bat (o arrastra el video encima del .bat).
+3. Elegi 1 (48 fps) o 2 (60 fps).
+4. Al terminar se abre solo el video nuevo: VitalAM_1080p_48fps.mp4 / _60fps.mp4
+
+- La primera vez descarga RIFE y ffmpeg (unos 630 MB). Despues ya no.
+- Usa tu placa NVIDIA. Para el teaser (589 cuadros en 1080p) son unos minutos.
+- Necesita ~6 GB libres temporales (se borran al terminar).
+- 48 fps es el mas fiel (agrega 1 cuadro entre cada par). 60 fps se ve mas fluido.
+- Revisa las salpicaduras y el cruce del agua: en cortes y movimientos muy rapidos la IA puede dejar algun artefacto.
