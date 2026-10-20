@@ -1,0 +1,11 @@
+SmartCare Vital AM - render 1080p en tu compu
+
+1. Descomprimi esta carpeta en un disco con espacio (ej. C:\VitalAM_render). Necesita unos 3 GB libres.
+2. Doble clic en RENDER_VitalAM.bat
+3. Espera. Al terminar se abre solo VitalAM_1080p.mp4 (en esta misma carpeta).
+
+- No hace falta instalar nada: la primera vez baja Blender 4.2 portable (no toca tu Blender 5.2).
+- Usa tu NVIDIA RTX automaticamente. Tiempo estimado: 2 a 5 horas.
+- Si Windows muestra "Windows protegio su PC": Mas informacion > Ejecutar de todas formas.
+- Si se corta o apagas la compu, volve a hacer doble clic: sigue desde el ultimo cuadro.
+- Ya incluye el cielo nuevo de la escena final (sol naranja detras del pack).

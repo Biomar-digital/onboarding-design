@@ -154,6 +154,30 @@ def apply_farmer(F):
     fist.hide_render=bpy.data.objects['FARMER_BODY'].hide_render
     ld=bpy.data.objects.get('SCOOP_LOAD')
     if ld: ld.hide_render=fist.hide_render or not (209<=F<=223)   # loaded from the dip until the release
+SUN_PEEK=0.007   # deepest the sun centre may sit behind the pack's silhouette edge (view units): its glow still spills round the edge, as in the approved frames
+_BVH={}
+def _sun_peek(sunv):
+    # the slow push-in widens the pack on screen; where the pack would swallow the sun, slide it sideways (same screen height)
+    # to the pack's right silhouette edge so it keeps peeking out. Frames where the sun is already visible are left untouched.
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    sc=bpy.context.scene; cam=sc.camera; bag=bpy.data.objects.get('JS_BAG')
+    ms=[o for o in ([bag]+list(bag.children_recursive)) if o.type=='MESH'] if bag else []
+    if not ms: return sunv
+    from mathutils.bvhtree import BVHTree
+    for o in ms:   # ray-test the pack alone (scene.ray_cast would stop at the invisible flags/scrims around it)
+        if o.name not in _BVH: _BVH[o.name]=BVHTree.FromPolygons([v.co.copy() for v in o.data.vertices],[p.vertices[:] for p in o.data.polygons])
+    bpy.context.view_layer.update()
+    P=cam.matrix_world.translation; tr,br,bl,tl=[cam.matrix_world@c for c in cam.data.view_frame(scene=sc)]
+    def ray(u,v): return (bl.lerp(br,u).lerp(tl.lerp(tr,u),v)-P).normalized()
+    def hidden(d):
+        for o in ms:
+            Mi=o.matrix_world.inverted()
+            if _BVH[o.name].ray_cast(Mi@P,(Mi.to_3x3()@d).normalized())[0] is not None: return True
+        return False
+    if not hidden(sunv): return sunv
+    s=w2c(sc,cam,P+sunv*1000.0); u=s.x
+    while u<s.x+0.25 and hidden(ray(u,s.y)): u+=0.001
+    return sunv if u-s.x<=SUN_PEEK else ray(u-SUN_PEEK,s.y)
 def set_mode(d):
     sc=bpy.context.scene; w=sc.world; nt=w.node_tree; sk=nt.nodes['SKY']; bg=nt.nodes['Background']
     sunv=Vector((d['sun'][0],-d['sun'][2],d['sun'][1])).normalized()
@@ -162,6 +186,7 @@ def set_mode(d):
     elif d['shot']=='s5':   # golden low sun beside the bag (previs disc sits too high for a golden sky)
         k=max(0.0,min(1.0,(d['F']-458)/131.0)); k=k*k*(3-2*k); el=math.radians(BAG_SUN_EL0+(BAG_SUN_EL1-BAG_SUN_EL0)*k); az=math.radians(BAG_SUN_AZ)   # orange sun rising right behind the pack (justifies the backlight)
         sunv=Vector((math.sin(az)*math.cos(el),math.cos(az)*math.cos(el),math.sin(el)))
+        sunv=_sun_peek(sunv)
     sk.sun_elevation=math.asin(max(-0.2,min(1,sunv.z))); sk.sun_rotation=math.atan2(sunv.x,sunv.y)+SUNROT_OFF
     room=d['room']; under=d['under']
     so=bpy.data.objects['SUN']

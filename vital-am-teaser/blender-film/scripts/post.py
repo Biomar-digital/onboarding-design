@@ -55,18 +55,24 @@ def split(F):
 n=len([f for f in os.listdir(SRC) if f.endswith('.jpg') and '_' not in f])
 yy0,xx0=np.mgrid[0:H,0:W].astype(np.float32)
 VIG=(1.0-0.28*np.clip(((xx0-W/2)/(W/2))**2*0.8+((yy0-H/2)/(H/2))**2*0.9-0.25,0,1))[...,None]
+FL={'p':None,'amp':0.0}
 def flare(a):
-    L=a.mean(2); m=L.max()
-    if m<245: return a
-    ys,xs=np.nonzero(L>m-6)
-    if len(xs)<12: return a
-    sx,sy=xs.mean(),ys.mean(); cx,cy=W/2,H/2; out=a.copy()
+    # flare only from a real, clipped sun disc; position and strength are smoothed over frames so it never jumps or pops
+    L=a.mean(2); m=L.max(); tgt=0.0; pos=None
+    if m>=250:
+        ys,xs=np.nonzero(L>m-6)
+        if len(xs)>=12: pos=(xs.mean(),ys.mean()); tgt=min(1.0,(m-250)/5.0)
+    if pos is not None:
+        q=FL['p']; FL['p']=pos if q is None or math.hypot(pos[0]-q[0],pos[1]-q[1])>60*sc else (0.5*q[0]+0.5*pos[0],0.5*q[1]+0.5*pos[1])
+    FL['amp']+=(tgt-FL['amp'])*0.35
+    if FL['p'] is None or FL['amp']<0.02: return a
+    k=FL['amp']; sx,sy=FL['p']; cx,cy=W/2,H/2; out=a.copy()
     # soft anamorphic streak through the sun
-    st=np.exp(-((yy0-sy)/(3.5*sc))**2)*np.exp(-np.abs(xx0-sx)/(260*sc)); out+=st[...,None]*np.array([90,60,30],np.float32)
+    st=np.exp(-((yy0-sy)/(3.5*sc))**2)*np.exp(-np.abs(xx0-sx)/(260*sc)); out+=k*st[...,None]*np.array([90,60,30],np.float32)
     # ghosts along the sun -> centre line
-    for k,(t,r,col) in enumerate(((0.55,26,(40,30,18)),(0.95,14,(28,32,40)),(1.35,44,(20,26,30)),(1.7,9,(40,28,16)))):
-        gx=sx+(cx-sx)*t*1.0; gy=sy+(cy-sy)*t*1.0
-        d2=((xx0-gx)**2+(yy0-gy)**2)/(r*sc)**2; out+=(np.clip(1-d2,0,1)**1.5)[...,None]*np.array(col,np.float32)
+    for t,r,col in ((0.55,26,(40,30,18)),(0.95,14,(28,32,40)),(1.35,44,(20,26,30)),(1.7,9,(40,28,16))):
+        gx=sx+(cx-sx)*t; gy=sy+(cy-sy)*t
+        d2=((xx0-gx)**2+(yy0-gy)**2)/(r*sc)**2; out+=k*(np.clip(1-d2,0,1)**1.5)[...,None]*np.array(col,np.float32)
     return out
 def finish(img,F):
     a=np.asarray(img.convert('RGB')).astype(np.float32)
