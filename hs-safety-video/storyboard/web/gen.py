@@ -37,7 +37,7 @@ def card(f):
     fid,img,tc,vo,vis,cam=f[:6]; ost=f[6] if len(f)>6 else ""
     if img: media=f'<img src="{img}" alt="Frame {fid}: {html.escape(vis)}" loading="lazy" width="1280" height="720">'
     else:
-        kind="Screen recording" if "Screen recording" in cam else "Motion graphic"
+        kind="Screen recording" if "screen recording" in cam.lower() else "Motion graphic"
         media=f'<div class="ph"><span class="ph-k">{kind}</span><span class="ph-t">{html.escape(ost or vis)}</span></div>'
     vo_html=f'<blockquote class="vo">{html.escape(vo)}</blockquote>' if vo else '<p class="vo none">No voice-over (music only)</p>'
     ost_html=f'<div class="row"><span class="k">On screen</span><span>{html.escape(ost)}</span></div>' if ost else ''
