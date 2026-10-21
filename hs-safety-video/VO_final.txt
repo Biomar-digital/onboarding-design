@@ -1,0 +1,31 @@
+BioMar – How to report a safety incident – Voice-over (final script)
+
+SCENE 1 – Why incident reporting matters (0:00–0:25)
+[0:00] 1A  Together, we can create a safer workplace by learning from every hazard, near miss and incident.
+[0:09] 1B  When you report what you see or experience, you help us identify risks early and prevent future harm.
+[0:19] 1C  Reporting is quick and easy for everyone in Workday.
+
+SCENE 2 – What is a safety incident? (0:25–1:10)
+[0:25] 2·0  Safety events can take different forms, including:
+[0:32] 2A  Injuries, such as cuts, burns, strains or fractures.
+[0:37] 2B  Hazards, such as damaged equipment, spills, blocked walkways or other unsafe conditions that could cause harm.
+[0:46] 2C  Near misses, where no one was hurt and nothing was damaged, but easily could have been.
+[0:55] 2D  Even when a hazard or near miss causes no harm, reporting it gives us the opportunity to learn, address the risk and help keep everyone safe.
+
+SCENE 3 – What should you do? (1:10–1:55)
+[1:10] 3A  If an incident occurs, your first priority is to prevent further injury or material damage. If it is safe to do so, stop the activity, secure the area and take any immediate action needed to protect people and create a safe workplace.
+[1:32] 3B  Help anyone who is injured, seek assistance and follow local emergency procedures.
+[1:41] 3C  Once the situation is safe and under control, it is time to report: inform your supervisor or manager as soon as possible and submit the incident report in Workday.
+
+SCENE 4 – How to report in Workday (1:55–3:25)
+[1:55] 4A  As an employee, you can report safety incidents directly in Workday, helping ensure that important information is recorded promptly. You can report from your computer or phone, whichever is most convenient.
+[2:10] 4·1  To get started, just open Workday and select “Report Safety Incident” from the menu.
+[2:20] 4·2  You can also search for “Report Safety Incident” using the search bar.
+[2:27] 4·3  You just need to complete the following fields: business unit and site; date and time of the incident; type of incident; area where the incident occurred; and a brief summary of what happened. Please do not include names or other personal information.
+[2:55] 4B  If it is safe and relevant, you can also upload photos before submitting the report.
+[3:11] 4C  After you submit the report, your local Health & Safety representative will review it, investigate the incident, ensure relevant corrective actions are taken and follow up as needed.
+
+SCENE 5 – Closing (3:25–3:47)
+[3:25] 5A  Every report makes a difference.
+[3:29] 5B  By reporting incidents, you help protect your colleagues…
+[3:34] 5C  …and contribute to a safer workplace for everyone.
