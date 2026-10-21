@@ -1,0 +1,79 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>2D motion graphic</title>
+<style>
+@font-face{font-family:Avenir;src:url(AvenirNextLTPro-Regular.otf);font-weight:400}
+@font-face{font-family:Avenir;src:url(AvenirNextLTPro-Demi.otf);font-weight:600}
+@font-face{font-family:Avenir;src:url(AvenirNextLTPro-Bold.otf);font-weight:700}
+:root{--blue:#1f3e77;--ocean:#0471ad;--sky:#92cee8;--crisp:#c3e4ef;--green:#97d130;--yellow:#eab318}
+html,body{margin:0;width:1920px;height:1080px;background:transparent;overflow:hidden}
+body{font-family:Avenir,Arial,sans-serif;color:var(--blue)}
+.abs{position:absolute}
+.card{width:400px;height:140px;top:170px;margin-left:-200px;background:#fff;border-radius:22px;
+  box-shadow:0 10px 30px rgba(31,62,119,.22);display:flex;align-items:center;gap:22px;padding:0 30px;box-sizing:border-box;transform-origin:50% 100%}
+.card svg{width:76px;height:76px;flex:none}
+.card span{font-weight:700;font-size:38px;letter-spacing:.01em;line-height:1.05}
+#lines{left:0;top:0}
+#lines path{fill:none;stroke:var(--ocean);stroke-width:7;stroke-linecap:round}
+.box{left:960px;top:445px;width:640px;height:150px;margin-left:-320px;background:var(--blue);border-radius:24px;
+  box-shadow:0 14px 40px rgba(31,62,119,.35);display:flex;align-items:center;justify-content:center;gap:24px;color:#fff}
+.box svg{width:78px;height:78px}
+.box span{font-weight:700;font-size:62px;letter-spacing:.01em}
+.box i{position:absolute;left:0;top:22px;bottom:22px;width:10px;border-radius:0 6px 6px 0;background:var(--green)}
+.chips{left:0;width:1920px;top:690px;display:flex;justify-content:center;gap:30px}
+.chip{background:#fff;border-radius:999px;height:88px;padding:0 36px 0 18px;display:flex;align-items:center;gap:18px;
+  box-shadow:0 8px 24px rgba(31,62,119,.2);transform-origin:50% 50%}
+.chip svg{width:56px;height:56px}
+.chip span{font-weight:700;font-size:36px;letter-spacing:.025em}
+</style></head><body>
+<svg id="lines" class="abs" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <path id="l0" d="M460 310 C460 390 760 380 760 445"/>
+  <path id="l1" d="M960 310 L960 445"/>
+  <path id="l2" d="M1460 310 C1460 390 1160 380 1160 445"/>
+</svg>
+
+<div class="card abs" id="c0" style="left:460px">
+  <!-- personal injury: filled first-aid cross -->
+  <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/><path fill="#fff" d="M26 14h12v12h12v12H38v12H26V38H14V26h12z"/></svg>
+  <span>Personal<br>injury</span></div>
+<div class="card abs" id="c1" style="left:960px">
+  <!-- hazard: filled warning triangle -->
+  <svg viewBox="0 0 64 64"><path fill="#eab318" d="M28.5 6.1a4 4 0 0 1 7 0l26.9 49.3A4 4 0 0 1 58.9 61H5.1a4 4 0 0 1-3.5-5.6z"/><path fill="#1f3e77" d="M29 22h6l-1 20h-4zM32 46.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg>
+  <span>Hazard</span></div>
+<div class="card abs" id="c2" style="left:1460px">
+  <!-- near miss: filled falling box with motion bars -->
+  <svg viewBox="0 0 64 64"><g fill="#0471ad"><rect x="2" y="8" width="7" height="24" rx="3.5"/><rect x="13" y="2" width="7" height="18" rx="3.5"/>
+  <path transform="rotate(16 42 40)" d="M25 21h34a3 3 0 0 1 3 3v32a3 3 0 0 1-3 3H25a3 3 0 0 1-3-3V24a3 3 0 0 1 3-3z"/></g>
+  <path transform="rotate(16 42 40)" fill="#fff" d="M36 21h12v14l-6-3.5-6 3.5z"/></svg>
+  <span>Near miss</span></div>
+
+<div class="box abs" id="box"><i></i>
+  <!-- filled shield -->
+  <svg viewBox="0 0 64 64"><path fill="#97d130" d="M32 3l25 9v17c0 16-11 27-25 32C18 56 7 45 7 29V12z"/><path fill="#1f3e77" d="M27.5 41.5 18 32l4-4 5.5 5.5L42 19l4 4z"/></svg>
+  <span>Safety Incident</span></div>
+
+<div class="chips abs" id="chips">
+  <div class="chip" id="h0"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#97d130"/><path fill="#fff" d="M27 45 15 33l5-5 7 7 17-17 5 5z"/></svg><span>Learn</span></div>
+  <div class="chip" id="h1"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#97d130"/><path fill="#fff" d="M27 45 15 33l5-5 7 7 17-17 5 5z"/></svg><span>Address the risk</span></div>
+  <div class="chip" id="h2"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#97d130"/><path fill="#fff" d="M27 45 15 33l5-5 7 7 17-17 5 5z"/></svg><span>Keep everyone safe</span></div>
+</div>
+
+<script>
+const clamp=(x)=>Math.max(0,Math.min(1,x));
+const easeOutBack=(x)=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const easeInOut=(x)=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const prog=(t,s,d)=>clamp((t-s)/d);
+const T={cards:[0.15,0.4,0.65],lines:[1.2,1.35,1.5],box:2.1,chips:[5.3,6.6,8.2],out:10.3,end:11.0};
+const L=[...document.querySelectorAll('#lines path')];
+L.forEach(p=>{const n=p.getTotalLength();p.style.strokeDasharray=n;p.dataset.n=n});
+function pop(el,p,from=0.6,dy=30){const e=easeOutBack(p);el.style.opacity=clamp(p*2.2);
+  el.style.transform=`translateY(${(1-e)*dy}px) scale(${from+(1-from)*e})`}
+window.render=function(t){
+  const o=1-easeInOut(prog(t,T.out,T.end-T.out-0.1));
+  document.body.style.opacity=o; document.body.style.transform=`scale(${0.97+0.03*o})`;
+  T.cards.forEach((s,i)=>pop(document.getElementById('c'+i),prog(t,s,0.55)));
+  L.forEach((p,i)=>{const k=easeInOut(prog(t,T.lines[i],0.8));p.style.strokeDashoffset=p.dataset.n*(1-k);p.style.opacity=k>0?1:0});
+  pop(document.getElementById('box'),prog(t,T.box,0.6),0.7,20);
+  T.chips.forEach((s,i)=>pop(document.getElementById('h'+i),prog(t,s,0.5),0.6,24));
+};
+render(0);
+</script></body></html>
