@@ -8,6 +8,7 @@ W,H,FPS=1920,1080,30
 HERE=__file__.rsplit('/',1)[0]
 T=json.load(open(TRK)); N=len(T)
 tb=Image.open(TB).convert('RGB')
+ROW_FILL=np.load(f'{HERE}/row926_med.npy')               # median of src row 926 over the clip
 ORANGE=(221,105,40); BLUE=(31,62,119); HL=(246,214,120); ACC=(234,179,24)
 ROB=f'{HERE}/fonts/roboto-latin-400-normal.woff'
 F_T=ImageFont.truetype(f'{HERE}/fonts/AvenirNextLTPro-Bold.otf',30)
@@ -136,7 +137,7 @@ CARD_CACHE={k:card(k,1) for k in CARDS}
 def render(i,src):
     t=i/FPS
     img=Image.fromarray(src.copy()); anonymise(img,i)
-    a=np.asarray(img); top=a[148:927]; fill=np.repeat(a[926:927],1032-len(top),0)
+    a=np.asarray(img); top=a[148:927]; fill=np.repeat(ROW_FILL[None],1032-len(top),0)   # cursor-free row, no streaks
     fr=Image.new('RGB',(W,H)); fr.paste(Image.fromarray(np.concatenate([top,fill])),(0,0)); fr.paste(tb,(0,1032))
     z,cx,cy=zoom_at(t,i); cy-=148                 # to formatted coords
     cw,ch=W/z,H/z; x0=min(max(cx-cw/2,0),W-cw); y0=min(max(cy-ch/2,0),H-ch)
