@@ -8,7 +8,7 @@ W,H,FPS=1920,1080,30
 HERE=__file__.rsplit('/',1)[0]
 T=json.load(open(TRK)); N=len(T)
 tb=Image.open(TB).convert('RGB')
-ORANGE=(221,105,40); BLUE=(31,62,119)
+ORANGE=(221,105,40); BLUE=(31,62,119); HL=(246,214,120); ACC=(234,179,24)
 ROB=f'{HERE}/fonts/roboto-latin-400-normal.woff'
 F_T=ImageFont.truetype(f'{HERE}/fonts/AvenirNextLTPro-Bold.otf',30)
 F_B=ImageFont.truetype(f'{HERE}/fonts/AvenirNextLTPro-Regular.otf',24)
@@ -46,19 +46,19 @@ def text_img(s,size,color):
     S=8; f=ImageFont.truetype(ROB,size*S); bb=f.getbbox(s)
     im=Image.new('L',(bb[2]+4*S,int(size*S*1.6)),0); ImageDraw.Draw(im).text((2*S,0),s,font=f,fill=255)
     im=im.resize((im.width//S,im.height//S),Image.BOX); return im,(bb[1]//S)
-def patch(img,x0,y0,x1,y1,s,cap_top):
+def patch(img,x0,y0,x1,y1,s,cap_top,tx):
     a=np.asarray(img); reg=a[max(y0,HDR):y1,x0:x1]
     if reg.size==0: return
     lum=reg.mean(2); bg=np.median(reg[lum>lum.max()-25],0) if (lum>lum.max()-25).any() else np.array([243,243,243])
     lay=Image.new('RGB',(x1-x0,y1-y0),tuple(int(v) for v in bg))
     m,off=text_img(s,7.45,0); col=Image.new('RGB',m.size,(40,40,40))
-    lay.paste(col,(122-x0 if x0<122 else 3, cap_top-y0-off-1),m)
+    lay.paste(col,(tx-x0, cap_top-y0-off-1),m)
     if y0<HDR: lay=lay.crop((0,HDR-y0,lay.width,lay.height)); y0=HDR
     if lay.height>0: img.paste(lay,(x0,y0))
 def anonymise(img,i):
     loc,inc=pill_pos(i)
-    if loc is not None and loc+24>HDR: patch(img,119,loc,215,loc+24,'[Location]',loc+8)
-    if inc is not None and inc+16>HDR: patch(img,143,inc,243,inc+16,'[Location] - Production',inc+4)
+    if loc is not None and loc+20>HDR: patch(img,118,loc+2,215,loc+20,'[Location]',loc+8,122)
+    if inc is not None and inc+14>HDR: patch(img,143,inc+1,241,inc+14,'[Location] - Production',inc+4,146)
 
 # ---------- sections ----------
 CARDS={'loc':('Location','In which business unit and site did the incident happen?'),
@@ -75,9 +75,9 @@ def geom(name,i):
     if name in ANCH:
         L=SANCH[name][i]
         if L is None: return None
-        if name=='loc':     return (8,L-12,266,L+27),(2.2,300,L+90)
+        if name=='loc':     return (8,L-12,266,L+(27 if T[i]['p_loc'][1]<12 else 18)),(2.2,300,L+90)
         if name=='date':    return (8,L-11,266,L+50),(2.2,300,L+40)
-        if name=='type':    return (8,L-12,290,L+35),(2.0,320,L+110)
+        if name=='type':    return (8,L-12,290,(ANCH['incloc'][i]-16) if ANCH['incloc'][i] else L+35),(2.0,320,L+110)
         if name=='incloc':  return (8,L-12,290,L+20),(2.0,320,L+70)
         if name=='summary': return (8,L-12,503,L+86),(1.9,420,L+40)
     if name=='attach': return (820,662,1092,756),(1.6,960,720)
@@ -86,16 +86,36 @@ def active(t):
     for n,a,b in SECT:
         if a<=t<b: return n,a,b
     return None,0,0
+ease3=lambda x:(lambda x:4*x*x*x if x<.5 else 1-(-2*x+2)**3/2)(min(1.0,max(0.0,x)))
+FULL=(1.0,W/2,H/2+148)
+def sect_target(name):
+    n=[k for k in SECT if k[0]==name][0]; mid=int((n[1]+n[2])/2*FPS)
+    if name in ANCH:                                 # framing fixed for the whole section (no per-frame follow)
+        ys=[ANCH[name][j] for j in range(int(n[1]*FPS),min(N,int(n[2]*FPS))) if ANCH[name][j] is not None]
+        L=int(np.median(ys)); SANCH[name][mid]=L
+    return geom(name,mid)[1]
+KEYS=[]                                              # (start,end,target)
+prev_end=0.0
+for n,a0,b0 in SECT:
+    if a0>prev_end+1e-6: KEYS.append((prev_end,a0,FULL))
+    KEYS.append((a0,b0,sect_target(n))); prev_end=b0
+KEYS.append((prev_end,1e9,FULL))
+TR=0.8
+def clampc(z,cx,cy):
+    cw,ch=W/z,H/z; cy-=148
+    return z,min(max(cx,cw/2),W-cw/2),min(max(cy,ch/2),H-ch/2)+148
 def zoom_at(t,i):
-    # blend between the targets of neighbouring sections; full frame at start, during the scroll and at the end
-    def tgt(tt):
-        n,_,_=active(tt)
-        if n is None: return (1.0,W/2,H/2+148)
-        g=geom(n,i); return g[1] if g else (1.0,W/2,H/2+148)
-    TR=0.55; acc=np.zeros(3); wsum=0
-    for k in range(-3,4):                          # small box-filter over time = eased transitions
-        tt=t+k*TR/6; z,cx,cy=tgt(tt); acc+=np.array([z,cx,cy]); wsum+=1
-    return acc/wsum
+    for k,(a0,b0,tg) in enumerate(KEYS):
+        if t<b0: break
+    A=clampc(*tg)
+    if k+1<len(KEYS) and t>b0-TR/2:
+        B=clampc(*KEYS[k+1][2]); u=ease3((t-(b0-TR/2))/TR)
+    elif k>0 and t<a0+TR/2:
+        B=A; A=clampc(*KEYS[k-1][2]); u=ease3((t-(a0-TR/2))/TR)
+    else: return A
+    z=np.exp(np.log(A[0])*(1-u)+np.log(B[0])*u)
+    # move the window so the framing glides without overshoot
+    return z,A[1]*(1-u)+B[1]*u,A[2]*(1-u)+B[2]*u
 def card(name,alpha):
     title,body=CARDS[name]; wmax=520
     words=body.split(); lines=[];cur=''
@@ -106,10 +126,8 @@ def card(name,alpha):
     lines.append(cur)
     tw=max(F_T.getlength(title),*(F_B.getlength(l) for l in lines))+56; th=24+38+len(lines)*32+18
     im=Image.new('RGBA',(int(tw)+40,int(th)+40),(0,0,0,0)); d=ImageDraw.Draw(im)
-    sh=Image.new('RGBA',im.size,(0,0,0,0)); ImageDraw.Draw(sh).rounded_rectangle((20,24,20+tw,24+th),16,fill=(31,62,119,70))
-    im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(10)))
-    d.rounded_rectangle((20,20,20+tw,20+th),16,fill=(255,255,255,255))
-    d.rounded_rectangle((20,20,28,20+th),4,fill=ORANGE+(255,))
+    d.rounded_rectangle((20,20,20+tw,20+th),16,fill=(255,255,255,255),outline=(214,222,232,255),width=2)
+    d.rounded_rectangle((20,20,28,20+th),4,fill=ACC+(255,))
     d.text((46,40),title,font=F_T,fill=BLUE); y=40+40
     for l in lines: d.text((46,y),l,font=F_B,fill=(51,51,51)); y+=32
     if alpha<1: im.putalpha(im.getchannel('A').point(lambda v:int(v*alpha)))
@@ -130,11 +148,17 @@ def render(i,src):
         g=geom(n,i)
         al=ease((t-a0-0.25)/0.3)*(1-ease((t-(b0-0.3))/0.25))
         if g and al>0:
-            bx=g[0]; p0=S(bx[0],bx[1]); p1=S(bx[2],bx[3]); pad=8
-            r=(p0[0]-pad,p0[1]-pad,p1[0]+pad,p1[1]+pad)
-            tint=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(tint).rounded_rectangle(r,14,fill=ORANGE+(int(26*al),))
-            d.rounded_rectangle(r,14,outline=ORANGE+(int(255*al),),width=5)
-            glow=lay.filter(ImageFilter.GaussianBlur(7)); base.alpha_composite(tint); base.alpha_composite(glow)
+            bx=g[0]; p0=S(bx[0],bx[1]); p1=S(bx[2],bx[3]); pad=6
+            r=[p0[0]-pad,p0[1]-pad,p1[0]+pad,p1[1]+pad]
+            wipe=ease3((t-a0-0.25)/0.35); rx=r[0]+(r[2]-r[0])*wipe
+            if rx>r[0]+2:
+                xa,ya,xb,yb=[int(round(v)) for v in (max(0,r[0]),max(0,r[1]),min(W,rx),min(H,r[3]))]
+                if xb>xa and yb>ya:
+                    reg=np.asarray(base)[ya:yb,xa:xb,:3].astype(np.float32)
+                    out=reg*(1-al+al*np.array(HL,np.float32)/255)          # multiply blend
+                    m=Image.new('L',(xb-xa,yb-ya),0); ImageDraw.Draw(m).rounded_rectangle((0,0,xb-xa-1,yb-ya-1),6,fill=255)
+                    patchimg=Image.fromarray(out.clip(0,255).astype(np.uint8)).convert('RGBA')
+                    base.paste(patchimg,(xa,ya),m)
             c=CARD_CACHE[n]
             if al<1: c=c.copy(); c.putalpha(c.getchannel('A').point(lambda v:int(v*al)))
             cxp=int(r[2]+22); cyp=int((r[1]+r[3])/2-c.height/2)
@@ -149,7 +173,7 @@ def render(i,src):
             for k in (0,0.33):
                 q=p-k
                 if 0<q<1:
-                    rr=10+42*ease(q); d.ellipse((c[0]-rr,c[1]-rr,c[0]+rr,c[1]+rr),outline=ORANGE+(int(230*(1-q)),),width=5)
+                    rr=10+42*ease(q); d.ellipse((c[0]-rr,c[1]-rr,c[0]+rr,c[1]+rr),outline=ACC+(int(240*(1-q)),),width=5)
     base.alpha_composite(lay); return base.convert('RGB')
 
 raw=subprocess.Popen(['ffmpeg','-v','error','-i',SRC,'-f','rawvideo','-pix_fmt','rgb24','-'],stdout=subprocess.PIPE)
