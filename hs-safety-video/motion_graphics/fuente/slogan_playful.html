@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Slogan playful</title>
+<style>
+@font-face{font-family:Avenir;src:url(AvenirNextLTPro-Bold.otf);font-weight:700}
+html,body{margin:0;width:1920px;height:1080px;background:transparent;overflow:hidden}
+body{font-family:Avenir,Arial,sans-serif}
+.row{position:absolute;left:0;top:0;width:1920px;height:1080px;display:flex;align-items:center;justify-content:center;gap:34px}
+.slot{position:relative}
+.chip{background:#fff;border-radius:999px;height:112px;padding:0 46px 0 22px;display:flex;align-items:center;gap:20px;
+  box-shadow:0 8px 24px rgba(31,62,119,.2);opacity:0;transform-origin:50% 100%}
+.chip svg{width:72px;height:72px;overflow:visible}
+.chip span{font-weight:700;font-size:50px;letter-spacing:.01em;color:#1f3e77;white-space:nowrap}
+.burst{position:absolute;left:50%;top:100%;width:0;height:0}
+.burst i{position:absolute;border-radius:50%;opacity:0}
+</style></head><body>
+<div class="row">
+  <div class="slot"><div class="chip" id="c0"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/>
+    <g id="eye" style="transform-origin:32px 32px"><path fill="#fff" d="M32 19c-10 0-18 7-21 13 3 6 11 13 21 13s18-7 21-13c-3-6-11-13-21-13z"/><circle cx="32" cy="32" r="7.5" fill="#0471ad"/><circle cx="32" cy="32" r="3.2" fill="#fff"/></g></svg><span>See it.</span></div><div class="burst" id="b0"></div></div>
+  <div class="slot"><div class="chip" id="c1"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/><path fill="#fff" d="M22 17h6a4 4 0 0 1 8 0h6a2 2 0 0 1 2 2v28a2 2 0 0 1-2 2H22a2 2 0 0 1-2-2V19a2 2 0 0 1 2-2z"/><path fill="#0471ad" d="M27 15.5h10v5H27z"/>
+    <rect id="l0" x="25" y="27" width="14" height="3" fill="#0471ad"/><rect id="l1" x="25" y="33" width="14" height="3" fill="#0471ad"/><rect id="l2" x="25" y="39" width="9" height="3" fill="#0471ad"/></svg><span>Report it.</span></div><div class="burst" id="b1"></div></div>
+  <div class="slot"><div class="chip" id="c2"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#97d130"/><path fill="#fff" d="M32 13l15 6v11c0 10-6.5 17.5-15 21-8.5-3.5-15-11-15-21V19z"/>
+    <path id="tick" d="M24.5 32.5l5.5 5.5 10-10" fill="none" stroke="#97d130" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Prevent it.</span></div><div class="burst" id="b2"></div></div>
+</div>
+<script>
+const clamp=x=>Math.max(0,Math.min(1,x));
+const prog=(t,s,d)=>clamp((t-s)/d);
+const easeIn=x=>x*x*x, easeOut=x=>1-Math.pow(1-x,3);
+const COLS=['#92cee8','#97d130','#eab318','#dd6928','#0471ad','#c3e4ef'];
+const LAND=[0.38,0.88,1.38], DROP=0.32;
+// burst particles
+[0,1,2].forEach(k=>{const b=document.getElementById('b'+k);
+  for(let j=0;j<12;j++){const i=document.createElement('i');const s=14+((j*7)%3)*6;i.style.width=i.style.height=s+'px';
+    i.style.marginLeft=i.style.marginTop=(-s/2)+'px';i.style.background=COLS[(j+k*2)%COLS.length];
+    i.dataset.a=(-200+ j*(220/11))*Math.PI/180; i.dataset.r=150+((j*37)%90); b.appendChild(i);}});
+const tick=document.getElementById('tick'); const TL=tick.getTotalLength(); tick.style.strokeDasharray=TL;
+window.render=function(t){
+  [0,1,2].forEach(k=>{
+    const el=document.getElementById('c'+k), L=LAND[k];
+    let y=0,sx=1,sy=1,rot=0,op=0;
+    if(t<L-DROP){op=0}
+    else if(t<L){const p=easeIn(prog(t,L-DROP,DROP)); y=-260*(1-p); op=clamp(prog(t,L-DROP,0.08)); sy=1+0.12*p; sx=1-0.08*p; rot=-7*(1-p)}
+    else{const u=t-L; op=1;
+      // squash on impact, then a damped bounce + wobble
+      const sq=Math.exp(-u*9)*Math.cos(u*26); sy=1-0.22*sq; sx=1+0.16*sq;
+      y=-Math.abs(Math.sin(u*11))*44*Math.exp(-u*6);
+      rot=5*Math.exp(-u*5)*Math.sin(u*18);
+      // closing wave
+      const w=prog(t,2.15+k*0.12,0.32); y+=-28*Math.sin(Math.PI*w);
+      if(w>0&&w<1){sy*=1+0.05*Math.sin(Math.PI*w); sx*=1-0.03*Math.sin(Math.PI*w)}
+    }
+    el.style.opacity=op; el.style.transform=`translateY(${y}px) rotate(${rot}deg) scale(${sx},${sy})`;
+    // burst
+    const bp=prog(t,L,0.55);
+    [...document.getElementById('b'+k).children].forEach(i=>{const a=+i.dataset.a,r=+i.dataset.r*easeOut(bp);
+      i.style.transform=`translate(${Math.cos(a)*r}px,${Math.sin(a)*r*0.75-56}px) scale(${1-0.5*bp})`; i.style.opacity=bp>0&&bp<1?(1-bp):0;});
+  });
+  // icons come alive
+  const bl=prog(t,LAND[0]+0.45,0.22), bl2=prog(t,1.95,0.2);
+  const blink=Math.max(Math.sin(Math.PI*bl),Math.sin(Math.PI*bl2));
+  document.getElementById('eye').style.transform=`scaleY(${1-0.9*blink})`;
+  [0,1,2].forEach(j=>{const p=easeOut(prog(t,LAND[1]+0.15+j*0.12,0.22)); const r=document.getElementById('l'+j);
+    r.setAttribute('width',(j==2?9:14)*p)});
+  tick.style.strokeDashoffset=TL*(1-easeOut(prog(t,LAND[2]+0.2,0.3)));
+};
+render(0);
+</script></body></html>
