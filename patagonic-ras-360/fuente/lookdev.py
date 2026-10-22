@@ -147,18 +147,70 @@ def lin(ob,attr,v0,v1):
     for fc in ob.animation_data.action.fcurves:
         for kp in fc.keyframe_points: kp.interpolation='LINEAR'
 if ANIM:
-    random.seed(11)
+    # ---- schooling (boids): a vigorous school following a meandering lead along the tank's circular flow
+    import numpy as np
+    rng=np.random.default_rng(5); random.seed(11)
+    CY=34.0; R0=30.0; VL=1.05; DT=1/24; WARM=48; X0=-5.5
+    NS=58                                                      # fish in the school; the rest swim alone
+    def lead(t):
+        th=-math.pi/2+(X0+VL*t)/R0; rr=R0+0.8*math.sin(0.9*t)
+        return np.array([rr*math.cos(th),CY+rr*math.sin(th),0.9+0.25*math.sin(0.6*t+1.0)])
+    def lead_v(t): return (lead(t+0.02)-lead(t-0.02))/0.04
+    P=lead(-WARM*DT)+rng.normal(0,1,(NS,3))*np.array([1.8,1.3,0.45])
+    V=np.tile(lead_v(-WARM*DT),(NS,1))+rng.normal(0,0.15,(NS,3))
+    burst=np.zeros(NS); trackP=[];trackV=[]
+    for k in range(-WARM,F):
+        t=k*DT; Lp=lead(t); Lv=lead_v(t)
+        d=P[:,None,:]-P[None,:,:]; dist=np.linalg.norm(d,axis=2)+np.eye(NS)*99
+        nb=(dist<1.6); cnt=np.maximum(nb.sum(1,keepdims=True),1)
+        align=(nb[:,:,None]*V[None,:,:]).sum(1)/cnt-V
+        coh=(nb[:,:,None]*P[None,:,:]).sum(1)/cnt-P
+        close=(dist<0.5)
+        sep=(close[:,:,None]*d/np.maximum(dist[:,:,None]**2,0.02)).sum(1)
+        seek=Lp-P; seek[:,2]*=2.5
+        A=1.6*align+0.5*coh+1.8*sep+0.22*seek+0.35*(Lv-V)+rng.normal(0,0.35,(NS,3))*np.array([1,1,0.3])
+        A[:,2]-=1.2*V[:,2]                                   # damp vertical motion: they swim mostly level
+        # sudden darts: a few fish burst for ~0.4 s
+        burst=np.maximum(burst-DT,0); go=rng.random(NS)<0.18*DT; burst[go]=0.4
+        V=V+A*DT; sp=np.linalg.norm(V,axis=1,keepdims=True)
+        lo,hi=0.7,1.3; boost=np.where(burst>0,1.7,1.0)[:,None]
+        V=V/np.maximum(sp,1e-6)*np.clip(sp*boost**DT*12/12,lo,hi*boost)
+        if burst.any(): V[burst>0]*=1+0.9*DT
+        P=P+V*DT
+        if k>=0: trackP.append(P.copy()); trackV.append(V.copy())
+    trackP=np.array(trackP); trackV=np.array(trackV)
+    def orient(v,prev_yaw,prev_bank):
+        yaw=math.atan2(v[0],-v[1]); h=math.hypot(v[0],v[1]); pitch=max(-0.21,min(0.21,-math.atan2(v[2],h)))
+        dyaw=(yaw-prev_yaw+math.pi)%(2*math.pi)-math.pi if prev_yaw is not None else 0.0
+        bank=0.8*(prev_bank or 0)+0.2*max(-0.6,min(0.6,-dyaw*24*0.25))   # lean into turns, smoothed
+        return pitch,bank,(prev_yaw+dyaw) if prev_yaw is not None else yaw
     for i,(r,a) in enumerate(fish):
-        fwd=r.matrix_world.to_3x3()@mathutils.Vector((0,-1,0)); fwd.normalize()
-        v=random.uniform(0.28,0.42)*(0.6 if i<3 else 1.0)       # m/s; close fish a bit slower so they stay in shot
-        p0=r.location.copy(); lin(r,'location',p0,p0+fwd*v*F/24)
+        if i<NS:
+            yw=None; bk=None; sc_=r.scale.copy()
+            for f in range(F):
+                pitch,bk,yw=orient(trackV[f,i],yw,bk)
+                r.location=trackP[f,i]; r.rotation_euler=(pitch,bk,yw)
+                r.keyframe_insert('location',frame=f+1); r.keyframe_insert('rotation_euler',frame=f+1)
+            v=float(np.linalg.norm(trackV[:,i],axis=1).mean())
+        else:   # loners: slow curved cruise at their own depth
+            x0,y0,z0=r.location; R=max(1.5,math.hypot(x0,y0-CY)); th0=math.atan2(y0-CY,x0)
+            sense=1 if random.random()<0.7 else -1; v=random.uniform(0.4,0.7)
+            yw=None; bk=None
+            for f in range(F):
+                t=f*DT; th=th0+sense*v*t/R; z=z0+0.2*math.sin(0.8*t+i)
+                p=mathutils.Vector((R*math.cos(th),CY+R*math.sin(th),z))
+                vv=np.array([-math.sin(th)*sense*v,math.cos(th)*sense*v,0.16*math.cos(0.8*t+i)])
+                pitch,bk,yw=orient(vv,yw,bk); r.location=p; r.rotation_euler=(pitch,bk,yw)
+                r.keyframe_insert('location',frame=f+1); r.keyframe_insert('rotation_euler',frame=f+1)
+        # vigorous tail beat: the swim cycle runs faster the faster the fish goes
+        for tr in a.animation_data.nla_tracks:
+            for st in tr.strips: st.scale=max(0.3,min(1.0,0.38/v)); st.repeat=14
     drift=bpy.data.objects.new('Drift',None); sc.collection.objects.link(drift)
     rise=bpy.data.objects.new('Rise',None); sc.collection.objects.link(rise)
     for o in list(sc.objects):
         if o.name.startswith('Flake') : o.parent=drift
         if o.name.startswith('Bubble'): o.parent=rise
     lin(drift,'location',(0,0,0),(0.04*F/24,-0.02*F/24,0.015*F/24)); lin(rise,'location',(0,0,0),(0,0,0.35*F/24))
-    c0=co.location.copy(); lin(co,'location',c0,c0+mathutils.Vector((0.06,0.12,0.02))*F/24)
     sc.render.image_settings.file_format='PNG'
 else:
     sc.frame_set(40)
