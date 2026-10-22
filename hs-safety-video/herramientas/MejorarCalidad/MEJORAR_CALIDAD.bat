@@ -1,11 +1,5 @@
 @echo off
-rem ---- reabrirse dentro de una ventana que NO se cierra sola (para ver siempre que paso)
-if "%MC_RUN%"=="1" goto :main
-set MC_RUN=1
-start "Mejorar calidad" cmd /k call "%~f0" %*
-exit /b
-
-:main
+echo Iniciando Mejorar calidad...
 title Mejorar calidad - escalado con IA (Real-ESRGAN, placa de video)
 cd /d "%~dp0"
 echo Carpeta de la herramienta: %CD%
@@ -29,6 +23,7 @@ if not defined LIST (
   echo  - Arrastra los videos ENCIMA de MEJORAR_CALIDAD.bat, o
   echo  - copialos en esta carpeta y hace doble clic en MEJORAR_CALIDAD.bat
   echo IMPORTANTE: primero descomprimi el zip ^(clic derecho - Extraer todo^).
+  pause
   goto :eof
 )
 echo Videos:
@@ -74,6 +69,7 @@ if not exist "%FF%" (
 for %%v in (%LIST%) do call :one "%%~v" || goto :err
 echo.
 echo LISTO. Los videos nuevos estan al lado de los originales, terminados en %TAG%.mp4
+pause
 goto :eof
 
 :one
@@ -98,4 +94,5 @@ exit /b 0
 :err
 echo.
 echo Hubo un error. Saca una captura de esta ventana y mandasela a Claude.
+pause
 goto :eof

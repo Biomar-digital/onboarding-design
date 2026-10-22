@@ -29,4 +29,9 @@ temporales (se borran solos al terminar). Para el video completo de 4 min hacen
 falta ~30 GB libres; por eso conviene ir clip por clip.
 
 SI ALGO FALLA
+Si la ventana se abre y se cierra sola, correlo asi para ver el error:
+  1. Abri la carpeta MejorarCalidad (la descomprimida).
+  2. Clic en la barra de direccion de arriba, escribi  cmd  y Enter.
+  3. En la ventana negra escribi  MEJORAR_CALIDAD.bat  y Enter.
+  Asi la ventana no se cierra y se ve el mensaje.
 Saca una captura de la ventana negra y mandasela a Claude.
