@@ -1,0 +1,31 @@
+MEJORAR CALIDAD - escalado con IA usando tu placa de video (Real-ESRGAN)
+=========================================================================
+
+COMO SE USA
+1. Descomprimi esta carpeta en un lugar con espacio (ej. C:\MejorarCalidad).
+   No la pongas dentro de OneDrive.
+2. Arrastra uno o varios videos ENCIMA de MEJORAR_CALIDAD.bat
+   (o copialos en esta carpeta y hace doble clic en el .bat).
+3. Elegi el tipo de video y la resolucion. La primera vez baja Real-ESRGAN y ffmpeg
+   (unos 250 MB, una sola vez).
+4. El video nuevo queda al lado del original, terminado en _HD.mp4 (1080p) o _4K.mp4.
+
+QUE CONVIENE ESCALAR
+- SI: los clips de Kling (salen en 1276x720). Con la opcion 1 (animacion) y 1080p
+  quedan nitidos en 1920x1080 sin el aspecto "ablandado" del 720p.
+  Mejor escalar cada clip antes de editar que el video final completo.
+- NO: las grabaciones de pantalla de Workday. Con letra tan chica la IA inventa
+  letras (lo probamos: "Summary" -> "Bummary"). Para esas, regrabar con el zoom
+  del navegador al 150-175% es lo unico que las deja nitidas.
+
+TIEMPOS (aprox. con una RTX)
+- Clip de 5 s (720p -> 1080p, opcion 1): menos de 1 minuto.
+- Opcion 2 (imagen real) es varias veces mas lenta.
+
+ESPACIO
+Mientras trabaja guarda los cuadros como imagenes: un clip de 10 s usa ~1-2 GB
+temporales (se borran solos al terminar). Para el video completo de 4 min hacen
+falta ~30 GB libres; por eso conviene ir clip por clip.
+
+SI ALGO FALLA
+Saca una captura de la ventana negra y mandasela a Claude.
