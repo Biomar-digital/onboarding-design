@@ -14,9 +14,14 @@ def pp(clip,t):                       # ping-pong so short clips can cover longe
 ease=lambda x:(lambda x:x*x*(3-2*x))(min(1,max(0,x)))
 def panel(fr,w,cx):                   # crop a w-wide window around cx
     x0=int(round(min(max(cx*W-w/2,0),W-w))); return fr[:,x0:x0+w]
-# screen region in the zoom clip's last frame: white area, found per run
-last=zo[-1].astype(int); m=last.min(2)>238; ys,xs=np.nonzero(m)
-sx0,sx1,sy0,sy1=np.percentile(xs,2),np.percentile(xs,98),np.percentile(ys,2),np.percentile(ys,98)
+# optional: quads json of the zoom clip + the screen image inserted into it (the zoom then lands on that image)
+QJ=sys.argv[7] if len(sys.argv)>7 else None
+SCR=np.asarray(__import__('PIL.Image',fromlist=['Image']).open(sys.argv[8]).convert('RGB').resize((W,H))) if len(sys.argv)>8 else np.full((H,W,3),255,np.uint8)
+if QJ:
+    import json; q=np.array(json.load(open(QJ))[-1]); sx0,sy0=q.min(0); sx1,sy1=q.max(0)
+else:
+    last=zo[-1].astype(int); m=last.min(2)>238; ys,xs=np.nonzero(m)
+    sx0,sx1,sy0,sy1=np.percentile(xs,2),np.percentile(xs,98),np.percentile(ys,2),np.percentile(ys,98)
 print('screen',sx0,sx1,sy0,sy1)
 T1,T2,T3,T4,END=4.0,4.8,9.5,10.3,15.0
 DIV=6
@@ -40,11 +45,13 @@ for i in range(int(END*FPS)):
         tz=t-T3; f=zo[min(int(tz*FPS),len(zo)-1)]
         zs=END-0.7                    # last 0.7 s: digital push into the white screen
         if t>zs:
-            a=ease((t-zs)/0.6); cw=W+(sx1-sx0-40-W)*a; ch=cw*H/W
+            a=ease((t-zs)/0.6); cw=W+(sx1-sx0-(0 if QJ else 40)-W)*a; ch=cw*H/W
             cx=W/2+((sx0+sx1)/2-W/2)*a; cy=H/2+((sy0+sy1)/2-H/2)*a
             x0=int(max(0,min(cx-cw/2,W-cw))); y0=int(max(0,min(cy-ch/2,H-ch)))
             from PIL import Image
             f=np.asarray(Image.fromarray(f).crop((x0,y0,x0+int(cw),y0+int(ch))).resize((W,H),Image.LANCZOS))
-            if a>=0.999: f=np.full((H,W,3),255,np.uint8)
+            k=ease((a-0.6)/0.4) if a>0.6 else 0          # settle exactly on the flat screen image
+            f=(f*(1-k)+SCR*k).astype(np.uint8)
+            if a>=0.999: f=SCR
     p.stdin.write(np.ascontiguousarray(f).tobytes())
 p.stdin.close(); p.wait(); print('ok',OUT)
