@@ -2,8 +2,9 @@ MEJORAR CALIDAD - escalado con IA usando tu placa de video (Real-ESRGAN)
 =========================================================================
 
 COMO SE USA
-1. Descomprimi esta carpeta en un lugar con espacio (ej. C:\MejorarCalidad).
-   No la pongas dentro de OneDrive.
+1. PRIMERO DESCOMPRIMI EL ZIP: clic derecho sobre MejorarCalidad.zip -> "Extraer todo..."
+   (si lo abris con doble clic y arrastras ahi adentro, no pasa nada).
+   Ponelo en un lugar con espacio (ej. C:\MejorarCalidad), no dentro de OneDrive.
 2. Arrastra uno o varios videos ENCIMA de MEJORAR_CALIDAD.bat
    (o copialos en esta carpeta y hace doble clic en el .bat).
 3. Elegi el tipo de video y la resolucion. La primera vez baja Real-ESRGAN y ffmpeg

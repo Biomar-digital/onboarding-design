@@ -1,22 +1,38 @@
 @echo off
-setlocal enabledelayedexpansion
+rem ---- reabrirse dentro de una ventana que NO se cierra sola (para ver siempre que paso)
+if "%MC_RUN%"=="1" goto :main
+set MC_RUN=1
+start "Mejorar calidad" cmd /k call "%~f0" %*
+exit /b
+
+:main
 title Mejorar calidad - escalado con IA (Real-ESRGAN, placa de video)
 cd /d "%~dp0"
+echo Carpeta de la herramienta: %CD%
 
-rem ---- videos de entrada: arrastrados sobre el .bat (uno o varios), o todos los .mp4 de esta carpeta
+rem ---- videos de entrada: arrastrados sobre el .bat (uno o varios), o todos los .mp4/.mov de esta carpeta
 set "LIST="
-if not "%~1"=="" (
-  for %%a in (%*) do set "LIST=!LIST! "%%~fa""
-) else (
-  for %%f in (*.mp4 *.mov) do (
-    set "NM=%%~nf"
-    if /i not "!NM:~-3!"=="_HD" if /i not "!NM:~-3!"=="_4K" set "LIST=!LIST! "%%~ff""
-  )
+:args
+if "%~1"=="" goto :argsdone
+set LIST=%LIST% "%~f1"
+shift
+goto :args
+:argsdone
+setlocal enabledelayedexpansion
+if not defined LIST for %%f in (*.mp4 *.mov) do (
+  set "NM=%%~nf"
+  if /i not "!NM:~-3!"=="_HD" if /i not "!NM:~-3!"=="_4K" set LIST=!LIST! "%%~ff"
 )
-if "%LIST%"=="" (
-  echo No encontre videos. Arrastralos sobre MEJORAR_CALIDAD.bat o copialos en esta carpeta.
-  pause & exit /b
+if not defined LIST (
+  echo.
+  echo No encontre videos.
+  echo  - Arrastra los videos ENCIMA de MEJORAR_CALIDAD.bat, o
+  echo  - copialos en esta carpeta y hace doble clic en MEJORAR_CALIDAD.bat
+  echo IMPORTANTE: primero descomprimi el zip ^(clic derecho - Extraer todo^).
+  goto :eof
 )
+echo Videos:
+for %%v in (%LIST%) do echo   %%~nxv
 
 echo.
 echo  Que tipo de video es?
@@ -58,8 +74,7 @@ if not exist "%FF%" (
 for %%v in (%LIST%) do call :one "%%~v" || goto :err
 echo.
 echo LISTO. Los videos nuevos estan al lado de los originales, terminados en %TAG%.mp4
-pause
-exit /b
+goto :eof
 
 :one
 set "IN=%~1"
@@ -83,4 +98,4 @@ exit /b 0
 :err
 echo.
 echo Hubo un error. Saca una captura de esta ventana y mandasela a Claude.
-pause
+goto :eof
