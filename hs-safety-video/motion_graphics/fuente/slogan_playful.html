@@ -6,20 +6,20 @@ html,body{margin:0;width:1920px;height:1080px;background:transparent;overflow:hi
 body{font-family:Avenir,Arial,sans-serif}
 .row{position:absolute;left:0;top:0;width:1920px;height:1080px;display:flex;align-items:center;justify-content:center;gap:34px}
 .slot{position:relative}
-.chip{background:#fff;border-radius:999px;height:112px;padding:0 46px 0 22px;display:flex;align-items:center;gap:20px;
+.chip{position:relative;z-index:2;background:#fff;border-radius:999px;height:112px;padding:0 46px 0 22px;display:flex;align-items:center;gap:20px;
   box-shadow:0 8px 24px rgba(31,62,119,.2);opacity:0;transform-origin:50% 100%}
 .chip svg{width:72px;height:72px;overflow:visible}
 .chip span{font-weight:700;font-size:50px;letter-spacing:.01em;color:#1f3e77;white-space:nowrap}
-.burst{position:absolute;left:50%;top:100%;width:0;height:0}
+.burst{position:absolute;left:50%;top:50%;width:0;height:0;z-index:1}
 .burst i{position:absolute;border-radius:50%;opacity:0}
 </style></head><body>
 <div class="row">
-  <div class="slot"><div class="chip" id="c0"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/>
-    <g id="eye" style="transform-origin:32px 32px"><path fill="#fff" d="M32 19c-10 0-18 7-21 13 3 6 11 13 21 13s18-7 21-13c-3-6-11-13-21-13z"/><circle cx="32" cy="32" r="7.5" fill="#0471ad"/><circle cx="32" cy="32" r="3.2" fill="#fff"/></g></svg><span>See it.</span></div><div class="burst" id="b0"></div></div>
-  <div class="slot"><div class="chip" id="c1"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/><path fill="#fff" d="M22 17h6a4 4 0 0 1 8 0h6a2 2 0 0 1 2 2v28a2 2 0 0 1-2 2H22a2 2 0 0 1-2-2V19a2 2 0 0 1 2-2z"/><path fill="#0471ad" d="M27 15.5h10v5H27z"/>
-    <rect id="l0" x="25" y="27" width="14" height="3" fill="#0471ad"/><rect id="l1" x="25" y="33" width="14" height="3" fill="#0471ad"/><rect id="l2" x="25" y="39" width="9" height="3" fill="#0471ad"/></svg><span>Report it.</span></div><div class="burst" id="b1"></div></div>
-  <div class="slot"><div class="chip" id="c2"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#97d130"/><path fill="#fff" d="M32 13l15 6v11c0 10-6.5 17.5-15 21-8.5-3.5-15-11-15-21V19z"/>
-    <path id="tick" d="M24.5 32.5l5.5 5.5 10-10" fill="none" stroke="#97d130" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Prevent it.</span></div><div class="burst" id="b2"></div></div>
+  <div class="slot"><div class="burst" id="b0"></div><div class="chip" id="c0"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/>
+    <g id="eye" style="transform-origin:32px 32px"><path fill="#fff" d="M32 19c-10 0-18 7-21 13 3 6 11 13 21 13s18-7 21-13c-3-6-11-13-21-13z"/><circle cx="32" cy="32" r="7.5" fill="#0471ad"/><circle cx="32" cy="32" r="3.2" fill="#fff"/></g></svg><span>See it.</span></div></div>
+  <div class="slot"><div class="burst" id="b1"></div><div class="chip" id="c1"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#0471ad"/><path fill="#fff" d="M22 17h6a4 4 0 0 1 8 0h6a2 2 0 0 1 2 2v28a2 2 0 0 1-2 2H22a2 2 0 0 1-2-2V19a2 2 0 0 1 2-2z"/><path fill="#0471ad" d="M27 15.5h10v5H27z"/>
+    <rect id="l0" x="25" y="27" width="14" height="3" fill="#0471ad"/><rect id="l1" x="25" y="33" width="14" height="3" fill="#0471ad"/><rect id="l2" x="25" y="39" width="9" height="3" fill="#0471ad"/></svg><span>Report it.</span></div></div>
+  <div class="slot"><div class="burst" id="b2"></div><div class="chip" id="c2"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#97d130"/><path fill="#fff" d="M32 13l15 6v11c0 10-6.5 17.5-15 21-8.5-3.5-15-11-15-21V19z"/>
+    <path id="tick" d="M24.5 32.5l5.5 5.5 10-10" fill="none" stroke="#97d130" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Prevent it.</span></div></div>
 </div>
 <script>
 const clamp=x=>Math.max(0,Math.min(1,x));
@@ -31,7 +31,7 @@ const LAND=[0.38,0.88,1.38], DROP=0.32;
 [0,1,2].forEach(k=>{const b=document.getElementById('b'+k);
   for(let j=0;j<12;j++){const i=document.createElement('i');const s=14+((j*7)%3)*6;i.style.width=i.style.height=s+'px';
     i.style.marginLeft=i.style.marginTop=(-s/2)+'px';i.style.background=COLS[(j+k*2)%COLS.length];
-    i.dataset.a=(-200+ j*(220/11))*Math.PI/180; i.dataset.r=150+((j*37)%90); b.appendChild(i);}});
+    i.dataset.a=(j*30+((j*13)%11))*Math.PI/180; i.dataset.r=60+((j*37)%70); b.appendChild(i);}});
 const tick=document.getElementById('tick'); const TL=tick.getTotalLength(); tick.style.strokeDasharray=TL;
 window.render=function(t){
   [0,1,2].forEach(k=>{
@@ -51,8 +51,8 @@ window.render=function(t){
     el.style.opacity=op; el.style.transform=`translateY(${y}px) rotate(${rot}deg) scale(${sx},${sy})`;
     // burst
     const bp=prog(t,L,0.55);
-    [...document.getElementById('b'+k).children].forEach(i=>{const a=+i.dataset.a,r=+i.dataset.r*easeOut(bp);
-      i.style.transform=`translate(${Math.cos(a)*r}px,${Math.sin(a)*r*0.75-56}px) scale(${1-0.5*bp})`; i.style.opacity=bp>0&&bp<1?(1-bp):0;});
+    [...document.getElementById('b'+k).children].forEach(i=>{const a=+i.dataset.a,r=+i.dataset.r*easeOut(bp), hw=el.offsetWidth/2-20, hh=46;
+      i.style.transform=`translate(${Math.cos(a)*(hw+r)}px,${Math.sin(a)*(hh+r*0.7)}px) scale(${1-0.5*bp})`; i.style.opacity=bp>0&&bp<1?(1-bp):0;});
   });
   // icons come alive
   const bl=prog(t,LAND[0]+0.45,0.22), bl2=prog(t,1.95,0.2);
