@@ -1,10 +1,10 @@
 # Smooth schooling: each fish keeps a slot in an elongated formation that follows a lead path,
 # with slow per-fish wander, soft separation, limited turn rate and low-passed heading.
 import numpy as np, math
-def simulate(lead, F, NS, seed=5, fps=24, warm=144, sub=4):
+def simulate(lead, F, NS, seed=5, fps=24, warm=144, sub=4, spread=1.0):
     rng=np.random.default_rng(seed); dt=1/fps/sub
     # slots in the school frame: x along travel, y across (depth), z up
-    slot=np.c_[rng.uniform(-4.0,4.0,NS), rng.uniform(-2.0,2.0,NS), rng.normal(0,0.3,NS)]
+    slot=np.c_[rng.uniform(-4.0,4.0,NS)*spread, rng.uniform(-2.0,2.0,NS)*spread, rng.normal(0,0.3,NS)*spread]
     # slow wander: 3 sines per axis per fish (periods 3-7 s)
     wf=rng.uniform(2*math.pi/7,2*math.pi/3,(NS,3,3)); wp=rng.uniform(0,6.28,(NS,3,3)); wa=np.array([0.6,0.5,0.15])
     spd_f=rng.uniform(2*math.pi/8,2*math.pi/4,NS); spd_p=rng.uniform(0,6.28,NS)

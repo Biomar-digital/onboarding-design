@@ -5,7 +5,7 @@ import numpy as np
 HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
 import hallgeo as hg; from school import simulate
 args=sys.argv[sys.argv.index('--')+1:]
-OUT=args[0]; T0=float(args[1]); F=int(args[2]); SCALE=float(args[3])
+OUT=args[0]; T0=float(args[1]); F=int(args[2]); SCALE=float(args[3]); ONLY=args[4].split(',') if len(args)>4 else None   # optional: only these screens
 os.makedirs(OUT,exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True); sc=bpy.context.scene
 def mk(name,build):
@@ -43,25 +43,40 @@ def swim(a,phase,v):
     st.frame_start=fr[0]-phase
     st.use_animated_influence=True; st.influence=0.6; st.keyframe_insert('influence',frame=1)   # 60% amplitude
 arm.animation_data.action=None
-# ---------------- schools on the circuit
-C,S_,LEN=hg.circuit(); V=LEN/90.0
-def lead_fn(phase_s):
+# ---------------- depth layers: schools at different distances behind the screens + loners
+# each layer has its own circuit (parallel to the screens, `behind` metres back) and does 1 lap in 90 s
+def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25):
+    V=LEN/90.0
     def lead(t):
-        s=(V*(t+T0+phase_s))%LEN; i=np.searchsorted(S_,s)-1; i=max(0,min(i,len(C)-1))
+        s=(sgn*V*(t+T0+phase_s))%LEN; i=np.searchsorted(S_,s,side='right')-1; i=max(0,min(i,len(C)-1))
         a=C[i]; b=C[(i+1)%len(C)]; u=(s-S_[i])/max(S_[i+1]-S_[i],1e-6); p=a+(b-a)*u
-        d=b-a; d=d/np.linalg.norm(d)*V
-        p=p.copy(); p[2]+=0.25*math.sin(0.4*(t+T0)+phase_s)
+        d=b-a; d=sgn*d/np.linalg.norm(d)*V
+        p=p.copy(); p[2]+=bob*math.sin(0.4*(t+T0)+phase_s)
         return p,d
     return lead
-random.seed(11)
-NS=40; fish=[(root,arm)]
-for i in range(3*NS-1): fish.append(dup_fish())
+# (name, behind m, height offset m, direction, [(fish, phase s), ...], spread)
+LAYERS=[
+ ('cerca',  1.4,  -0.2,  1, [(9, 29.6),(7, 81.5)],                 0.6),
+ ('medio',  3.5,   0.0,  1, [(34, 14.2),(22, 45.5),(26, 71.5)],    1.0),
+ ('lejos',  7.5,   0.7, -1, [(40, 5.4),(30, 35.2),(30, 64.9)],     1.2),   # swims the other way
+ ('fondo', 15.0,  -0.4,  1, [(60, 22.2),(50, 67.1)],               2.0),   # big schools fading into the haze
+]
+random.seed(11); rng=np.random.default_rng(3)
+plan=[]
+for name,beh,dz,sgn,schools,spr in LAYERS:
+    C,S_,LEN=hg.circuit(behind=beh,dz=dz)
+    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25))
+for k in range(7):                                   # loners: single salmon at random depths and heights
+    C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.0,9.0)),dz=float(rng.uniform(-1.0,1.2)))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6))
+NT=sum(p[5] for p in plan); fish=[(root,arm)]
+for i in range(NT-1): fish.append(dup_fish())
 k=0
-for sch,ph in enumerate((0.0,30.0,60.0)):
-    P,Vt=simulate(lead_fn(ph),F,NS,seed=5+sch)
-    for j in range(NS):
+for q,(C,S_,LEN,ph,sgn,ns,spr,bob) in enumerate(plan):
+    P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob),F,ns,seed=5+q,spread=spr)
+    for j in range(ns):
         r,a=fish[k]; k+=1
-        r.scale=(0.7/L*random.uniform(0.85,1.15),)*3
+        r.scale=(0.7/L*random.uniform(0.85,1.15)*(1.15 if ns==1 else 1.0),)*3
         yw=None; bk=0.0
         for f in range(F):
             v=Vt[f,j]; yaw=math.atan2(v[0],-v[1]); h=math.hypot(v[0],v[1]); pitch=max(-0.21,min(0.21,-math.atan2(v[2],h)))
@@ -70,7 +85,8 @@ for sch,ph in enumerate((0.0,30.0,60.0)):
             yw=yaw
             r.location=P[f,j]; r.rotation_euler=(pitch,bk,yaw)
             r.keyframe_insert('location',frame=f+1); r.keyframe_insert('rotation_euler',frame=f+1)
-        swim(a,random.randint(0,190),V)
+        swim(a,random.randint(0,190),0)
+print('FISH',NT)
 # ---------------- water world
 CX,CY=23.0,-8.0
 box=mk('WaterBox',lambda bm: bmesh.ops.create_cube(bm,size=1.0)); box.location=(CX,CY,-1.0); box.scale=(150,150,15.0)
@@ -152,6 +168,7 @@ sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=3; sc.cycles.transparent_ma
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - High Contrast'
 sc.render.image_settings.file_format='PNG'
 for s,co in cams:
+    if ONLY and s['name'] not in ONLY: continue
     sc.camera=co; sc.render.resolution_x=max(2,int(s['res'][0]*SCALE)); sc.render.resolution_y=max(2,int(s['res'][1]*SCALE))
     sc.render.filepath=os.path.join(OUT,s['name']+('_' if F>1 else '.png'))
     bpy.ops.render.render(write_still=(F==1),animation=(F>1))

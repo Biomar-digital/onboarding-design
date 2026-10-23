@@ -30,14 +30,17 @@ SC=[screen(s) for s in SCREENS]
 # swim circuit: 3.5 m behind each screen (inside the water), in this order, closed loop, smoothed
 ORDER=['banner_frontal','totem_N1','totem_N2','totem_N3','totem_N4','concava','cocina','totem_R2','totem_R1','banner_lateral']
 BEHIND=3.5
-def circuit(n=2000):
+LEADIN={'cocina':(8.0,-1.0)}   # extra waypoint: (metres before the screen along travel, metres further back)
+def circuit(n=2000, behind=BEHIND, dz=0.0):
     by={s['name']:s for s in SC}
     pts=[]; cs=[by[k]['c'] for k in ORDER]
     for i,k in enumerate(ORDER):
         s=by[k]; d=cs[(i+1)%len(cs)]-cs[i-1]; t=s['t'] if np.dot(s['t'],d)>=0 else -s['t']   # travel direction along the screen
         h=max(s['W']/2,1.0); z=min(max(s['c'][2],1.2),3.6)
+        if k in LEADIN:                                    # come in from the side, not straight at the viewer
+            a,b=LEADIN[k]; p=s['c']-s['n']*(behind+b)-t*(h+a); p=p.copy(); p[2]=z+dz; pts.append(p)
         for u in (-h,h):                                   # two points: the path runs parallel behind every screen
-            p=s['c']-s['n']*BEHIND+t*u; p=p.copy(); p[2]=z; pts.append(p)
+            p=s['c']-s['n']*behind+t*u; p=p.copy(); p[2]=z+dz; pts.append(p)
     P=np.array(pts); N=len(P)
     # closed Catmull-Rom
     out=[]
