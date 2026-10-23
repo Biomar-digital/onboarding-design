@@ -67,15 +67,15 @@ random.seed(11); rng=np.random.default_rng(3)
 plan=[]
 for name,beh,dz,sgn,schools,spr in LAYERS:
     C,S_,LEN=hg.circuit(behind=beh,dz=dz)
-    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25))
+    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','15'))))
 for k in range(12):                                   # loners: single salmon at random depths and heights
     C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.0,9.0)),dz=float(rng.uniform(-1.0,1.2)))
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,False))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
 NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
 k=0
-for q,(C,S_,LEN,ph,sgn,ns,spr,bob) in enumerate(plan):
+for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far) in enumerate(plan):
     P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob),F,ns,seed=5+q,spread=spr)
     for j in range(ns):
         r,a=fish[k]; k+=1
@@ -94,7 +94,14 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob) in enumerate(plan):
                 fc=ac.fcurves.new(path,index=ax); fc.keyframe_points.add(F)
                 fc.keyframe_points.foreach_set('co',np.c_[fr_,arr[:,ax]].ravel())
                 fc.update()
-        swim(a,random.randint(0,190),0)
+        if far:
+            # 15-26 m away the tail beat is invisible: drop the skinning so all far fish share one static mesh
+            # (Cycles instances them instead of rebuilding ~700 deformed meshes every frame)
+            for o in r.children_recursive:
+                if o.type=='MESH':
+                    for md in [m for m in o.modifiers if m.type=='ARMATURE']: o.modifiers.remove(md)
+        else:
+            swim(a,random.randint(0,190),0)
 print('FISH',NT)
 # ---------------- water world
 CX,CY=23.0,-8.0
@@ -187,32 +194,33 @@ dm=bpy.data.materials.new('snow'); dm.use_nodes=True; dn=dm.node_tree; dn.nodes.
 trn=dn.nodes.new('ShaderNodeBsdfTransparent'); dsc=dn.nodes.new('ShaderNodeBsdfTranslucent'); dsc.inputs['Color'].default_value=(0.9,0.97,0.95,1)
 dmx=dn.nodes.new('ShaderNodeMixShader'); dmx.inputs['Fac'].default_value=0.45; dn.links.new(trn.outputs[0],dmx.inputs[1]); dn.links.new(dsc.outputs[0],dmx.inputs[2])
 dn.links.new(dmx.outputs[0],dn.nodes['Material Output'].inputs['Surface'])
-flakes=[]
+fcoll=bpy.data.collections.new('Flakes'); sc.collection.children.link(fcoll)        # not hidden: hiding would hide the instances too
 for q in range(16):
-    f_=mk(f'Flake{q}',flake); f_.data.materials.append(dm); f_.location=(0,-500,0); f_.visible_shadow=False; flakes.append(f_)
-for s in hg.SC:
-    c,n,t=s['c'],s['n'],s['t']
-    for i in range(int(450*max(1,s['W']/3))):
-        d=random.choice(flakes).copy(); sc.collection.objects.link(d)
-        depth=random.uniform(0.2,9); lat=random.uniform(-1,1)*(s['W']/2+depth*0.8)
-        d.location=tuple(c-n*depth+t*lat+np.array([0,0,random.uniform(-s['H']/2-depth*0.5,s['H']/2+depth*0.5)]))
-        sz=0.0012*math.exp(random.gauss(0,0.45)) if random.random()>0.04 else 0.006*math.exp(random.gauss(0,0.35))
-        d.scale=(sz*random.uniform(0.5,1.5),sz*random.uniform(0.5,1.5),sz); d.rotation_euler=(random.uniform(0,6.3),random.uniform(0,6.3),random.uniform(0,6.3))
-# aeration plumes (Geometry Nodes, loop-periodic): a couple per screen at different depths + far ones
+    f_=mk(f'Flake{q}',flake); f_.data.materials.append(dm); sc.collection.objects.unlink(f_); fcoll.objects.link(f_); f_.location=(0,-500,0); f_.visible_shadow=False
+# tank current: RAS tanks circulate; salmon hold against it, so it runs opposite to the schools' travel
+CUR=0.07
 import bubbles
-bmat=bubbles.material(); bng=bubbles.group(bmat); brng=random.Random(21)
+by_={s['name']:s for s in hg.SC}; cs_=[by_[k]['c'] for k in hg.ORDER]
+def travel(s):
+    i=hg.ORDER.index(s['name']); d=cs_[(i+1)%len(cs_)]-cs_[i-1]; return s['t'] if np.dot(s['t'],d)>=0 else -s['t']
+bmat=bubbles.material(); bng=bubbles.group(bmat); sng=bubbles.snow_group(fcoll); brng=random.Random(21)
 for i,s in enumerate(hg.SC):
-    for j in range(2 if s['W']>=3 else 1):
-        beh=brng.uniform(1.2,7.0); lat=brng.uniform(-0.5,0.5)*(s['W']+beh*0.6)
-        p=s['c']-s['n']*beh+s['t']*lat
-        bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,int(brng.uniform(6000,8000)),i*10+j,T0,size_max=0.012,
-                      spread_top=brng.uniform(0.6,1.2),sway=brng.uniform(0.15,0.35))
-    p=s['c']-s['n']*brng.uniform(0.5,1.2)+s['t']*brng.uniform(-0.35,0.35)*s['W']      # one close column: big wobbling bubbles
-    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,1600,300+i,T0,spread_top=0.45,sway=0.12,size_max=0.026)
-    p=s['c']-s['n']*brng.uniform(0.12,0.35)+s['t']*brng.uniform(-0.3,0.3)*s['W']       # coarse-aeration gulps right behind the glass: big lens bubbles
-    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,70,700+i,T0,spread_top=0.3,sway=0.08,size_min=0.015,size_max=0.05)
-    p=s['c']-s['n']*brng.uniform(16,24)+s['t']*brng.uniform(-4,4)                   # distant column, reads as a silvery curtain
-    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,6000,500+i,T0,spread_top=1.8,sway=0.4,size_max=0.016)
+    cur=-travel(s)*CUR; up=(s['c'][2]-ZF)/((ZS-ZF-0.15)/90.0)          # seconds a bubble needs to reach screen height
+    def base(p): q=p-cur*up; return (q[0],q[1],ZF+0.1)                 # start upstream so the leaning column crosses the screen
+    beh=brng.uniform(0.35,1.0); p=s['c']-s['n']*beh+s['t']*brng.uniform(-0.35,0.35)*s['W']     # bubbles only read when close to the lens
+    bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,int(brng.uniform(500,800)),i*10,T0,spread_top=brng.uniform(0.3,0.55),sway=brng.uniform(0.1,0.2),size_min=0.0015,size_max=0.004,current=cur)
+    if i%2==0:                                                          # a closer column with some coarse (5-7 mm) bubbles
+        p=s['c']-s['n']*brng.uniform(1.5,3.0)+s['t']*brng.uniform(-0.35,0.35)*s['W']
+        bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,900,300+i,T0,spread_top=0.5,sway=0.2,size_min=0.0015,size_max=0.0035,current=cur)
+    if i%3==0:                                                          # a distant curtain
+        p=s['c']-s['n']*brng.uniform(14,22)+s['t']*brng.uniform(-4,4)
+        bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,2500,500+i,T0,spread_top=1.4,sway=0.4,current=cur)
+    # marine snow drifting with the current through this screen's view
+    dirc=cur/np.linalg.norm(cur); L=CUR*90/1; ctr=s['c']-s['n']*0.2
+    snow_ob=bubbles.snow(sc,sng,(ctr[0],ctr[1],s['c'][2]),math.atan2(dirc[1],dirc[0]),int(900*max(1,s['W']/2)),900+i,T0,L,1,9.0,s['H']+6)
+    # local y must point away from the public (into the water): flip if needed
+    yl=np.array([-dirc[1],dirc[0],0.0])
+    if np.dot(yl,-s['n'])<0: snow_ob.scale=(1,-1,1)
 # ---------------- one window camera per screen (off-axis: the frustum passes exactly through the screen)
 cams=[]
 for s in hg.SC:
@@ -237,8 +245,27 @@ sc.cycles.samples=int(os.environ.get('RAS_SAMPLES','24')); sc.cycles.use_denoisi
 sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=8; sc.cycles.diffuse_bounces=1; sc.cycles.glossy_bounces=4; sc.cycles.transmission_bounces=6; sc.cycles.transparent_max_bounces=8; sc.cycles.volume_bounces=0
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
+FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
+ext='.png'
+if os.environ.get('RAS_JPG'): sc.render.image_settings.file_format='JPEG'; sc.render.image_settings.quality=93; ext='.jpg'
+if F>1 and os.environ.get('RAS_FRAMEMAJOR'):
+    # frame by frame across all screens, keeping the synced scene (BVH) between cameras: much less overhead
+    sc.render.use_persistent_data=True
+    for f in range(FA,FB+1):
+        todo=[(s,co) for s,co in cams if not (ONLY and s['name'] not in ONLY)
+              and not os.path.exists(os.path.join(OUT,s['name'],f"{s['name']}_{f:04d}{ext}"))]
+        if not todo: continue
+        sc.frame_set(f)
+        for s,co in todo:
+            sc.camera=co; sc.render.resolution_x=max(2,int(s['res'][0]*SCALE)); sc.render.resolution_y=max(2,int(s['res'][1]*SCALE))
+            os.makedirs(os.path.join(OUT,s['name']),exist_ok=True)
+            sc.render.filepath=os.path.join(OUT,s['name'],f"{s['name']}_{f:04d}{ext}")
+            bpy.ops.render.render(write_still=True)
+        print('FRAME_DONE',f,flush=True)
+    print('DONE'); sys.exit(0)
 for s,co in cams:
     if ONLY and s['name'] not in ONLY: continue
+    sc.frame_start=FA; sc.frame_end=FB
     sc.camera=co; sc.render.resolution_x=max(2,int(s['res'][0]*SCALE)); sc.render.resolution_y=max(2,int(s['res'][1]*SCALE))
     sc.render.filepath=os.path.join(OUT,s['name'],s['name']+'_') if F>1 else os.path.join(OUT,s['name']+'.png')
     sc.render.use_overwrite=False; sc.render.use_placeholder=True        # re-running resumes where it stopped
