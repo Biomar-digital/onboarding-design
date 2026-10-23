@@ -56,19 +56,21 @@ def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25):
     return lead
 # (name, behind m, height offset m, direction, [(fish, phase s), ...], spread)
 LAYERS=[
- ('cerca',  1.4,  -0.2,  1, [(9, 29.6),(7, 81.5)],                 0.6),
- ('medio',  3.5,   0.0,  1, [(34, 14.2),(22, 45.5),(26, 71.5)],    1.0),
- ('lejos',  7.5,   0.7, -1, [(40, 5.4),(30, 35.2),(30, 64.9)],     1.2),   # swims the other way
- ('fondo', 15.0,  -0.4,  1, [(60, 22.2),(50, 67.1)],               2.0),   # big schools fading into the haze
+ ('cerca',  1.4,  -0.2,  1, [(12, 0.9),(10, 31.6),(10, 61.8)],                0.7),
+ ('medio',  3.5,   0.0,  1, [(55, 7.7),(45, 33.3),(50, 54.2),(40, 76.9)],     1.3),
+ ('lejos',  7.5,   0.7, -1, [(70, 17.9),(60, 42.9),(60, 63.6),(55, 84.6)],    1.6),   # swims the other way
+ ('fondo', 15.0,  -0.4,  1, [(140, 2.2),(120, 30.0),(120, 59.4)],             2.4),   # big schools fading into the haze
+ ('pared', 26.0,   0.6, -1, [(220, 25.1),(200, 66.1)],                        3.2),   # far wall of fish: RAS density
 ]
 random.seed(11); rng=np.random.default_rng(3)
 plan=[]
 for name,beh,dz,sgn,schools,spr in LAYERS:
     C,S_,LEN=hg.circuit(behind=beh,dz=dz)
     for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25))
-for k in range(7):                                   # loners: single salmon at random depths and heights
+for k in range(12):                                   # loners: single salmon at random depths and heights
     C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.0,9.0)),dz=float(rng.uniform(-1.0,1.2)))
     plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6))
+if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
 NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
 k=0
@@ -89,21 +91,21 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob) in enumerate(plan):
 print('FISH',NT)
 # ---------------- water world
 CX,CY=23.0,-8.0
-box=mk('WaterBox',lambda bm: bmesh.ops.create_cube(bm,size=1.0)); box.location=(CX,CY,-1.0); box.scale=(150,150,15.0)
+ZS=9.0; ZF=-8.0
+box=mk('WaterBox',lambda bm: bmesh.ops.create_cube(bm,size=1.0)); box.location=(CX,CY,(ZF-0.5+ZS-0.02)/2); box.scale=(900,900,ZS-0.02-(ZF-0.5))   # big enough that its walls are lost in the haze
 vm=bpy.data.materials.new('water'); vm.use_nodes=True; vn=vm.node_tree; vn.nodes.remove(vn.nodes['Principled BSDF'])
-vol=vn.nodes.new('ShaderNodeVolumePrincipled'); vol.inputs['Color'].default_value=(0.24,0.46,0.45,1); vol.inputs['Density'].default_value=0.085
-vol.inputs['Anisotropy'].default_value=0.75; vol.inputs['Absorption Color'].default_value=(0.45,0.72,0.7,1)
+vol=vn.nodes.new('ShaderNodeVolumePrincipled'); vol.inputs['Color'].default_value=(0.04,0.22,0.52,1); vol.inputs['Density'].default_value=0.075
+vol.inputs['Anisotropy'].default_value=0.75; vol.inputs['Absorption Color'].default_value=(0.12,0.42,0.82,1)
 vn.links.new(vol.outputs[0],vn.nodes['Material Output'].inputs['Volume']); box.data.materials.append(vm)
-w=bpy.data.worlds.new('W'); sc.world=w; w.use_nodes=True; w.node_tree.nodes['Background'].inputs[0].default_value=(0.16,0.3,0.31,1); w.node_tree.nodes['Background'].inputs[1].default_value=0.6
+w=bpy.data.worlds.new('W'); sc.world=w; w.use_nodes=True; w.node_tree.nodes['Background'].inputs[0].default_value=(0.02,0.1,0.26,1); w.node_tree.nodes['Background'].inputs[1].default_value=0.6
 sun=bpy.data.lights.new('sun','SUN'); sun.energy=34; sun.color=(0.92,0.98,1.0); sun.angle=math.radians(2)
 so=bpy.data.objects.new('sun',sun); sc.collection.objects.link(so); so.rotation_euler=(math.radians(-30),math.radians(25),math.radians(-20))
-ZS=9.0
-surf=mk('Surface',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=200)); surf.location=(CX,CY,ZS)
+surf=mk('Surface',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); surf.location=(CX,CY,ZS)
 sm=bpy.data.materials.new('surf'); sm.use_nodes=True; sb=sm.node_tree.nodes['Principled BSDF']; sb.inputs['Transmission Weight'].default_value=1; sb.inputs['Roughness'].default_value=0.05; sb.inputs['IOR'].default_value=1.33
 sn=sm.node_tree; wv=sn.nodes.new('ShaderNodeTexNoise'); wv.inputs['Scale'].default_value=3.5; wv.inputs['Detail'].default_value=8; wv.inputs['Distortion'].default_value=1.5
 bmp=sn.nodes.new('ShaderNodeBump'); bmp.inputs['Strength'].default_value=1.0; sn.links.new(wv.outputs['Fac'],bmp.inputs['Height']); sn.links.new(bmp.outputs['Normal'],sb.inputs['Normal'])
 surf.data.materials.append(sm); surf.visible_shadow=False
-gobo=mk('Gobo',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=200)); gobo.location=(CX,CY,ZS-0.3)
+gobo=mk('Gobo',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); gobo.location=(CX,CY,ZS-0.3)
 gm=bpy.data.materials.new('gobo'); gm.use_nodes=True; gn=gm.node_tree; gb=gn.nodes['Principled BSDF']
 cv=gn.nodes.new('ShaderNodeTexVoronoi'); cv.feature='DISTANCE_TO_EDGE'; cv.inputs['Scale'].default_value=1.4
 gco=gn.nodes.new('ShaderNodeTexCoord'); wrp=gn.nodes.new('ShaderNodeTexNoise'); wrp.inputs['Scale'].default_value=0.6
@@ -113,12 +115,12 @@ gr=gn.nodes.new('ShaderNodeValToRGB'); gr.color_ramp.elements[0].position=0.05; 
 gn.links.new(cv.outputs['Distance'],gr.inputs[0]); inv=gn.nodes.new('ShaderNodeInvert'); gn.links.new(gr.outputs['Color'],inv.inputs['Color'])
 gn.links.new(inv.outputs['Color'],gb.inputs['Alpha']); gb.inputs['Base Color'].default_value=(0,0,0,1); gobo.data.materials.append(gm)
 for v in ('visible_camera','visible_diffuse','visible_glossy','visible_transmission','visible_volume_scatter'): setattr(gobo,v,False)
-sky=mk('Sky',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=200)); sky.location=(CX,CY,ZS+4)
+sky=mk('Sky',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); sky.location=(CX,CY,ZS+4)
 km=bpy.data.materials.new('sky'); km.use_nodes=True; kn=km.node_tree; kn.nodes.remove(kn.nodes['Principled BSDF'])
-em=kn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(1.2,1.35,1.35,1); em.inputs["Strength"].default_value=1.0
+em=kn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(1.0,1.25,1.5,1); em.inputs["Strength"].default_value=1.0
 kn.links.new(em.outputs[0],kn.nodes['Material Output'].inputs['Surface']); sky.data.materials.append(km); sky.visible_shadow=False
-floor=mk('Floor',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=200)); floor.location=(CX,CY,-8)
-fm=bpy.data.materials.new('floor'); fm.use_nodes=True; fm.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value=(0.02,0.04,0.045,1); floor.data.materials.append(fm)
+floor=mk('Floor',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); floor.location=(CX,CY,-8)
+fm=bpy.data.materials.new('floor'); fm.use_nodes=True; fm.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value=(0.01,0.03,0.06,1); floor.data.materials.append(fm)
 # ---------------- marine snow + bubbles, placed in the water seen through each screen
 def flake(bm):
     bmesh.ops.create_icosphere(bm,subdivisions=1,radius=1.0)
@@ -139,16 +141,19 @@ for s in hg.SC:
         d.location=tuple(c-n*depth+t*lat+np.array([0,0,random.uniform(-s['H']/2-depth*0.5,s['H']/2+depth*0.5)]))
         sz=0.0012*math.exp(random.gauss(0,0.45)) if random.random()>0.04 else 0.006*math.exp(random.gauss(0,0.35))
         d.scale=(sz*random.uniform(0.5,1.5),sz*random.uniform(0.5,1.5),sz); d.rotation_euler=(random.uniform(0,6.3),random.uniform(0,6.3),random.uniform(0,6.3))
-bm_=bpy.data.materials.new('bubble'); bm_.use_nodes=True; bbn=bm_.node_tree.nodes['Principled BSDF']
-bbn.inputs['Transmission Weight'].default_value=1; bbn.inputs['IOR'].default_value=0.75; bbn.inputs['Roughness'].default_value=0.0
-bub=mk('Bubble',lambda bm: bmesh.ops.create_uvsphere(bm,u_segments=16,v_segments=8,radius=1.0)); bub.data.materials.append(bm_); bub.location=(0,-500,0)
-for p in bub.data.polygons: p.use_smooth=True
-for s in hg.SC[::2]:
-    base=s['c']-s['n']*random.uniform(3,7)+s['t']*random.uniform(-s['W'],s['W'])
-    for i in range(120):
-        d=bub.copy(); sc.collection.objects.link(d); h=random.uniform(-3,ZS)
-        d.location=(base[0]+random.gauss(0,0.12+0.02*(h+3)),base[1]+random.gauss(0,0.12+0.02*(h+3)),h)
-        r_=random.uniform(0.0015,0.006); d.scale=(r_,r_,r_*0.8); d.visible_shadow=False
+# aeration plumes (Geometry Nodes, loop-periodic): a couple per screen at different depths + far ones
+import bubbles
+bmat=bubbles.material(); bng=bubbles.group(bmat); brng=random.Random(21)
+for i,s in enumerate(hg.SC):
+    for j in range(2 if s['W']>=3 else 1):
+        beh=brng.uniform(1.2,7.0); lat=brng.uniform(-0.5,0.5)*(s['W']+beh*0.6)
+        p=s['c']-s['n']*beh+s['t']*lat
+        bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,int(brng.uniform(6000,8000)),i*10+j,T0,size_max=0.012,
+                      spread_top=brng.uniform(0.6,1.2),sway=brng.uniform(0.15,0.35))
+    p=s['c']-s['n']*brng.uniform(0.5,1.2)+s['t']*brng.uniform(-0.35,0.35)*s['W']      # one close column: big wobbling bubbles
+    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,1600,300+i,T0,spread_top=0.45,sway=0.12,size_max=0.02)
+    p=s['c']-s['n']*brng.uniform(16,24)+s['t']*brng.uniform(-4,4)                   # distant column, reads as a silvery curtain
+    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,6000,500+i,T0,spread_top=1.8,sway=0.4,size_max=0.016)
 # ---------------- one window camera per screen (off-axis: the frustum passes exactly through the screen)
 cams=[]
 for s in hg.SC:
@@ -159,13 +164,13 @@ for s in hg.SC:
     R=co.matrix_world.to_3x3(); loc=R.transposed()@(mathutils.Vector(s['c'])-eye)
     big=max(s['W'],s['H']); D=-loc.z
     cd.sensor_fit='AUTO'; cd.sensor_width=36; cd.lens=D*36/big
-    cd.shift_x=loc.x/big; cd.shift_y=loc.y/big; cd.clip_start=D*0.97; cd.clip_end=200
+    cd.shift_x=loc.x/big; cd.shift_y=loc.y/big; cd.clip_start=D*0.97; cd.clip_end=3000
     cams.append((s,co))
 # ---------------- render settings
 sc.frame_start=1; sc.frame_end=F; sc.render.fps=24
 sc.render.engine='CYCLES'; sc.cycles.device='CPU'; sc.cycles.samples=24; sc.cycles.use_denoising=True
 sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=3; sc.cycles.transparent_max_bounces=4; sc.cycles.volume_bounces=0
-sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - High Contrast'
+sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
 for s,co in cams:
     if ONLY and s['name'] not in ONLY: continue
