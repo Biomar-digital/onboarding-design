@@ -23,6 +23,8 @@ export interface SignupRequestRow {
   status: "pending" | "approved" | "rejected";
 }
 
+import type { Person } from "../content/types";
+
 class BackendUnavailableError extends Error {}
 
 async function call(path: string, init?: RequestInit): Promise<Response> {
@@ -139,4 +141,34 @@ export async function adminResetPassword(
   const data = await res.json();
   if (!res.ok) return { ok: false, error: data.error ?? `Failed (${res.status}).` };
   return { ok: true };
+}
+
+// ── people records (server-side) ────────────────────────────────────────────
+/** Admin: every record (or null if nothing was ever saved). Employee: their own. */
+export async function fetchPeople(): Promise<Person[] | null> {
+  const res = await call("/api/people");
+  if (!res.ok) throw new Error(`Could not load people (${res.status}).`);
+  const data = await res.json();
+  return data.people;
+}
+
+/** Admin: save the whole list. Returns the saved list (employee progress preserved). */
+export async function savePeople(people: Person[]): Promise<Person[]> {
+  const res = await call("/api/people", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ people }),
+  });
+  if (!res.ok) throw new Error(`Could not save people (${res.status}).`);
+  const data = await res.json();
+  return data.people;
+}
+
+export async function saveProgress(moduleId: string, quizScore: number | null): Promise<void> {
+  const res = await call("/api/progress", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ moduleId, quizScore }),
+  });
+  if (!res.ok) throw new Error(`Could not save progress (${res.status}).`);
 }

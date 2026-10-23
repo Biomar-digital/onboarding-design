@@ -1,8 +1,10 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -109,6 +111,77 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  // ── server sync ────────────────────────────────────────────────────────────
+  // People records live in the Worker's KV so a new hire has a record the first
+  // time they sign in on their own browser. Admin: the server copy is the source
+  // of truth (first ever load seeds it from this browser) and edits are saved
+  // back. Employee: only their own record is loaded, and progress is posted.
+  const roleRef = useRef<"admin" | "employee" | null>(null);
+  const serverJsonRef = useRef<string | null>(null); // last list known to match the server
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const syncFromServer = useCallback(async (role: "admin" | "employee") => {
+    roleRef.current = role;
+    try {
+      const remote = await authApi.fetchPeople();
+      if (role === "admin") {
+        if (remote === null) {
+          const saved = await authApi.savePeople(stateRef.current.people);
+          serverJsonRef.current = JSON.stringify(saved);
+        } else {
+          const people = remote.map(reconcilePerson);
+          serverJsonRef.current = JSON.stringify(people);
+          setState((s) => ({ ...s, people }));
+        }
+      } else if (remote && remote.length > 0) {
+        const own = reconcilePerson(remote[0]);
+        setState((s) => ({
+          ...s,
+          people: s.people.some((p) => p.id === own.id)
+            ? s.people.map((p) => (p.id === own.id ? own : p))
+            : [...s.people, own],
+        }));
+      }
+    } catch {
+      /* keep working from the local copy; the next load retries */
+    }
+  }, []);
+
+  // Admin edits → debounced save.
+  useEffect(() => {
+    if (roleRef.current !== "admin" || serverJsonRef.current === null) return;
+    const json = JSON.stringify(state.people);
+    if (json === serverJsonRef.current) return;
+    const t = setTimeout(async () => {
+      try {
+        const saved = await authApi.savePeople(state.people);
+        const savedJson = JSON.stringify(saved);
+        serverJsonRef.current = savedJson;
+        // Employees' progress may have moved on server-side — adopt it.
+        if (savedJson !== json) setState((s) => ({ ...s, people: saved }));
+      } catch {
+        /* retried on the next edit */
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [state.people, currentUserId]);
+
+  // Admin: pick up employees' new progress when coming back to the tab.
+  useEffect(() => {
+    const onVisible = () => {
+      if (
+        document.visibilityState === "visible" &&
+        roleRef.current === "admin" &&
+        JSON.stringify(stateRef.current.people) === serverJsonRef.current
+      ) {
+        syncFromServer("admin");
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [syncFromServer]);
+
   // On load, ask the Worker who (if anyone) the session cookie belongs to. If
   // there's no Worker at this URL at all (a static preview), fall back to the
   // old browser-local demo session so the preview stays explorable.
@@ -119,7 +192,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const session = await authApi.fetchMe();
         if (cancelled) return;
         setBackendAvailable(true);
-        if (session.ok && session.personId) setCurrentUserId(session.personId);
+        if (session.ok && session.personId) {
+          // Load the records first so the user never lands on a missing record.
+          await syncFromServer(session.role ?? "employee");
+          if (cancelled) return;
+          setCurrentUserId(session.personId);
+        }
       } catch (err) {
         if (cancelled) return;
         if (authApi.isBackendUnavailable(err)) {
@@ -159,6 +237,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       login: async (email, password) => {
         const result = await authApi.login(email, password);
         if (!result.ok) return { ok: false, message: result.error };
+        await syncFromServer(result.role);
         setCurrentUserId(result.personId);
         return { ok: true };
       },
@@ -168,6 +247,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       logout: () => {
         localStorage.removeItem(DEMO_SESSION_KEY);
+        roleRef.current = null;
+        serverJsonRef.current = null;
         setCurrentUserId(null);
         if (backendAvailable) authApi.logout().catch(() => {});
       },
@@ -191,7 +272,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setPeople((people) =>
           people.map((p) => (p.id === personId ? { ...p, schedule } : p)),
         ),
-      markModuleComplete: (personId, moduleId, quizScore) =>
+      markModuleComplete: (personId, moduleId, quizScore) => {
+        if (roleRef.current === "employee") {
+          authApi.saveProgress(moduleId, quizScore).catch(() => {});
+        }
         setPeople((people) =>
           people.map((p) =>
             p.id === personId
@@ -204,7 +288,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 }
               : p,
           ),
-        ),
+        );
+      },
       publish: async () => {
         try {
           const res = await fetch("/api/publish", {
@@ -246,7 +331,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setCurrentUserId(null);
       },
     };
-  }, [state, currentUserId, authLoading, backendAvailable]);
+  }, [state, currentUserId, authLoading, backendAvailable, syncFromServer]);
 
   return (
     <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
