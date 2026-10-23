@@ -17,6 +17,9 @@
 //   POST /api/auth/signup-requests/:id/reject  → admin: decline the request
 //   POST /api/auth/change-password       → the signed-in user sets a new password
 //   POST /api/admin/reset-password       → admin: set someone else's password
+//   GET  /api/people             → admin: every person record; employee: only their own
+//   PUT  /api/people             → admin: save the people list (employee progress is kept)
+//   POST /api/progress           → the signed-in person records a completed module
 //   *                            → static assets (dist/) + SPA fallback
 //
 // Credentials live in Cloudflare KV (binding: AUTH_KV) — see worker/auth.ts and
@@ -25,6 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { AuthEnv } from "./auth";
+import type { Person } from "../src/content/types";
 import {
   ensureBootstrapAdmin,
   getUser,
@@ -65,6 +69,9 @@ export default {
     }
     if (path.startsWith("/api/auth/") || path.startsWith("/api/admin/")) {
       return handleAuthRoute(path, request, env);
+    }
+    if (path === "/api/people" || path === "/api/progress") {
+      return handlePeopleRoute(path, request, env);
     }
 
     // Not an API route → static site (SPA fallback handled by the assets config).
@@ -232,6 +239,76 @@ async function handleAdminResetPassword(request: Request, env: Env): Promise<Res
   const { hash, salt, iterations } = await hashPassword(newPassword);
   await putUser(env, { ...user, passwordHash: hash, salt, iterations });
   return json({ ok: true });
+}
+
+// ── people records (server-side, so a new hire's record exists for them too) ──
+// KV layout:  person:<id> → Person   ·   people:meta → { updatedAt }
+// Per-person keys so two employees saving progress at once never overwrite
+// each other. The admin owns everything except `progress`, which belongs to
+// the employee: admin saves never reset it.
+async function handlePeopleRoute(path: string, request: Request, env: Env): Promise<Response> {
+  if (!env.AUTH_KV) return json({ error: "Login isn't configured yet." }, 501);
+  const user = await getSessionUser(request, env);
+  if (!user) return json({ error: "Not signed in." }, 401);
+
+  if (path === "/api/people" && request.method === "GET") {
+    if (user.role === "admin") {
+      const initialised = await env.AUTH_KV.get("people:meta");
+      if (!initialised) return json({ people: null });
+      return json({ people: await listPeople(env) });
+    }
+    const own = await env.AUTH_KV.get(`person:${user.personId}`);
+    return json({ people: own ? [JSON.parse(own) as Person] : [] });
+  }
+
+  if (path === "/api/people" && request.method === "PUT") {
+    if (user.role !== "admin") return json({ error: "Admins only." }, 403);
+    const body = (await safeJson(request)) as { people?: Person[] } | null;
+    if (!Array.isArray(body?.people)) return json({ error: "Body must include a `people` array." }, 400);
+    const incoming = body!.people.filter((p) => p && typeof p.id === "string" && p.id);
+
+    const existing = await listPeople(env);
+    const existingById = new Map(existing.map((p) => [p.id, p]));
+    const merged = incoming.map((p) => {
+      const current = existingById.get(p.id);
+      return current ? { ...p, progress: current.progress } : p;
+    });
+    const keep = new Set(merged.map((p) => p.id));
+
+    await Promise.all([
+      ...merged.map((p) => env.AUTH_KV.put(`person:${p.id}`, JSON.stringify(p))),
+      ...existing.filter((p) => !keep.has(p.id)).map((p) => env.AUTH_KV.delete(`person:${p.id}`)),
+      env.AUTH_KV.put("people:meta", JSON.stringify({ updatedAt: new Date().toISOString() })),
+    ]);
+    return json({ ok: true, people: merged });
+  }
+
+  if (path === "/api/progress" && request.method === "POST") {
+    const body = (await safeJson(request)) as { moduleId?: string; quizScore?: number | null } | null;
+    const moduleId = body?.moduleId;
+    if (typeof moduleId !== "string" || !moduleId) return json({ error: "moduleId is required." }, 400);
+    const score = typeof body?.quizScore === "number" ? body.quizScore : null;
+
+    const raw = await env.AUTH_KV.get(`person:${user.personId}`);
+    if (!raw) return json({ error: "No record for this account yet — ask an admin." }, 404);
+    const person = JSON.parse(raw) as Person;
+    person.progress = { ...person.progress, [moduleId]: { completed: true, quizScore: score } };
+    await env.AUTH_KV.put(`person:${person.id}`, JSON.stringify(person));
+    return json({ ok: true });
+  }
+
+  return json({ error: "Not found." }, 404);
+}
+
+async function listPeople(env: Env): Promise<Person[]> {
+  const list = await env.AUTH_KV.list({ prefix: "person:" });
+  const people = await Promise.all(
+    list.keys.map(async (k) => {
+      const raw = await env.AUTH_KV.get(k.name);
+      return raw ? (JSON.parse(raw) as Person) : null;
+    }),
+  );
+  return people.filter((p): p is Person => !!p);
 }
 
 async function requireAdmin(request: Request, env: Env) {
