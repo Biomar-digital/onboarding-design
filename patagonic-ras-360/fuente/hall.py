@@ -12,7 +12,8 @@ def mk(name,build):
     me=bpy.data.meshes.new(name); bm=bmesh.new(); build(bm); bm.to_mesh(me); bm.free()
     ob=bpy.data.objects.new(name,me); sc.collection.objects.link(ob); return ob
 # ---------------- fish (client model, original material)
-bpy.ops.import_scene.gltf(filepath=os.path.join(HERE,'fish_feeding.glb'))
+GLB=next(p for p in (os.path.join(HERE,'fish_feeding.glb'),os.path.join(HERE,'..','referencias','Fish_Feeding_boca.glb')) if os.path.exists(p))
+bpy.ops.import_scene.gltf(filepath=GLB)
 for o in sc.objects:
     if o.name.startswith('Icosphere'): o.hide_render=True; o.hide_viewport=True
 arm=[o for o in sc.objects if o.type=='ARMATURE'][0]
@@ -205,7 +206,13 @@ for s in hg.SC:
     cams.append((s,co))
 # ---------------- render settings
 sc.frame_start=1; sc.frame_end=F; sc.render.fps=24
-sc.render.engine='CYCLES'; sc.cycles.device='CPU'; sc.cycles.samples=24; sc.cycles.use_denoising=True
+sc.render.engine='CYCLES'; sc.cycles.device='CPU'
+# GPU if available: set RAS_GPU=OPTIX / CUDA / HIP / METAL / ONEAPI (OPTIX for NVIDIA RTX)
+if os.environ.get('RAS_GPU'):
+    pr=bpy.context.preferences.addons['cycles'].preferences; pr.compute_device_type=os.environ['RAS_GPU']; pr.get_devices()
+    for d in pr.devices: d.use=(d.type!='CPU')
+    sc.cycles.device='GPU'; print('GPU',[d.name for d in pr.devices if d.use])
+sc.cycles.samples=int(os.environ.get('RAS_SAMPLES','24')); sc.cycles.use_denoising=True
 sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=8; sc.cycles.diffuse_bounces=1; sc.cycles.glossy_bounces=4; sc.cycles.transmission_bounces=6; sc.cycles.transparent_max_bounces=8; sc.cycles.volume_bounces=0
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
