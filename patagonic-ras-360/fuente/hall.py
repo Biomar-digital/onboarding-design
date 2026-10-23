@@ -40,7 +40,7 @@ def dup_fish():
 fr=act.frame_range
 def swim(a,phase,v):
     a.animation_data_create(); tr=a.animation_data.nla_tracks.new(); st=tr.strips.new('swim',int(fr[0]),act)
-    st.repeat=30; st.scale=0.9                    # close to the authored speed: calm, not violent
+    st.repeat=max(30,int((F+400)/max(1,fr[1]-fr[0])/0.9)+2); st.scale=0.9                    # close to the authored speed: calm, not violent
     st.frame_start=fr[0]-phase
     st.use_animated_influence=True; st.influence=0.6; st.keyframe_insert('influence',frame=1)   # 60% amplitude
 arm.animation_data.action=None
@@ -80,14 +80,20 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob) in enumerate(plan):
     for j in range(ns):
         r,a=fish[k]; k+=1
         r.scale=(0.7/L*random.uniform(0.85,1.15)*(1.15 if ns==1 else 1.0),)*3
-        yw=None; bk=0.0
+        yw=None; bk=0.0; loc=np.zeros((F,3)); rot=np.zeros((F,3))
         for f in range(F):
             v=Vt[f,j]; yaw=math.atan2(v[0],-v[1]); h=math.hypot(v[0],v[1]); pitch=max(-0.21,min(0.21,-math.atan2(v[2],h)))
             if yw is not None:
                 dy=(yaw-yw+math.pi)%(2*math.pi)-math.pi; yaw=yw+dy; bk=0.85*bk+0.15*max(-0.35,min(0.35,-dy*24*0.3))
-            yw=yaw
-            r.location=P[f,j]; r.rotation_euler=(pitch,bk,yaw)
-            r.keyframe_insert('location',frame=f+1); r.keyframe_insert('rotation_euler',frame=f+1)
+            yw=yaw; loc[f]=P[f,j]; rot[f]=(pitch,bk,yaw)
+        # write all keys at once (keyframe_insert per frame is far too slow for 1300 fish x 2160 frames)
+        r.animation_data_create(); ac=bpy.data.actions.new('swimpath'); r.animation_data.action=ac
+        fr_=np.arange(1,F+1,dtype=float)
+        for path,arr in (('location',loc),('rotation_euler',rot)):
+            for ax in range(3):
+                fc=ac.fcurves.new(path,index=ax); fc.keyframe_points.add(F)
+                fc.keyframe_points.foreach_set('co',np.c_[fr_,arr[:,ax]].ravel())
+                fc.update()
         swim(a,random.randint(0,190),0)
 print('FISH',NT)
 # ---------------- water world
@@ -127,9 +133,9 @@ surf=mk('Surface',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,
 sm=bpy.data.materials.new('surf'); sm.use_nodes=True; sb=sm.node_tree.nodes['Principled BSDF']; sb.inputs['Transmission Weight'].default_value=1; sb.inputs['Roughness'].default_value=0.05; sb.inputs['IOR'].default_value=1.33
 sn=sm.node_tree; st_=clock(sn); sco=sn.nodes.new('ShaderNodeTexCoord')
 def wave():
-    n=sn.nodes.new('ShaderNodeTexNoise'); n.noise_dimensions='4D'; n.inputs['Scale'].default_value=3.5; n.inputs['Detail'].default_value=8; n.inputs['Distortion'].default_value=1.5; return n
+    n=sn.nodes.new('ShaderNodeTexNoise'); n.noise_dimensions='4D'; n.inputs['Scale'].default_value=0.12; n.inputs['Detail'].default_value=3; n.inputs['Distortion'].default_value=0.6; return n   # slow swells (~8 m), not a glittering ceiling
 hgt=looped(sn,wave,sco.outputs['Object'],st_,0.35,'Fac')
-bmp=sn.nodes.new('ShaderNodeBump'); bmp.inputs['Strength'].default_value=1.0; sn.links.new(hgt,bmp.inputs['Height']); sn.links.new(bmp.outputs['Normal'],sb.inputs['Normal'])
+bmp=sn.nodes.new('ShaderNodeBump'); bmp.inputs['Strength'].default_value=0.35; sn.links.new(hgt,bmp.inputs['Height']); sn.links.new(bmp.outputs['Normal'],sb.inputs['Normal'])
 surf.data.materials.append(sm); surf.visible_shadow=False
 gobo=mk('Gobo',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); gobo.location=(CX,CY,ZS-0.3)
 gm=bpy.data.materials.new('gobo'); gm.use_nodes=True; gn=gm.node_tree; gb=gn.nodes['Principled BSDF']
@@ -140,7 +146,21 @@ wx=looped(gn,warpn,gco.outputs['Object'],gt,0.06,'Fac')
 wv_=gn.nodes.new('ShaderNodeVectorMath'); wv_.operation='ADD'; gn.links.new(gco.outputs['Object'],wv_.inputs[0]); gn.links.new(wx,wv_.inputs[1])
 def cell():
     n=gn.nodes.new('ShaderNodeTexVoronoi'); n.voronoi_dimensions='4D'; n.feature='DISTANCE_TO_EDGE'; n.inputs['Scale'].default_value=1.4; return n
-dist=looped(gn,cell,wv_.outputs[0],gt,0.22,'Distance')
+def looped_min(nt,make,vec,t,rate,out,k=0.35):
+    A=make(); B=make(); f=nt.nodes.new('ShaderNodeMath'); f.operation='DIVIDE'; nt.links.new(t,f.inputs[0]); f.inputs[1].default_value=LOOP
+    res=[]
+    for node,off,sign in ((A,0.0,1),(B,-LOOP,-1)):
+        w=nt.nodes.new('ShaderNodeMath'); w.operation='MULTIPLY_ADD'; nt.links.new(t,w.inputs[0]); w.inputs[1].default_value=rate; w.inputs[2].default_value=off*rate
+        nt.links.new(w.outputs[0],node.inputs['W']); nt.links.new(vec,node.inputs['Vector'])
+        b=nt.nodes.new('ShaderNodeMath'); b.operation='MULTIPLY_ADD'; nt.links.new(f.outputs[0],b.inputs[0]); b.inputs[1].default_value=sign*k; b.inputs[2].default_value=0.0 if sign>0 else k
+        s=nt.nodes.new('ShaderNodeMath'); s.operation='ADD'; nt.links.new(node.outputs[out],s.inputs[0]); nt.links.new(b.outputs[0],s.inputs[1]); res.append(s.outputs[0])
+    m=nt.nodes.new('ShaderNodeMath'); m.operation='MINIMUM'; nt.links.new(res[0],m.inputs[0]); nt.links.new(res[1],m.inputs[1])
+    # remove the common bias k*min(f,1-f) so the dominant net keeps its true distances (edges stay at 0)
+    g=nt.nodes.new('ShaderNodeMath'); g.operation='SUBTRACT'; g.inputs[0].default_value=1.0; nt.links.new(f.outputs[0],g.inputs[1])
+    mn=nt.nodes.new('ShaderNodeMath'); mn.operation='MINIMUM'; nt.links.new(f.outputs[0],mn.inputs[0]); nt.links.new(g.outputs[0],mn.inputs[1])
+    c=nt.nodes.new('ShaderNodeMath'); c.operation='MULTIPLY_ADD'; nt.links.new(mn.outputs[0],c.inputs[0]); c.inputs[1].default_value=-k; nt.links.new(m.outputs[0],c.inputs[2])
+    return c.outputs[0]
+dist=looped_min(gn,cell,wv_.outputs[0],gt,0.22,'Distance')
 gr=gn.nodes.new('ShaderNodeValToRGB'); gr.color_ramp.elements[0].position=0.05; gr.color_ramp.elements[0].color=(1,1,1,1); gr.color_ramp.elements[1].position=0.16; gr.color_ramp.elements[1].color=(0.12,0.12,0.12,1)
 gn.links.new(dist,gr.inputs[0]); inv=gn.nodes.new('ShaderNodeInvert'); gn.links.new(gr.outputs['Color'],inv.inputs['Color'])
 gn.links.new(inv.outputs['Color'],gb.inputs['Alpha']); gb.inputs['Base Color'].default_value=(0,0,0,1); gobo.data.materials.append(gm)
@@ -151,7 +171,8 @@ em=kn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(1.0,1.2
 # Snell's window is far brighter than the water: seen through refraction/reflection (bubble rims, fish flanks,
 # looking up through the surface) the sky is 4x the strength it adds as diffuse fill
 lp=kn.nodes.new('ShaderNodeLightPath'); gm_=kn.nodes.new('ShaderNodeMath'); gm_.operation='MAXIMUM'
-kn.links.new(lp.outputs['Is Glossy Ray'],gm_.inputs[0]); kn.links.new(lp.outputs['Is Transmission Ray'],gm_.inputs[1])
+td=kn.nodes.new('ShaderNodeMath'); td.operation='GREATER_THAN'; kn.links.new(lp.outputs['Transmission Depth'],td.inputs[0]); td.inputs[1].default_value=1.5   # through a bubble (2+ refractions), not just the surface
+kn.links.new(lp.outputs['Is Glossy Ray'],gm_.inputs[0]); kn.links.new(td.outputs[0],gm_.inputs[1])
 sk=kn.nodes.new('ShaderNodeMapRange'); kn.links.new(gm_.outputs[0],sk.inputs[0]); sk.inputs[3].default_value=1.0; sk.inputs[4].default_value=4.0
 kn.links.new(sk.outputs[0],em.inputs['Strength'])
 kn.links.new(em.outputs[0],kn.nodes['Material Output'].inputs['Surface']); sky.data.materials.append(km); sky.visible_shadow=False
@@ -219,7 +240,8 @@ sc.render.image_settings.file_format='PNG'
 for s,co in cams:
     if ONLY and s['name'] not in ONLY: continue
     sc.camera=co; sc.render.resolution_x=max(2,int(s['res'][0]*SCALE)); sc.render.resolution_y=max(2,int(s['res'][1]*SCALE))
-    sc.render.filepath=os.path.join(OUT,s['name']+('_' if F>1 else '.png'))
+    sc.render.filepath=os.path.join(OUT,s['name'],s['name']+'_') if F>1 else os.path.join(OUT,s['name']+'.png')
+    sc.render.use_overwrite=False; sc.render.use_placeholder=True        # re-running resumes where it stopped
     bpy.ops.render.render(write_still=(F==1),animation=(F>1))
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT,'hall.blend'))
 print('DONE')
