@@ -4,7 +4,7 @@ import { Logo, TAGLINE } from "./Brand";
 import { useStore } from "../lib/store";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { currentUser, logout, dirty } = useStore();
+  const { currentUser, logout, dirty, backendAvailable } = useStore();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isAdmin = currentUser?.role === "admin";
@@ -25,7 +25,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   </NavLink>
                   {dirty && (
                     <span className="chip bg-amber-100 text-amber-700">
-                      Unpublished changes
+                      {backendAvailable ? "Saving…" : "Unpublished changes"}
                     </span>
                   )}
                 </>

@@ -7,7 +7,7 @@ import { modules } from "../content/modules";
 import type { Person } from "../content/types";
 
 export function Admin() {
-  const { people, dirty, publish, resetDemo } = useStore();
+  const { people, dirty, publish, resetDemo, backendAvailable } = useStore();
   const employees = people.filter((p) => p.role === "employee");
   const [msg, setMsg] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -45,10 +45,16 @@ export function Admin() {
             disabled={publishing}
           >
             {publishing
-              ? "Publishing…"
+              ? backendAvailable
+                ? "Saving…"
+                : "Publishing…"
               : dirty
-                ? "Publish to GitHub"
-                : "Published ✓"}
+                ? backendAvailable
+                  ? "Save now"
+                  : "Publish to GitHub"
+                : backendAvailable
+                  ? "Saved ✓"
+                  : "Published ✓"}
           </button>
         </div>
       </div>
