@@ -67,7 +67,7 @@ def group(mat):
     sm=N.new('GeometryNodeSetShadeSmooth'); Lk.new(sph.outputs['Mesh'],sm.inputs['Geometry'])
     smat=N.new('GeometryNodeSetMaterial'); smat.inputs['Material'].default_value=mat; Lk.new(sm.outputs[0],smat.inputs['Geometry'])
     # big bubbles flatten (oblate) and tilt with the wobble
-    flat=M('SUBTRACT',1.0,M('MULTIPLY',0.4,M('MINIMUM',1.0,M('MAXIMUM',0.0,M('DIVIDE',M('SUBTRACT',size,0.0025),0.004)))))
+    flat=M('SUBTRACT',1.0,M('MULTIPLY',0.5,M('MINIMUM',1.0,M('MAXIMUM',0.0,M('DIVIDE',M('SUBTRACT',size,0.0025),0.012)))))
     scl=N.new('ShaderNodeCombineXYZ'); Lk.new(size,scl.inputs[0]); Lk.new(size,scl.inputs[1]); Lk.new(M('MULTIPLY',size,flat),scl.inputs[2])
     rot=N.new('ShaderNodeCombineXYZ'); Lk.new(M('MULTIPLY',0.35,M('SINE',arg)),rot.inputs[0]); Lk.new(M('MULTIPLY',0.35,M('COSINE',arg)),rot.inputs[1])
     iop=N.new('GeometryNodeInstanceOnPoints'); Lk.new(pts.outputs[0],iop.inputs['Points']); Lk.new(smat.outputs[0],iop.inputs['Instance'])
@@ -76,24 +76,20 @@ def group(mat):
     return ng
 
 def material():
-    # air in water: almost clear in the centre, silvery rim (total internal reflection) and a sharp highlight
-    m=bpy.data.materials.new('bubble'); m.use_nodes=True; nt=m.node_tree; N=nt.nodes; L=nt.links
-    N.remove(N['Principled BSDF']); out=N['Material Output']
-    lw=N.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.35
-    rim=N.new('ShaderNodeMath'); rim.operation='POWER'; L.new(lw.outputs['Facing'],rim.inputs[0]); rim.inputs[1].default_value=1.6
-    tr=N.new('ShaderNodeBsdfTransparent')
-    gl=N.new('ShaderNodeBsdfGlossy'); gl.inputs['Roughness'].default_value=0.03; gl.inputs['Color'].default_value=(1,1,1,1)
-    em=N.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(0.75,0.9,1.0,1); em.inputs['Strength'].default_value=1.6
-    a1=N.new('ShaderNodeAddShader'); L.new(gl.outputs[0],a1.inputs[0]); L.new(em.outputs[0],a1.inputs[1])
-    mx=N.new('ShaderNodeMixShader'); L.new(rim.outputs[0],mx.inputs['Fac']); L.new(tr.outputs[0],mx.inputs[1]); L.new(a1.outputs[0],mx.inputs[2])
-    L.new(mx.outputs[0],out.inputs['Surface'])
+    # physically an air bubble in water is a glass sphere with IOR 1/1.33: the centre refracts (a small
+    # minified image of the bright water above), the rim goes to total internal reflection (silver).
+    # Needs enough transmission/glossy bounces in the render settings.
+    m=bpy.data.materials.new('bubble'); m.use_nodes=True; nt=m.node_tree; N=nt.nodes
+    N.remove(N['Principled BSDF'])
+    g=N.new('ShaderNodeBsdfGlass'); g.inputs['IOR'].default_value=1/1.33; g.inputs['Roughness'].default_value=0.035     # tiny roughness lets the sun be sampled: glints inside light shafts
+    nt.links.new(g.outputs[0],N['Material Output'].inputs['Surface'])
     return m
 
-def plume(sc,ng,loc,height,count,seed,T0,spread_top=0.9,sway=0.25,size_max=0.007):
+def plume(sc,ng,loc,height,count,seed,T0,spread_top=0.9,sway=0.25,size_max=0.007,size_min=0.002):
     me=bpy.data.meshes.new('plume'); ob=bpy.data.objects.new('BubblePlume',me); sc.collection.objects.link(ob)
     ob.location=loc; ob.visible_shadow=False
     md=ob.modifiers.new('bubbles','NODES'); md.node_group=ng
-    vals={'Count':count,'Seed':seed,'Height':height,'Spread Top':spread_top,'Sway':sway,'T0':T0,'Size Max':size_max}
+    vals={'Count':count,'Seed':seed,'Height':height,'Spread Top':spread_top,'Sway':sway,'T0':T0,'Size Max':size_max,'Size Min':size_min}
     for it in ng.interface.items_tree:
         if it.in_out=='INPUT' and it.name in vals: md[it.identifier]=vals[it.name]
     return ob

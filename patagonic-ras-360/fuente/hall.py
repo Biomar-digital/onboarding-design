@@ -100,24 +100,59 @@ vn.links.new(vol.outputs[0],vn.nodes['Material Output'].inputs['Volume']); box.d
 w=bpy.data.worlds.new('W'); sc.world=w; w.use_nodes=True; w.node_tree.nodes['Background'].inputs[0].default_value=(0.02,0.1,0.26,1); w.node_tree.nodes['Background'].inputs[1].default_value=0.6
 sun=bpy.data.lights.new('sun','SUN'); sun.energy=34; sun.color=(0.92,0.98,1.0); sun.angle=math.radians(2)
 so=bpy.data.objects.new('sun',sun); sc.collection.objects.link(so); so.rotation_euler=(math.radians(-30),math.radians(25),math.radians(-20))
+# ---- living water: surface ripples and the caustic net / light shafts move, seamless over the 90 s loop.
+# A texture evolving in 4D (W = time) is not periodic, so each one is evaluated at t and at t-90 and
+# cross-faded by t/90: at t=90 the second copy is exactly the first one at t=0.
+LOOP=90.0
+def clock(nt):
+    v=nt.nodes.new('ShaderNodeValue'); v.label='loop time'
+    v.outputs[0].default_value=T0; v.outputs[0].keyframe_insert('default_value',frame=1)
+    v.outputs[0].default_value=T0+1000/24.0; v.outputs[0].keyframe_insert('default_value',frame=1001)
+    for fc in nt.animation_data.action.fcurves:
+        for k in fc.keyframe_points: k.interpolation='LINEAR'
+        fc.extrapolation='LINEAR'
+    t=nt.nodes.new('ShaderNodeMath'); t.operation='WRAP'; nt.links.new(v.outputs[0],t.inputs[0]); t.inputs[1].default_value=LOOP; t.inputs[2].default_value=0.0
+    return t.outputs[0]
+def looped(nt,make,vec,t,rate,out):
+    A=make(); B=make()
+    for node,off in ((A,0.0),(B,-LOOP)):
+        w=nt.nodes.new('ShaderNodeMath'); w.operation='MULTIPLY_ADD'; nt.links.new(t,w.inputs[0]); w.inputs[1].default_value=rate; w.inputs[2].default_value=off*rate
+        nt.links.new(w.outputs[0],node.inputs['W']); nt.links.new(vec,node.inputs['Vector'])
+    f=nt.nodes.new('ShaderNodeMath'); f.operation='DIVIDE'; nt.links.new(t,f.inputs[0]); f.inputs[1].default_value=LOOP
+    mx=nt.nodes.new('ShaderNodeMix'); mx.data_type='FLOAT'; nt.links.new(f.outputs[0],mx.inputs['Factor'])
+    nt.links.new(A.outputs[out],mx.inputs[2]); nt.links.new(B.outputs[out],mx.inputs[3])
+    return mx.outputs[0]
 surf=mk('Surface',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); surf.location=(CX,CY,ZS)
 sm=bpy.data.materials.new('surf'); sm.use_nodes=True; sb=sm.node_tree.nodes['Principled BSDF']; sb.inputs['Transmission Weight'].default_value=1; sb.inputs['Roughness'].default_value=0.05; sb.inputs['IOR'].default_value=1.33
-sn=sm.node_tree; wv=sn.nodes.new('ShaderNodeTexNoise'); wv.inputs['Scale'].default_value=3.5; wv.inputs['Detail'].default_value=8; wv.inputs['Distortion'].default_value=1.5
-bmp=sn.nodes.new('ShaderNodeBump'); bmp.inputs['Strength'].default_value=1.0; sn.links.new(wv.outputs['Fac'],bmp.inputs['Height']); sn.links.new(bmp.outputs['Normal'],sb.inputs['Normal'])
+sn=sm.node_tree; st_=clock(sn); sco=sn.nodes.new('ShaderNodeTexCoord')
+def wave():
+    n=sn.nodes.new('ShaderNodeTexNoise'); n.noise_dimensions='4D'; n.inputs['Scale'].default_value=3.5; n.inputs['Detail'].default_value=8; n.inputs['Distortion'].default_value=1.5; return n
+hgt=looped(sn,wave,sco.outputs['Object'],st_,0.35,'Fac')
+bmp=sn.nodes.new('ShaderNodeBump'); bmp.inputs['Strength'].default_value=1.0; sn.links.new(hgt,bmp.inputs['Height']); sn.links.new(bmp.outputs['Normal'],sb.inputs['Normal'])
 surf.data.materials.append(sm); surf.visible_shadow=False
 gobo=mk('Gobo',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); gobo.location=(CX,CY,ZS-0.3)
 gm=bpy.data.materials.new('gobo'); gm.use_nodes=True; gn=gm.node_tree; gb=gn.nodes['Principled BSDF']
-cv=gn.nodes.new('ShaderNodeTexVoronoi'); cv.feature='DISTANCE_TO_EDGE'; cv.inputs['Scale'].default_value=1.4
-gco=gn.nodes.new('ShaderNodeTexCoord'); wrp=gn.nodes.new('ShaderNodeTexNoise'); wrp.inputs['Scale'].default_value=0.6
-wad=gn.nodes.new('ShaderNodeVectorMath'); wad.operation='ADD'; gn.links.new(gco.outputs['Object'],wad.inputs[0]); gn.links.new(wrp.outputs['Color'],wad.inputs[1])
-gn.links.new(gco.outputs['Object'],wrp.inputs['Vector']); gn.links.new(wad.outputs[0],cv.inputs['Vector'])
+gt=clock(gn); gco=gn.nodes.new('ShaderNodeTexCoord')
+def warpn():
+    n=gn.nodes.new('ShaderNodeTexNoise'); n.noise_dimensions='4D'; n.inputs['Scale'].default_value=0.6; return n
+wx=looped(gn,warpn,gco.outputs['Object'],gt,0.06,'Fac')
+wv_=gn.nodes.new('ShaderNodeVectorMath'); wv_.operation='ADD'; gn.links.new(gco.outputs['Object'],wv_.inputs[0]); gn.links.new(wx,wv_.inputs[1])
+def cell():
+    n=gn.nodes.new('ShaderNodeTexVoronoi'); n.voronoi_dimensions='4D'; n.feature='DISTANCE_TO_EDGE'; n.inputs['Scale'].default_value=1.4; return n
+dist=looped(gn,cell,wv_.outputs[0],gt,0.22,'Distance')
 gr=gn.nodes.new('ShaderNodeValToRGB'); gr.color_ramp.elements[0].position=0.05; gr.color_ramp.elements[0].color=(1,1,1,1); gr.color_ramp.elements[1].position=0.16; gr.color_ramp.elements[1].color=(0.12,0.12,0.12,1)
-gn.links.new(cv.outputs['Distance'],gr.inputs[0]); inv=gn.nodes.new('ShaderNodeInvert'); gn.links.new(gr.outputs['Color'],inv.inputs['Color'])
+gn.links.new(dist,gr.inputs[0]); inv=gn.nodes.new('ShaderNodeInvert'); gn.links.new(gr.outputs['Color'],inv.inputs['Color'])
 gn.links.new(inv.outputs['Color'],gb.inputs['Alpha']); gb.inputs['Base Color'].default_value=(0,0,0,1); gobo.data.materials.append(gm)
 for v in ('visible_camera','visible_diffuse','visible_glossy','visible_transmission','visible_volume_scatter'): setattr(gobo,v,False)
 sky=mk('Sky',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); sky.location=(CX,CY,ZS+4)
 km=bpy.data.materials.new('sky'); km.use_nodes=True; kn=km.node_tree; kn.nodes.remove(kn.nodes['Principled BSDF'])
 em=kn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value=(1.0,1.25,1.5,1); em.inputs["Strength"].default_value=1.0
+# Snell's window is far brighter than the water: seen through refraction/reflection (bubble rims, fish flanks,
+# looking up through the surface) the sky is 4x the strength it adds as diffuse fill
+lp=kn.nodes.new('ShaderNodeLightPath'); gm_=kn.nodes.new('ShaderNodeMath'); gm_.operation='MAXIMUM'
+kn.links.new(lp.outputs['Is Glossy Ray'],gm_.inputs[0]); kn.links.new(lp.outputs['Is Transmission Ray'],gm_.inputs[1])
+sk=kn.nodes.new('ShaderNodeMapRange'); kn.links.new(gm_.outputs[0],sk.inputs[0]); sk.inputs[3].default_value=1.0; sk.inputs[4].default_value=4.0
+kn.links.new(sk.outputs[0],em.inputs['Strength'])
 kn.links.new(em.outputs[0],kn.nodes['Material Output'].inputs['Surface']); sky.data.materials.append(km); sky.visible_shadow=False
 floor=mk('Floor',lambda bm: bmesh.ops.create_grid(bm,x_segments=1,y_segments=1,size=1000)); floor.location=(CX,CY,-8)
 fm=bpy.data.materials.new('floor'); fm.use_nodes=True; fm.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value=(0.01,0.03,0.06,1); floor.data.materials.append(fm)
@@ -151,7 +186,9 @@ for i,s in enumerate(hg.SC):
         bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,int(brng.uniform(6000,8000)),i*10+j,T0,size_max=0.012,
                       spread_top=brng.uniform(0.6,1.2),sway=brng.uniform(0.15,0.35))
     p=s['c']-s['n']*brng.uniform(0.5,1.2)+s['t']*brng.uniform(-0.35,0.35)*s['W']      # one close column: big wobbling bubbles
-    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,1600,300+i,T0,spread_top=0.45,sway=0.12,size_max=0.02)
+    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,1600,300+i,T0,spread_top=0.45,sway=0.12,size_max=0.026)
+    p=s['c']-s['n']*brng.uniform(0.12,0.35)+s['t']*brng.uniform(-0.3,0.3)*s['W']       # coarse-aeration gulps right behind the glass: big lens bubbles
+    bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,70,700+i,T0,spread_top=0.3,sway=0.08,size_min=0.015,size_max=0.05)
     p=s['c']-s['n']*brng.uniform(16,24)+s['t']*brng.uniform(-4,4)                   # distant column, reads as a silvery curtain
     bubbles.plume(sc,bng,(p[0],p[1],ZF+0.1),ZS-ZF-0.15,6000,500+i,T0,spread_top=1.8,sway=0.4,size_max=0.016)
 # ---------------- one window camera per screen (off-axis: the frustum passes exactly through the screen)
@@ -169,7 +206,7 @@ for s in hg.SC:
 # ---------------- render settings
 sc.frame_start=1; sc.frame_end=F; sc.render.fps=24
 sc.render.engine='CYCLES'; sc.cycles.device='CPU'; sc.cycles.samples=24; sc.cycles.use_denoising=True
-sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=3; sc.cycles.transparent_max_bounces=4; sc.cycles.volume_bounces=0
+sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=8; sc.cycles.diffuse_bounces=1; sc.cycles.glossy_bounces=4; sc.cycles.transmission_bounces=6; sc.cycles.transparent_max_bounces=8; sc.cycles.volume_bounces=0
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
 for s,co in cams:
