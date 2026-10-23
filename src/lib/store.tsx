@@ -159,7 +159,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const savedJson = JSON.stringify(saved);
         serverJsonRef.current = savedJson;
         // Employees' progress may have moved on server-side — adopt it.
-        if (savedJson !== json) setState((s) => ({ ...s, people: saved }));
+        setState((s) => ({
+          ...s,
+          dirty: false,
+          ...(savedJson !== json ? { people: saved } : {}),
+        }));
       } catch {
         /* retried on the next edit */
       }
@@ -291,6 +295,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         );
       },
       publish: async () => {
+        // With the server backend, "publish" is just "save now" — records live in KV.
+        if (backendAvailable && roleRef.current === "admin") {
+          try {
+            const saved = await authApi.savePeople(stateRef.current.people);
+            serverJsonRef.current = JSON.stringify(saved);
+            setState((s) => ({ ...s, people: saved, dirty: false }));
+            return { ok: true, message: "Saved — everyone sees these changes now." };
+          } catch (err) {
+            return { ok: false, message: `Could not save: ${(err as Error).message}` };
+          }
+        }
         try {
           const res = await fetch("/api/publish", {
             method: "POST",

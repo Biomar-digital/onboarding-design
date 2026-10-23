@@ -12,10 +12,10 @@ import type { Person } from "../content/types";
 
 // Admin review queue for self-service "request access" submissions. Approving
 // creates the login credential (server-side, via the Worker) and — unless
-// linked to an existing designer — a new Person record here, which still
-// needs a normal "Publish to GitHub" to become permanent.
+// linked to an existing designer — a new Person record, which is saved to the
+// server automatically so the new hire can sign in from their own browser.
 export function AdminSignupRequests() {
-  const { people, upsertPerson, publish } = useStore();
+  const { people, upsertPerson } = useStore();
   const [requests, setRequests] = useState<SignupRequestRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +75,6 @@ export function AdminSignupRequests() {
                     load();
                   }}
                   onRejected={load}
-                  publish={publish}
                 />
               ))}
             </div>
@@ -126,13 +125,11 @@ function RequestRow({
   people,
   onApproved,
   onRejected,
-  publish,
 }: {
   request: SignupRequestRow;
   people: Person[];
   onApproved: (person: Person) => void;
   onRejected: () => void;
-  publish: () => Promise<{ ok: boolean; message: string }>;
 }) {
   const [open, setOpen] = useState(false);
   const [linkTo, setLinkTo] = useState<string>("__new__");
@@ -167,7 +164,6 @@ function RequestRow({
     }
     onApproved(person);
     setDone({ email: request.email, password });
-    publish().catch(() => {});
   };
 
   const reject = async () => {
