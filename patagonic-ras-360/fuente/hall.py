@@ -46,8 +46,8 @@ def swim(a,phase,v):
 arm.animation_data.action=None
 # ---------------- depth layers: schools at different distances behind the screens + loners
 # each layer has its own circuit (parallel to the screens, `behind` metres back) and does 1 lap in 90 s
-def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25):
-    V=LEN/90.0
+def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25,laps=1):
+    V=laps*LEN/90.0
     def lead(t):
         s=(sgn*V*(t+T0+phase_s))%LEN; i=np.searchsorted(S_,s,side='right')-1; i=max(0,min(i,len(C)-1))
         a=C[i]; b=C[(i+1)%len(C)]; u=(s-S_[i])/max(S_[i+1]-S_[i],1e-6); p=a+(b-a)*u
@@ -57,7 +57,7 @@ def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25):
     return lead
 # (name, behind m, height offset m, direction, [(fish, phase s), ...], spread)
 LAYERS=[
- ('cerca',  1.4,  -0.2,  1, [(12, 0.9),(10, 31.6),(10, 61.8)],                0.7),
+ ('cerca',  2.2,  -0.2,  1, [(12, 0.9),(10, 31.6),(10, 61.8)],                0.7),
  ('medio',  3.5,   0.0,  1, [(55, 7.7),(45, 33.3),(50, 54.2),(40, 76.9)],     1.3),
  ('lejos',  7.5,   0.7, -1, [(70, 17.9),(60, 42.9),(60, 63.6),(55, 84.6)],    1.6),   # swims the other way
  ('fondo', 15.0,  -0.4,  1, [(140, 2.2),(120, 30.0),(120, 59.4)],             2.4),   # big schools fading into the haze
@@ -67,18 +67,68 @@ random.seed(11); rng=np.random.default_rng(3)
 plan=[]
 for name,beh,dz,sgn,schools,spr in LAYERS:
     C,S_,LEN=hg.circuit(behind=beh,dz=dz)
-    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','15'))))
+    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','15')),1))
 for k in range(12):                                   # loners: single salmon at random depths and heights
-    C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.0,9.0)),dz=float(rng.uniform(-1.0,1.2)))
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,False))
+    C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.8,9.0)),dz=float(rng.uniform(-1.0,1.2)))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,False,1))
+# rotunda: fish milling behind the two round-room totems on their own short loops (laps chosen for ~0.6 m/s)
+for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,-1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
+    C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz)
+    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*90/LEN))))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
+def keep_behind_glass(P,margin=0.9,iters=16):
+    # Each screen is a window whose near clip plane is the glass: a fish inside a screen's visible pyramid
+    # (eye -> screen rectangle) closer than `margin` behind the glass would be sliced or float in the room.
+    # Move it out by the shortest way (further back, or out of a side of the pyramid), with the correction
+    # spread over time (dilate by magnitude, then gaussian) so it reads as a natural swerve, never a jump.
+    F_,N_,_=P.shape; out=P.copy(); win=72; G=np.exp(-0.5*(np.arange(-30,31)/12.0)**2); G/=G.sum()
+    for it in range(iters):
+        tot=np.zeros_like(out)
+        for s in hg.SC:
+            c,n,t=s['c'],s['n'],s['t']; e=s['eye']; D=s['D']; up=np.array([0,0,1.0])
+            rel=out-e; along=rel@(-n); d=along-D
+            ok=along>0.05
+            cx=(c-e)@t; cz=c[2]-e[2]
+            ox=rel@t-cx*along/D; oz=rel[...,2]-cz*along/D                 # offset from the screen's centre line
+            hx=(s['W']/2+0.6)*along/D; hz=(s['H']/2+0.6)*along/D          # pyramid half-size at that depth (+0.6 m body)
+            inside=ok&(np.abs(ox)<hx)&(np.abs(oz)<hz)&(d<margin)
+            if not inside.any(): continue
+            back=np.clip(margin-d,0,None)
+            side=hx-np.abs(ox); vert=hz-np.abs(oz)
+            # pick the cheapest exit (vertical exits only a little favoured: fish should stay mostly level)
+            cost=np.stack([back,side*1e6,vert*1.6],-1); k=cost.argmin(-1)   # no sideways exits: their side flips mid-crossing and cancels out
+            vec=np.where((k==0)[...,None],back[...,None]*(-n),
+                np.where((k==1)[...,None],(side+0.05)[...,None]*np.sign(ox)[...,None]*t,(vert+0.05)[...,None]*np.sign(oz)[...,None]*up))
+            vec=np.where(inside[...,None],vec,0.0); tot+=vec
+        if not np.abs(tot).any(): break
+        mag=np.linalg.norm(tot,axis=-1)
+        pad=np.pad(mag,((win//2,win//2),(0,0)),mode='edge'); idx=np.lib.stride_tricks.sliding_window_view(pad,win,axis=0).argmax(-1)[:F_]
+        rows=np.clip(np.arange(F_)[:,None]-win//2+idx,0,F_-1)
+        dil=tot[rows,np.arange(N_)[None,:]]                                   # vector of the strongest need nearby in time
+        sm=np.stack([np.stack([np.convolve(np.pad(dil[:,j,a],30,mode='edge'),G,mode='valid') for a in range(3)],-1) for j in range(N_)],1)
+        out=out+sm
+    return out
+def sliced_fish(P,margin=0.45):
+    # fish that would still touch a glass after the correction (indices): they are left out of the school
+    bad=np.zeros(P.shape[1],bool)
+    for s in hg.SC:
+        c,n,t=s['c'],s['n'],s['t']; e=s['eye']; D=s['D']; rel=P-e; along=rel@(-n); d=along-D
+        ox=rel@t-((c-e)@t)*along/D; oz=rel[...,2]-(c[2]-e[2])*along/D
+        m=(along>0.05)&(np.abs(ox)<(s['W']/2+0.4)*along/D)&(np.abs(oz)<(s['H']/2+0.4)*along/D)&(d<margin)
+        bad|=m.any(0)
+    return np.where(bad)[0]
 NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
 k=0
-for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far) in enumerate(plan):
-    P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob),F,ns,seed=5+q,spread=spr)
+for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps) in enumerate(plan):
+    P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr)
+    P=keep_behind_glass(P); drop=set(sliced_fish(P).tolist())
+    if drop: print('DROPPED',len(drop),'fish of plan',q)
     for j in range(ns):
         r,a=fish[k]; k+=1
+        if j in drop:
+            for o in [r]+list(r.children_recursive): o.hide_render=True; o.hide_viewport=True
+            continue
         r.scale=(0.7/L*random.uniform(0.85,1.15)*(1.15 if ns==1 else 1.0),)*3
         yw=None; bk=0.0; loc=np.zeros((F,3)); rot=np.zeros((F,3))
         for f in range(F):
@@ -202,6 +252,7 @@ CUR=0.07
 import bubbles
 by_={s['name']:s for s in hg.SC}; cs_=[by_[k]['c'] for k in hg.ORDER]
 def travel(s):
+    if s['name'] not in hg.ORDER: return s['t']                        # rotunda totems: local loops, either way
     i=hg.ORDER.index(s['name']); d=cs_[(i+1)%len(cs_)]-cs_[i-1]; return s['t'] if np.dot(s['t'],d)>=0 else -s['t']
 bmat=bubbles.material(); bng=bubbles.group(bmat); sng=bubbles.snow_group(fcoll); brng=random.Random(21)
 for i,s in enumerate(hg.SC):

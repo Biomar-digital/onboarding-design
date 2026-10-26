@@ -28,9 +28,30 @@ def screen(s):
     return dict(name=name,c=np.array([c[0],c[1],zc]),t=np.array([t[0],t[1],0.0]),n=np.array([n[0],n[1],0.0]),W=W,H=H,res=res,eye=eye,D=D)
 SC=[screen(s) for s in SCREENS]
 # swim circuit: 3.5 m behind each screen (inside the water), in this order, closed loop, smoothed
-ORDER=['banner_frontal','totem_N1','totem_N2','totem_N3','totem_N4','concava','cocina','totem_R2','totem_R1','banner_lateral']
+ORDER=['banner_frontal','totem_N1','totem_N2','totem_N3','totem_N4','concava','cocina','banner_lateral']   # rotunda totems get their own local schools (local_loop)
 BEHIND=3.5
+SINGLE={'totem_R1','totem_R2'}
 LEADIN={'cocina':(8.0,-1.0)}   # extra waypoint: (metres before the screen along travel, metres further back)
+def clear_views(C,clear=2.4,pad=2.6,iters=80):
+    # The route must never run through what a screen shows in front of its glass (the room side): push every
+    # path point that lies inside a screen's visible pyramid (widened by `pad` for the school's width) and less
+    # than `clear` metres behind the glass out by the shortest exit, then relax the closed curve so it stays smooth.
+    C=C.copy(); up=np.array([0,0,1.0])
+    for it in range(iters):
+        moved=False
+        for s in SC:
+            c,n,t=s['c'],s['n'],s['t']; e=s['eye']; D=s['D']; rel=C-e; along=rel@(-n); d=along-D
+            ox=rel@t-((c-e)@t)*along/D; oz=rel[:,2]-(c[2]-e[2])*along/D
+            hx=(s['W']/2)*along/D+pad; hz=(s['H']/2)*along/D+pad
+            ins=(along>0.05)&(np.abs(ox)<hx)&(np.abs(oz)<hz)&(d<clear)
+            if not ins.any(): continue
+            back=clear-d; side=hx-np.abs(ox); vert=(hz-np.abs(oz))*2.5
+            k=np.stack([back,side,vert],-1).argmin(-1)
+            v=np.where((k==0)[:,None],(back+0.05)[:,None]*(-n),np.where((k==1)[:,None],(side+0.05)[:,None]*np.sign(ox)[:,None]*t,(vert/2.5+0.05)[:,None]*np.sign(oz)[:,None]*up))
+            C[ins]+=0.5*v[ins]; moved=True
+        for _ in range(3): C=0.5*C+0.25*(np.roll(C,1,0)+np.roll(C,-1,0))
+        if not moved and it>8: break
+    return C
 def circuit(n=2000, behind=BEHIND, dz=0.0):
     by={s['name']:s for s in SC}
     pts=[]; cs=[by[k]['c'] for k in ORDER]
@@ -39,6 +60,8 @@ def circuit(n=2000, behind=BEHIND, dz=0.0):
         h=max(s['W']/2,1.0); z=min(max(s['c'][2],1.2),3.6)
         if k in LEADIN:                                    # come in from the side, not straight at the viewer
             a,b=LEADIN[k]; p=s['c']-s['n']*(behind+b)-t*(h+a); p=p.copy(); p[2]=z+dz; pts.append(p)
+        if k in SINGLE:                                    # small screens on a curve: one waypoint, crossed on the diagonal
+            p=s['c']-s['n']*behind; p=p.copy(); p[2]=z+dz; pts.append(p); continue
         for u in (-h,h):                                   # two points: the path runs parallel behind every screen
             p=s['c']-s['n']*behind+t*u; p=p.copy(); p[2]=z+dz; pts.append(p)
     P=np.array(pts); N=len(P)
@@ -48,6 +71,21 @@ def circuit(n=2000, behind=BEHIND, dz=0.0):
         p0,p1,p2,p3=P[i-1],P[i],P[(i+1)%N],P[(i+2)%N]
         for u in np.linspace(0,1,n//N,endpoint=False):
             out.append(0.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u**3))
-    C=np.array(out); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1); L=seg.sum()
+    C=clear_views(np.array(out)); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1); L=seg.sum()
     s=np.concatenate([[0],np.cumsum(seg)])
     return C,s,L
+
+def local_loop(names,behind,dz=0.0,n=600,pad=1.0):
+    # small closed loop through the water behind a group of screens (each crossed parallel to its glass)
+    by={s['name']:s for s in SC}; pts=[]
+    for k in names:
+        s=by[k]; h=max(s['W']/2,1.0)+pad; z=min(max(s['c'][2],1.2),3.6)+dz
+        for u in (-h,h): p=s['c']-s['n']*behind+s['t']*u; p=p.copy(); p[2]=z; pts.append(p)
+    P=np.array(pts); m=P[:,:2].mean(0); P=P[np.argsort(np.arctan2(P[:,1]-m[1],P[:,0]-m[0]))]
+    N=len(P); out=[]
+    for i in range(N):
+        p0,p1,p2,p3=P[i-1],P[i],P[(i+1)%N],P[(i+2)%N]
+        for u in np.linspace(0,1,n//N,endpoint=False):
+            out.append(0.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u**3))
+    C=clear_views(np.array(out)); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1)
+    return C,np.concatenate([[0],np.cumsum(seg)]),seg.sum()
