@@ -68,7 +68,6 @@ set "OUT=render_prueba" & set "SCALE=0.5" & set "RAS_SAMPLES=24" & set "RAS_FRAM
 :go
 set "RAS_GPU=AUTO"
 set "RAS_FRAMEMAJOR=1"
-set "RAS_STATIC_FROM=15"
 echo.
 echo  Renderizando en "%OUT%" ...  (cuadros %RAS_FRAMES%)
 echo  Primero prepara la escena (unos minutos), despues va mostrando cada cuadro terminado.

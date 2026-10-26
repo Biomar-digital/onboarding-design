@@ -55,6 +55,14 @@ def salmon_skin(L):
     bs.inputs['Coat Weight'].default_value=0.6; bs.inputs['Coat Roughness'].default_value=0.05
     if 'Thin Film Thickness' in bs.inputs: bs.inputs['Thin Film Thickness'].default_value=260.0; bs.inputs['Thin Film IOR'].default_value=1.4   # faint iridescence of the scales
 if not os.environ.get('RAS_ORIGINAL_SKIN'): salmon_skin(L)
+def make_lod(ratio=0.27):
+    # simplified body for distant fish: same UVs and skeleton weights, so it still swims; ~1/3 of the points
+    tmp=bpy.data.objects.new('lodtmp',body.data.copy()); sc.collection.objects.link(tmp)
+    for vg in body.vertex_groups: tmp.vertex_groups.new(name=vg.name)
+    md=tmp.modifiers.new('dec','DECIMATE'); md.ratio=ratio
+    dg=bpy.context.evaluated_depsgraph_get(); me=bpy.data.meshes.new_from_object(tmp.evaluated_get(dg),preserve_all_data_layers=True,depsgraph=dg)
+    me.name='body_LOD'; bpy.data.objects.remove(tmp); return me
+LOD_MESH=make_lod(); LOD_FROM=float(os.environ.get('RAS_LOD_FROM','7'))
 def dup_fish():
     objs=[root]+[o for o in root.children_recursive if not o.name.startswith('Icosphere')]
     m={}
@@ -97,17 +105,17 @@ random.seed(11); rng=np.random.default_rng(3)
 plan=[]
 for name,beh,dz,sgn,schools,spr in LAYERS:
     C,S_,LEN=hg.circuit(behind=beh,dz=dz)
-    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','15')),1))
+    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','999')),1,beh>=LOD_FROM))
 for k in range(12):                                   # loners: single salmon at random depths and heights
     C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.8,9.0)),dz=float(rng.uniform(-1.0,1.2)))
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,False,1))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,False,1,False))
 for k in range(6):                                  # close passes: big salmon gliding ~1.1-1.5 m behind the glass
     C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.1,1.5)),dz=float(rng.uniform(-0.4,0.5)),clear=1.05,pad=0.5)
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%2 else -1,1,1.0,0.3,False,1))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%2 else -1,1,1.0,0.3,False,1,False))
 # rotunda: fish milling behind the two round-room totems on their own short loops (laps chosen for ~0.6 m/s)
 for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,-1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
     C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz)
-    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*90/LEN))))
+    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*90/LEN)),False))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
 def keep_behind_glass(P,margin=0.9,iters=16):
     # Each screen is a window whose near clip plane is the glass: a fish inside a screen's visible pyramid
@@ -153,7 +161,7 @@ def sliced_fish(P,margin=0.45):
 NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
 k=0
-for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps) in enumerate(plan):
+for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
     P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr,darts=(2.5 if ns==1 else 1.2) if not far else 0.0)
     P=keep_behind_glass(P); drop=set(sliced_fish(P).tolist())
     if drop: print('DROPPED',len(drop),'fish of plan',q)
@@ -163,6 +171,11 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps) in enumerate(plan):
             for o in [r]+list(r.children_recursive): o.hide_render=True; o.hide_viewport=True
             continue
         r.scale=(0.7/L*random.uniform(0.85,1.15)*(1.15 if ns==1 else 1.0),)*3
+        if lod:                                       # distant fish: simplified body, no eyes (sub-pixel there)
+            for o in r.children_recursive:
+                if o.type=='MESH':
+                    if len(o.data.vertices)==len(body.data.vertices): o.data=LOD_MESH
+                    else: o.hide_render=True
         yw=None; bk=0.0; loc=np.zeros((F,3)); rot=np.zeros((F,3))
         for f in range(F):
             v=Vt[f,j]; yaw=math.atan2(v[0],-v[1]); h=math.hypot(v[0],v[1]); pitch=max(-0.21,min(0.21,-math.atan2(v[2],h)))
