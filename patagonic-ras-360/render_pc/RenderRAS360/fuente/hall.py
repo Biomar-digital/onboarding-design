@@ -375,14 +375,14 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
     _set(ee,'volumetric_start',0.5); _set(ee,'volumetric_end',90.0); _set(ee,'volumetric_tile_size','4')
     _set(ee,'volumetric_samples',96); _set(ee,'volumetric_sample_distribution',0.85); _set(ee,'use_volumetric_shadows',True)
     _set(ee,'volumetric_ray_depth',16); _set(ee,'volumetric_light_clamp',0.0)
-    wn=sc.world.node_tree; wv=wn.nodes.new('ShaderNodeVolumePrincipled')
-    for k in ('Color','Density','Anisotropy','Absorption Color'): wv.inputs[k].default_value=vol.inputs[k].default_value
-    wn.links.new(wv.outputs[0],wn.nodes['World Output'].inputs['Volume']); box.hide_render=True
+    # water stays a mesh volume (a world volume in EEVEE is infinite and absorbs all sun and sky light)
     _set(sun,'shadow_softness_factor',0.2); _set(sun,'volume_factor',1.0)
     # the gobo casts the caustic/shaft pattern: its alpha must count in shadows
     # v2: the alpha 'gobo' blocks the sun in EEVEE and the glass surface refracts into nothing (black):
     # drop both; EEVEE does not light the scene from an emissive plane, so the sky light comes from the world
-    gobo.hide_render=True; surf.hide_render=True
+    surf.hide_render=True; sky.hide_render=True; floor.hide_render=True   # EEVEE ignores 'no shadow' on these planes: they block the sun
+    if os.environ.get('RAS_EEVEE_NOGOBO'): gobo.hide_render=True
+    else: _set(gm,'use_transparent_shadow',True); _set(gm,'surface_render_method','DITHERED')   # caustic net -> light shafts
     bg=sc.world.node_tree.nodes['Background']; bg.inputs[0].default_value=(0.10,0.30,0.55,1); bg.inputs[1].default_value=1.2
     for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
         _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
