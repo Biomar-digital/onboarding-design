@@ -380,7 +380,10 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
     wn.links.new(wv.outputs[0],wn.nodes['World Output'].inputs['Volume']); box.hide_render=True
     _set(sun,'shadow_softness_factor',0.2); _set(sun,'volume_factor',1.0)
     # the gobo casts the caustic/shaft pattern: its alpha must count in shadows
-    _set(gm,'use_transparent_shadow',True); _set(gm,'surface_render_method','DITHERED')
+    # v2: the alpha 'gobo' blocks the sun in EEVEE and the glass surface refracts into nothing (black):
+    # drop both; EEVEE does not light the scene from an emissive plane, so the sky light comes from the world
+    gobo.hide_render=True; surf.hide_render=True
+    bg=sc.world.node_tree.nodes['Background']; bg.inputs[0].default_value=(0.10,0.30,0.55,1); bg.inputs[1].default_value=1.2
     for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
         _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
     _set(dm,'surface_render_method','BLENDED')             # marine snow (transparent/translucent)
