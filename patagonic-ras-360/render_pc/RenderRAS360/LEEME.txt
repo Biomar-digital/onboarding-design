@@ -1,0 +1,19 @@
+PATAGONIC RAS 360 - RENDER EN TU PC
+===================================
+
+1. Descomprimi el zip: clic derecho sobre RenderRAS360.zip -> "Extraer todo".
+   (No lo abras desde adentro del zip: no funciona.)
+2. Doble clic en RENDER_RAS360.bat.
+   - La primera vez baja Blender 4.2 (380 MB) y ffmpeg (200 MB). Despues ya no.
+3. Elegi:
+   1 = Prueba rapida (3 s de las 10 pantallas). Hacela primero: te dice si usa la placa de video
+       y cuanto tarda cada cuadro.
+   2 = Minuto completo, calidad media.
+   3 = Minuto completo, calidad final (resolucion nativa de cada pantalla).
+4. Al terminar abre la carpeta con un MP4 por pantalla. Mandalos al chat y armo el mockup.
+
+- Si cerras la ventana o se apaga la PC, volve a hacer doble clic y elegi la misma opcion:
+  sigue desde el ultimo cuadro terminado.
+- Placa de video: la detecta sola (NVIDIA RTX, NVIDIA mas vieja, AMD o Intel Arc).
+  Si no encuentra ninguna, usa el procesador (mucho mas lento).
+- Necesitas unos 16 GB de RAM y unos 10 GB libres en disco para el render final.

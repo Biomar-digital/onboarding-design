@@ -34,17 +34,17 @@ def salmon_skin(L):
     tc=N.new('ShaderNodeTexCoord'); sep=N.new('ShaderNodeSeparateXYZ'); Lk.new(tc.outputs['Normal'],sep.inputs[0])
     def mr(x,a,b,lo=0.0,hi=1.0):
         r=N.new('ShaderNodeMapRange'); Lk.new(x,r.inputs[0]); r.inputs[1].default_value=a; r.inputs[2].default_value=b; r.inputs[3].default_value=lo; r.inputs[4].default_value=hi; return r.outputs[0]
-    back=mr(sep.outputs['Z'],0.15,0.75)                     # 0 flank/belly -> 1 dorsal (object-space normal)
+    back=mr(sep.outputs['Z'],0.05,0.55)                     # 0 flank/belly -> 1 dorsal (object-space normal)
     flank=mr(sep.outputs['Z'],-0.75,0.1)                    # 0 belly -> 1 flank and up
     # spots: sparse voronoi cells, ~1 cm dots every ~4 cm, only from the lateral line up
-    vo=N.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value=24.0/L; Lk.new(tc.outputs['Object'],vo.inputs['Vector'])
-    dot=mr(vo.outputs['Distance'],0.24,0.34,1.0,0.0)
+    vo=N.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value=20.0/L; Lk.new(tc.outputs['Object'],vo.inputs['Vector'])
+    dot=mr(vo.outputs['Distance'],0.27,0.38,1.0,0.0)
     keep=N.new('ShaderNodeMath'); keep.operation='GREATER_THAN'; Lk.new(vo.outputs['Color'],keep.inputs[0]); keep.inputs[1].default_value=0.5
     zone=mr(sep.outputs['Z'],-0.05,0.25)
     sp=N.new('ShaderNodeMath'); sp.operation='MULTIPLY'; Lk.new(dot,sp.inputs[0]); Lk.new(keep.outputs[0],sp.inputs[1])
     sp2=N.new('ShaderNodeMath'); sp2.operation='MULTIPLY'; Lk.new(sp.outputs[0],sp2.inputs[0]); Lk.new(zone,sp2.inputs[1])
     # colour: back towards steel blue-green, spots near-black
-    dk=N.new('ShaderNodeMix'); dk.data_type='RGBA'; dk.blend_type='MULTIPLY'; Lk.new(back,dk.inputs['Factor']); Lk.new(base,dk.inputs[6]); dk.inputs[7].default_value=(0.2,0.3,0.33,1)
+    dk=N.new('ShaderNodeMix'); dk.data_type='RGBA'; dk.blend_type='MULTIPLY'; Lk.new(back,dk.inputs['Factor']); Lk.new(base,dk.inputs[6]); dk.inputs[7].default_value=(0.11,0.17,0.2,1)
     spc=N.new('ShaderNodeMix'); spc.data_type='RGBA'; Lk.new(sp2.outputs[0],spc.inputs['Factor']); Lk.new(dk.outputs[2],spc.inputs[6]); spc.inputs[7].default_value=(0.02,0.02,0.025,1)
     Lk.new(spc.outputs[2],bs.inputs['Base Color'])
     # silver: metallic on the flanks (not on the back or spots), wet roughness
@@ -52,7 +52,7 @@ def salmon_skin(L):
     met2=N.new('ShaderNodeMath'); met2.operation='MULTIPLY'; Lk.new(met.outputs[0],met2.inputs[0]); Lk.new(mr(sp2.outputs[0],0,1,1,0),met2.inputs[1])
     Lk.new(met2.outputs[0],bs.inputs['Metallic'])
     Lk.new(mr(back,0,1,0.22,0.34),bs.inputs['Roughness'])
-    bs.inputs['Coat Weight'].default_value=0.4; bs.inputs['Coat Roughness'].default_value=0.07
+    bs.inputs['Coat Weight'].default_value=0.6; bs.inputs['Coat Roughness'].default_value=0.05
     if 'Thin Film Thickness' in bs.inputs: bs.inputs['Thin Film Thickness'].default_value=260.0; bs.inputs['Thin Film IOR'].default_value=1.4   # faint iridescence of the scales
 if not os.environ.get('RAS_ORIGINAL_SKIN'): salmon_skin(L)
 def dup_fish():
@@ -322,20 +322,25 @@ sc.frame_start=1; sc.frame_end=F; sc.render.fps=24
 sc.render.engine='CYCLES'; sc.cycles.device='CPU'
 # GPU if available: set RAS_GPU=OPTIX / CUDA / HIP / METAL / ONEAPI (OPTIX for NVIDIA RTX)
 if os.environ.get('RAS_GPU'):
-    pr=bpy.context.preferences.addons['cycles'].preferences; pr.compute_device_type=os.environ['RAS_GPU']; pr.get_devices()
-    for d in pr.devices: d.use=(d.type!='CPU')
-    sc.cycles.device='GPU'; print('GPU',[d.name for d in pr.devices if d.use])
+    # AUTO tries every backend (NVIDIA RTX: OPTIX, older NVIDIA: CUDA, AMD: HIP, Intel Arc: ONEAPI, Mac: METAL)
+    pr=bpy.context.preferences.addons['cycles'].preferences; want=os.environ['RAS_GPU'].upper()
+    for typ in (['OPTIX','CUDA','HIP','ONEAPI','METAL'] if want=='AUTO' else [want]):
+        try: pr.compute_device_type=typ
+        except Exception: continue
+        pr.get_devices(); gpus=[d for d in pr.devices if d.type==typ]
+        if gpus:
+            for d in pr.devices: d.use=(d.type==typ)
+            sc.cycles.device='GPU'; print('GPU',typ,[d.name for d in gpus],flush=True); break
+    else: print('GPU no encontrada: se usa el procesador (CPU)',flush=True)
 sc.cycles.samples=int(os.environ.get('RAS_SAMPLES','24')); sc.cycles.use_denoising=True
 sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=8; sc.cycles.diffuse_bounces=1; sc.cycles.glossy_bounces=4; sc.cycles.transmission_bounces=6; sc.cycles.transparent_max_bounces=8; sc.cycles.volume_bounces=0
 sc.render.use_motion_blur=not os.environ.get('RAS_NO_MBLUR'); sc.render.motion_blur_shutter=0.5
-sc.use_nodes=True; ct=sc.node_tree; ct.nodes.clear()
-rl=ct.nodes.new('CompositorNodeRLayers'); co_=ct.nodes.new('CompositorNodeComposite')
-ld=ct.nodes.new('CompositorNodeLensdist'); ld.inputs['Dispersion'].default_value=0.012; ld.use_fit=True
-el=ct.nodes.new('CompositorNodeEllipseMask'); el.width=0.95; el.height=0.95
-bl=ct.nodes.new('CompositorNodeBlur'); bl.filter_type='FAST_GAUSS'; bl.use_relative=True; bl.factor_x=bl.factor_y=0.25
-vg=ct.nodes.new('CompositorNodeMixRGB'); vg.blend_type='MULTIPLY'; vg.inputs[0].default_value=0.28
-ct.links.new(rl.outputs['Image'],ld.inputs['Image']); ct.links.new(el.outputs['Mask'],bl.inputs['Image'])
-ct.links.new(ld.outputs['Image'],vg.inputs[1]); ct.links.new(bl.outputs['Image'],vg.inputs[2]); ct.links.new(vg.outputs['Image'],co_.inputs['Image'])
+try:
+  sc.use_nodes=True; ct=sc.node_tree; ct.nodes.clear()
+  rl=ct.nodes.new('CompositorNodeRLayers'); co_=ct.nodes.new('CompositorNodeComposite')
+  ld=ct.nodes.new('CompositorNodeLensdist'); ld.inputs['Dispersion'].default_value=0.012; ld.use_fit=True
+  ct.links.new(rl.outputs['Image'],ld.inputs['Image']); ct.links.new(ld.outputs['Image'],co_.inputs['Image'])   # vignette + grain are added in post (ffmpeg)
+except Exception as e: print('compositor skipped:',e)
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
 FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
