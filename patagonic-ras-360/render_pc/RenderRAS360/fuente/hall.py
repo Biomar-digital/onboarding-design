@@ -5,6 +5,7 @@ import numpy as np
 HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
 import hallgeo as hg; from school import simulate
 args=sys.argv[sys.argv.index('--')+1:]
+LOOP_S=float(os.environ.get('RAS_LOOP','90'))     # seamless loop length (s): every motion in the scene repeats exactly
 OUT=args[0]; T0=float(args[1]); F=int(args[2]); SCALE=float(args[3]); ONLY=args[4].split(',') if len(args)>4 else None   # optional: only these screens
 os.makedirs(OUT,exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True); sc=bpy.context.scene
@@ -78,19 +79,19 @@ def dup_fish():
 fr=act.frame_range
 def swim(a,phase,v,rate=1.0):
     a.animation_data_create(); tr=a.animation_data.nla_tracks.new(); st=tr.strips.new('swim',int(fr[0]),act)
-    st.scale=0.9/max(0.55,min(1.6,rate)); st.repeat=max(30,int((F+400)/max(1,fr[1]-fr[0])/st.scale)+2)                    # close to the authored speed: calm, not violent
+    Fl=LOOP_S*24; cyc=(fr[1]-fr[0]); n_=max(1,round(Fl/(cyc*0.9/max(0.55,min(1.6,rate))))); st.scale=Fl/(cyc*n_); st.repeat=max(30,int((F+400)/max(1,fr[1]-fr[0])/st.scale)+2)                    # close to the authored speed: calm, not violent
     st.frame_start=fr[0]-phase
     st.use_animated_influence=True; st.influence=0.6; st.keyframe_insert('influence',frame=1)   # 60% amplitude
 arm.animation_data.action=None
 # ---------------- depth layers: schools at different distances behind the screens + loners
 # each layer has its own circuit (parallel to the screens, `behind` metres back) and does 1 lap in 90 s
 def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25,laps=1):
-    V=laps*LEN/90.0
+    V=laps*LEN/LOOP_S; wb=2*math.pi*max(1,round(0.4*LOOP_S/(2*math.pi)))/LOOP_S
     def lead(t):
         s=(sgn*V*(t+T0+phase_s))%LEN; i=np.searchsorted(S_,s,side='right')-1; i=max(0,min(i,len(C)-1))
         a=C[i]; b=C[(i+1)%len(C)]; u=(s-S_[i])/max(S_[i+1]-S_[i],1e-6); p=a+(b-a)*u
         d=b-a; d=sgn*d/np.linalg.norm(d)*V
-        p=p.copy(); p[2]+=bob*math.sin(0.4*(t+T0)+phase_s)
+        p=p.copy(); p[2]+=bob*math.sin(wb*(t+T0)+phase_s)
         return p,d
     return lead
 # (name, behind m, height offset m, direction, [(fish, phase s), ...], spread)
@@ -115,7 +116,7 @@ for k in range(6):                                  # close passes: big salmon g
 # rotunda: fish milling behind the two round-room totems on their own short loops (laps chosen for ~0.6 m/s)
 for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,-1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
     C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz)
-    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*90/LEN)),False))
+    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),False))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
 def keep_behind_glass(P,margin=0.9,iters=16):
     # Each screen is a window whose near clip plane is the glass: a fish inside a screen's visible pyramid
@@ -143,10 +144,10 @@ def keep_behind_glass(P,margin=0.9,iters=16):
             vec=np.where(inside[...,None],vec,0.0); tot+=vec
         if not np.abs(tot).any(): break
         mag=np.linalg.norm(tot,axis=-1)
-        pad=np.pad(mag,((win//2,win//2),(0,0)),mode='edge'); idx=np.lib.stride_tricks.sliding_window_view(pad,win,axis=0).argmax(-1)[:F_]
-        rows=np.clip(np.arange(F_)[:,None]-win//2+idx,0,F_-1)
+        pad=np.pad(mag,((win//2,win//2),(0,0)),mode='wrap'); idx=np.lib.stride_tricks.sliding_window_view(pad,win,axis=0).argmax(-1)[:F_]
+        rows=(np.arange(F_)[:,None]-win//2+idx)%F_
         dil=tot[rows,np.arange(N_)[None,:]]                                   # vector of the strongest need nearby in time
-        sm=np.stack([np.stack([np.convolve(np.pad(dil[:,j,a],30,mode='edge'),G,mode='valid') for a in range(3)],-1) for j in range(N_)],1)
+        sm=np.stack([np.stack([np.convolve(np.pad(dil[:,j,a],30,mode='wrap'),G,mode='valid') for a in range(3)],-1) for j in range(N_)],1)
         out=out+sm
     return out
 def sliced_fish(P,margin=0.45):
@@ -162,7 +163,7 @@ NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
 k=0
 for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
-    P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr,darts=(2.5 if ns==1 else 1.2) if not far else 0.0)
+    P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr,loop=LOOP_S,darts=(2.5 if ns==1 else 1.2) if not far else 0.0)
     P=keep_behind_glass(P); drop=set(sliced_fish(P).tolist())
     if drop: print('DROPPED',len(drop),'fish of plan',q)
     for j in range(ns):
@@ -177,6 +178,11 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
                     if len(o.data.vertices)==len(body.data.vertices): o.data=LOD_MESH
                     else: o.hide_render=True
         yw=None; bk=0.0; loc=np.zeros((F,3)); rot=np.zeros((F,3))
+        for f in list(range(F))[-48:]:                 # prime the bank filter with the end of the loop
+            v=Vt[f,j]; yaw=math.atan2(v[0],-v[1])
+            if yw is not None: dy=(yaw-yw+math.pi)%(2*math.pi)-math.pi; bk=0.85*bk+0.15*max(-0.35,min(0.35,-dy*24*0.3))
+            yw=yaw
+        yw=None
         for f in range(F):
             v=Vt[f,j]; yaw=math.atan2(v[0],-v[1]); h=math.hypot(v[0],v[1]); pitch=max(-0.21,min(0.21,-math.atan2(v[2],h)))
             if yw is not None:
@@ -213,7 +219,7 @@ so=bpy.data.objects.new('sun',sun); sc.collection.objects.link(so); so.rotation_
 # ---- living water: surface ripples and the caustic net / light shafts move, seamless over the 90 s loop.
 # A texture evolving in 4D (W = time) is not periodic, so each one is evaluated at t and at t-90 and
 # cross-faded by t/90: at t=90 the second copy is exactly the first one at t=0.
-LOOP=90.0
+LOOP=LOOP_S
 def clock(nt):
     v=nt.nodes.new('ShaderNodeValue'); v.label='loop time'
     v.outputs[0].default_value=T0; v.outputs[0].keyframe_insert('default_value',frame=1)
@@ -295,14 +301,14 @@ for q in range(16):
     f_=mk(f'Flake{q}',flake); f_.data.materials.append(dm); sc.collection.objects.unlink(f_); fcoll.objects.link(f_); f_.location=(0,-500,0); f_.visible_shadow=False
 # tank current: RAS tanks circulate; salmon hold against it, so it runs opposite to the schools' travel
 CUR=0.07
-import bubbles
+import bubbles; bubbles.LOOP=LOOP_S
 by_={s['name']:s for s in hg.SC}; cs_=[by_[k]['c'] for k in hg.ORDER]
 def travel(s):
     if s['name'] not in hg.ORDER: return s['t']                        # rotunda totems: local loops, either way
     i=hg.ORDER.index(s['name']); d=cs_[(i+1)%len(cs_)]-cs_[i-1]; return s['t'] if np.dot(s['t'],d)>=0 else -s['t']
 bmat=bubbles.material(); bng=bubbles.group(bmat); sng=bubbles.snow_group(fcoll); brng=random.Random(21)
 for i,s in enumerate(hg.SC):
-    cur=-travel(s)*CUR; up=(s['c'][2]-ZF)/((ZS-ZF-0.15)/90.0)          # seconds a bubble needs to reach screen height
+    cur=-travel(s)*CUR; up=(s['c'][2]-ZF)/((ZS-ZF-0.15)/LOOP_S)          # seconds a bubble needs to reach screen height
     def base(p): q=p-cur*up; return (q[0],q[1],ZF+0.1)                 # start upstream so the leaning column crosses the screen
     beh=brng.uniform(0.35,1.0); p=s['c']-s['n']*beh+s['t']*brng.uniform(-0.35,0.35)*s['W']     # bubbles only read when close to the lens
     bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,int(brng.uniform(500,800)),i*10,T0,spread_top=brng.uniform(0.3,0.55),sway=brng.uniform(0.1,0.2),size_min=0.0015,size_max=0.004,current=cur)
@@ -313,7 +319,7 @@ for i,s in enumerate(hg.SC):
         p=s['c']-s['n']*brng.uniform(14,22)+s['t']*brng.uniform(-4,4)
         bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,2500,500+i,T0,spread_top=1.4,sway=0.4,current=cur)
     # marine snow drifting with the current through this screen's view
-    dirc=cur/np.linalg.norm(cur); L=CUR*90/1; ctr=s['c']-s['n']*0.2
+    dirc=cur/np.linalg.norm(cur); L=CUR*LOOP_S/1; ctr=s['c']-s['n']*0.2
     snow_ob=bubbles.snow(sc,sng,(ctr[0],ctr[1],s['c'][2]),math.atan2(dirc[1],dirc[0]),int(900*max(1,s['W']/2)),900+i,T0,L,1,9.0,s['H']+6)
     # local y must point away from the public (into the water): flip if needed
     yl=np.array([-dirc[1],dirc[0],0.0])
@@ -356,6 +362,16 @@ try:
 except Exception as e: print('compositor skipped:',e)
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
+if os.environ.get('RAS_LOOPCHECK'):
+    # seam check: the jump from the last frame to the first must look like any other frame-to-frame step
+    Fl=int(LOOP_S*24); roots=[r for r,a in fish if not r.hide_render]; arms=[a for r,a in fish if not r.hide_render]
+    def snap(f):
+        sc.frame_set(f); P=np.array([r.matrix_world.translation[:] for r in roots])
+        B=np.array([[q for b in a.pose.bones[:6] for q in b.matrix.to_quaternion()] for a in arms[:200]]); return P,B
+    P1,B1=snap(1); P2,B2=snap(2); Pl,Bl=snap(Fl); Pn,Bn=snap(Fl+1)
+    print('LOOPCHECK fish step  normal',round(float(np.median(np.linalg.norm(P2-P1,axis=1))),3),'seam',round(float(np.median(np.linalg.norm(P1-Pl,axis=1))),3),'max seam',round(float(np.linalg.norm(P1-Pl,axis=1).max()),3),flush=True)
+    print('LOOPCHECK tail pose  frame Fl+1 vs 1 (0 = identical):',round(float(np.abs(Bn-B1).max()),4),'| normal frame change',round(float(np.abs(B2-B1).max()),4),flush=True)
+    sys.exit(0)
 def _set(obj,attr,val):
     # setting names move between Blender versions: never let one missing option stop the render
     try:
@@ -370,11 +386,11 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
     ee=sc.eevee; print('ENGINE',sc.render.engine,flush=True)
     _set(ee,'taa_render_samples',int(os.environ.get('RAS_SAMPLES','64')))
     _set(ee,'use_raytracing',True); _set(ee,'ray_tracing_method','SCREEN')
-    _set(ee,'use_shadows',True); _set(ee,'shadow_ray_count',2); _set(ee,'shadow_step_count',8); _set(ee,'shadow_resolution_scale',1.0)
+    _set(ee,'use_shadows',True); _set(ee,'shadow_ray_count',1); _set(ee,'shadow_step_count',4); _set(ee,'shadow_resolution_scale',0.5)
     # water: EEVEE fills the view with a world volume (froxels) - that is where it does haze and sun shafts well
-    _set(ee,'volumetric_start',0.5); _set(ee,'volumetric_end',90.0); _set(ee,'volumetric_tile_size','4')
-    _set(ee,'volumetric_samples',96); _set(ee,'volumetric_sample_distribution',0.85); _set(ee,'use_volumetric_shadows',True)
-    _set(ee,'volumetric_ray_depth',16); _set(ee,'volumetric_light_clamp',0.0)
+    _set(ee,'volumetric_start',0.5); _set(ee,'volumetric_end',70.0); _set(ee,'volumetric_tile_size','8')
+    _set(ee,'volumetric_samples',48); _set(ee,'volumetric_sample_distribution',0.85); _set(ee,'use_volumetric_shadows',True)
+    _set(ee,'volumetric_ray_depth',8); _set(ee,'volumetric_light_clamp',0.0)
     # water stays a mesh volume (a world volume in EEVEE is infinite and absorbs all sun and sky light)
     _set(sun,'shadow_softness_factor',0.2); _set(sun,'volume_factor',1.0)
     # the gobo casts the caustic/shaft pattern: its alpha must count in shadows
@@ -387,7 +403,7 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
     for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
         _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
     _set(dm,'surface_render_method','BLENDED')             # marine snow (transparent/translucent)
-    _set(sc.render,'use_motion_blur',True); _set(sc.render,'motion_blur_shutter',0.5); _set(ee,'motion_blur_steps',2)
+    _set(sc.render,'use_motion_blur',True); _set(sc.render,'motion_blur_shutter',0.5); _set(ee,'motion_blur_steps',1)
     _set(sc.render,'use_persistent_data',False)
 FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
 ext='.png'

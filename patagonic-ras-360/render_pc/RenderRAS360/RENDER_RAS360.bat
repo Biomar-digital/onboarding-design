@@ -58,17 +58,17 @@ del "%TOOLS%\ffmpeg.zip"
 echo.
 echo  Que queres renderizar?
 echo    1 = Prueba rapida: 3 segundos de las 10 pantallas, calidad media   ^<- empeza por aca
-echo    2 = Minuto completo, calidad media  (mitad de resolucion, para revisar)
-echo    3 = Minuto completo, calidad final  (resolucion nativa de cada pantalla)
-echo    4 = EEVEE (motor rapido) - minuto completo, pantalla concava sola, resolucion completa
-echo    5 = EEVEE (motor rapido) - minuto completo, las 10 pantallas, resolucion completa
+echo    2 = Loop completo de 90 s, calidad media  (mitad de resolucion, para revisar)
+echo    3 = Loop completo de 90 s, calidad final  (resolucion nativa de cada pantalla)
+echo    4 = EEVEE (motor rapido) - loop de 90 s, pantalla concava sola, resolucion completa
+echo    5 = EEVEE (motor rapido) - loop de 90 s, las 10 pantallas, resolucion completa
 echo.
 choice /c 12345 /n /m "Elegi 1, 2, 3, 4 o 5: "
 set "RAS_ENGINE=" & set "ONLY="
-if errorlevel 5 (set "OUT=render_eevee_minuto" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_FRAMES=1-1440" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & goto :go)
-if errorlevel 4 (set "OUT=render_eevee_concava" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_FRAMES=1-1440" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & set "ONLY=concava" & goto :go)
-if errorlevel 3 (set "OUT=render_final" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_FRAMES=1-1440" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & goto :go)
-if errorlevel 2 (set "OUT=render_media" & set "SCALE=0.5" & set "RAS_SAMPLES=24" & set "RAS_FRAMES=1-1440" & set "RAS_JPG=1" & set "EXT=jpg" & set "START=1" & goto :go)
+if errorlevel 5 (set "OUT=render_eevee_loop90" & set "SCALE=1.0" & set "RAS_SAMPLES=32" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & goto :go)
+if errorlevel 4 (set "OUT=render_eevee_concava_loop90" & set "SCALE=1.0" & set "RAS_SAMPLES=32" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & set "ONLY=concava" & goto :go)
+if errorlevel 3 (set "OUT=render_final" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & goto :go)
+if errorlevel 2 (set "OUT=render_media" & set "SCALE=0.5" & set "RAS_SAMPLES=24" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=1" & set "EXT=jpg" & set "START=1" & goto :go)
 set "OUT=render_prueba" & set "SCALE=0.5" & set "RAS_SAMPLES=24" & set "RAS_FRAMES=613-684" & set "RAS_JPG=1" & set "EXT=jpg" & set "START=613"
 :go
 set "RAS_GPU=AUTO"
@@ -78,7 +78,7 @@ echo  Renderizando en "%OUT%" ...  (cuadros %RAS_FRAMES%)
 echo  Primero prepara la escena (unos minutos), despues va mostrando cada cuadro terminado.
 echo  Podes cerrar esta ventana cuando quieras: al volver a abrirla sigue desde el ultimo cuadro.
 echo.
-"%BL%" -b --factory-startup -P fuente\hall.py -- "%CD%\%OUT%" 0 1440 %SCALE% %ONLY% 2>&1 | powershell -NoProfile -ExecutionPolicy Bypass -Command "$w=[IO.StreamWriter]::new((Join-Path (Get-Location) 'render_log.txt')); foreach($l in $input){ $w.WriteLine($l); if($l -match '^GPU|^ENGINE|FRAME_DONE|^FISH|Error|Traceback|^DONE'){ Write-Host ((Get-Date -Format 'HH:mm:ss')+'  '+$l); $w.Flush() } }; $w.Close()"
+"%BL%" -b --factory-startup -P fuente\hall.py -- "%CD%\%OUT%" 0 2160 %SCALE% %ONLY% 2>&1 | powershell -NoProfile -ExecutionPolicy Bypass -Command "$w=[IO.StreamWriter]::new((Join-Path (Get-Location) 'render_log.txt')); foreach($l in $input){ $w.WriteLine($l); if($l -match '^GPU|^ENGINE|FRAME_DONE|^FISH|Error|Traceback|^DONE'){ Write-Host ((Get-Date -Format 'HH:mm:ss')+'  '+$l); $w.Flush() } }; $w.Close()"
 findstr /c:"DONE" render_log.txt >nul || (echo. & echo  El render no termino bien. Mandame el archivo render_log.txt de esta carpeta. & pause & goto :eof)
 
 echo.

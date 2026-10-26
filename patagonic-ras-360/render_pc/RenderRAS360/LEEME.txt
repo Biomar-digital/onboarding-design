@@ -8,8 +8,11 @@ PATAGONIC RAS 360 - RENDER EN TU PC
 3. Elegi:
    1 = Prueba rapida (3 s de las 10 pantallas). Hacela primero: te dice si usa la placa de video
        y cuanto tarda cada cuadro.
-   2 = Minuto completo, calidad media.
-   3 = Minuto completo, calidad final (resolucion nativa de cada pantalla).
+   2 = Loop completo de 90 s, calidad media.
+   3 = Loop completo de 90 s, calidad final (resolucion nativa de cada pantalla).
+   4 = EEVEE (rapido): loop de 90 s de la pantalla concava.
+   5 = EEVEE (rapido): loop de 90 s de las 10 pantallas.
+   El video loopea perfecto: el ultimo cuadro empalma con el primero.
 4. Al terminar abre la carpeta con un MP4 por pantalla. Mandalos al chat y armo el mockup.
 
 - Si cerras la ventana o se apaga la PC, volve a hacer doble clic y elegi la misma opcion:
