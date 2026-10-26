@@ -398,7 +398,17 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
     # drop both; EEVEE does not light the scene from an emissive plane, so the sky light comes from the world
     surf.hide_render=True; sky.hide_render=True; floor.hide_render=True   # EEVEE ignores 'no shadow' on these planes: they block the sun
     if os.environ.get('RAS_EEVEE_NOGOBO'): gobo.hide_render=True
-    else: _set(gm,'use_transparent_shadow',True); _set(gm,'surface_render_method','DITHERED')   # caustic net -> light shafts
+    else:
+        _set(gm,'use_transparent_shadow',True); _set(gm,'surface_render_method','DITHERED')   # caustic net -> light shafts
+        # EEVEE caches shadows of objects that do not move; the gobo only changes its pattern, so nudge it by a
+        # sub-millimetre every frame to force the shadow (and the shafts) to be recomputed
+        for f_ in range(1,int(LOOP_S*24)+2):
+            gobo.location.z=ZS-0.3+(0.0002 if f_%2 else 0.0); gobo.keyframe_insert('location',index=2,frame=f_)
+    # the wet clear-coat is too sharp for EEVEE's sun highlight (reads as white dots): soften it
+    try:
+        fb=bpy.data.materials['Fish_Shd'].node_tree.nodes['Principled BSDF']
+        fb.inputs['Coat Roughness'].default_value=0.22; fb.inputs['Coat Weight'].default_value=0.35
+    except Exception as e: print('skip coat',e)
     bg=sc.world.node_tree.nodes['Background']; bg.inputs[0].default_value=(0.10,0.30,0.55,1); bg.inputs[1].default_value=1.2
     for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
         _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
