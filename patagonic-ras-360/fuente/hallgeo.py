@@ -52,7 +52,7 @@ def clear_views(C,clear=2.4,pad=2.6,iters=80):
         for _ in range(3): C=0.5*C+0.25*(np.roll(C,1,0)+np.roll(C,-1,0))
         if not moved and it>8: break
     return C
-def circuit(n=2000, behind=BEHIND, dz=0.0):
+def circuit(n=2000, behind=BEHIND, dz=0.0, clear=2.4, pad=2.6):
     by={s['name']:s for s in SC}
     pts=[]; cs=[by[k]['c'] for k in ORDER]
     for i,k in enumerate(ORDER):
@@ -71,7 +71,7 @@ def circuit(n=2000, behind=BEHIND, dz=0.0):
         p0,p1,p2,p3=P[i-1],P[i],P[(i+1)%N],P[(i+2)%N]
         for u in np.linspace(0,1,n//N,endpoint=False):
             out.append(0.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u**3))
-    C=clear_views(np.array(out)); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1); L=seg.sum()
+    C=clear_views(np.array(out),clear,pad); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1); L=seg.sum()
     s=np.concatenate([[0],np.cumsum(seg)])
     return C,s,L
 
