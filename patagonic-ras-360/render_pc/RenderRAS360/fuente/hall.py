@@ -356,6 +356,36 @@ try:
 except Exception as e: print('compositor skipped:',e)
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
+def _set(obj,attr,val):
+    # setting names move between Blender versions: never let one missing option stop the render
+    try:
+        if hasattr(obj,attr): setattr(obj,attr,val)
+    except Exception as e: print('skip',attr,e)
+if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
+    # EEVEE (real-time engine, GPU): seconds per frame instead of minutes. Same scene, adapted where EEVEE works
+    # differently from Cycles.
+    for eng in ('BLENDER_EEVEE_NEXT','BLENDER_EEVEE'):
+        try: sc.render.engine=eng; break
+        except Exception: pass
+    ee=sc.eevee; print('ENGINE',sc.render.engine,flush=True)
+    _set(ee,'taa_render_samples',int(os.environ.get('RAS_SAMPLES','64')))
+    _set(ee,'use_raytracing',True); _set(ee,'ray_tracing_method','SCREEN')
+    _set(ee,'use_shadows',True); _set(ee,'shadow_ray_count',2); _set(ee,'shadow_step_count',8); _set(ee,'shadow_resolution_scale',1.0)
+    # water: EEVEE fills the view with a world volume (froxels) - that is where it does haze and sun shafts well
+    _set(ee,'volumetric_start',0.5); _set(ee,'volumetric_end',90.0); _set(ee,'volumetric_tile_size','4')
+    _set(ee,'volumetric_samples',96); _set(ee,'volumetric_sample_distribution',0.85); _set(ee,'use_volumetric_shadows',True)
+    _set(ee,'volumetric_ray_depth',16); _set(ee,'volumetric_light_clamp',0.0)
+    wn=sc.world.node_tree; wv=wn.nodes.new('ShaderNodeVolumePrincipled')
+    for k in ('Color','Density','Anisotropy','Absorption Color'): wv.inputs[k].default_value=vol.inputs[k].default_value
+    wn.links.new(wv.outputs[0],wn.nodes['World Output'].inputs['Volume']); box.hide_render=True
+    _set(sun,'shadow_softness_factor',0.2); _set(sun,'volume_factor',1.0)
+    # the gobo casts the caustic/shaft pattern: its alpha must count in shadows
+    _set(gm,'use_transparent_shadow',True); _set(gm,'surface_render_method','DITHERED')
+    for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
+        _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
+    _set(dm,'surface_render_method','BLENDED')             # marine snow (transparent/translucent)
+    _set(sc.render,'use_motion_blur',True); _set(sc.render,'motion_blur_shutter',0.5); _set(ee,'motion_blur_steps',2)
+    _set(sc.render,'use_persistent_data',False)
 FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
 ext='.png'
 if os.environ.get('RAS_JPG'): sc.render.image_settings.file_format='JPEG'; sc.render.image_settings.quality=93; ext='.jpg'
