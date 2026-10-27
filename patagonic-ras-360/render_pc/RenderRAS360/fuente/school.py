@@ -19,6 +19,7 @@ def simulate(lead, F, NS, seed=5, fps=24, warm=144, sub=4, spread=1.0, darts=0.0
     T=(F+warm)/fps; ne=rng.poisson(max(darts,0)*T/60.0+1e-9,NS); DUR=1.6
     if loop: ne=rng.poisson(max(darts,0)*loop/60.0+1e-9,NS)
     ev=[(rng.uniform(0,loop,k) if loop else rng.uniform(-warm/fps,F/fps,k),rng.choice([-1,1],k),rng.uniform(-1,1,k)) for k in ne]
+    split_sgn=np.where(slot[:,0]>np.median(slot[:,0]),1.0,-1.0); split_ph=rng.uniform(0,2*math.pi)
     def frame(t):
         p,v=lead(t); h=v/np.linalg.norm(v); side=np.cross([0,0,1],h); side/=np.linalg.norm(side)
         return p,v,h,side
@@ -28,6 +29,9 @@ def simulate(lead, F, NS, seed=5, fps=24, warm=144, sub=4, spread=1.0, darts=0.0
     for k in range(-warm*sub, F*sub):
         t=k*dt; p,v,h,side=frame(t)
         wob=(wa*np.sin(wf*t+wp).sum(2)/3)
+        if loop:                                          # split & merge: halves drift apart, twice per loop
+            env=np.maximum(0,np.sin(2*math.pi*2*t/loop+split_ph))**3
+            wob=wob+np.c_[np.zeros(NS),split_sgn*env*1.6*spread,split_sgn*env*0.35*spread]
         tgt=p+(slot[:,:1]+wob[:,:1])*h+(slot[:,1:2]+wob[:,1:2])*side+(slot[:,2:3]+wob[:,2:3])*np.array([0,0,1])
         d=P[:,None,:]-P[None,:,:]; dist=np.linalg.norm(d,axis=2)+np.eye(NS)*99
         rep=np.clip(1.2-dist,0,None)[:,:,None]*d/np.maximum(dist[:,:,None],1e-3)

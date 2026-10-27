@@ -90,7 +90,7 @@ def material():
     # Needs enough transmission/glossy bounces in the render settings.
     m=bpy.data.materials.new('bubble'); m.use_nodes=True; nt=m.node_tree; N=nt.nodes
     N.remove(N['Principled BSDF'])
-    g=N.new('ShaderNodeBsdfGlass'); g.inputs['IOR'].default_value=1/1.33; g.inputs['Roughness'].default_value=0.035     # tiny roughness lets the sun be sampled: glints inside light shafts
+    g=N.new('ShaderNodeBsdfGlass'); g.inputs['IOR'].default_value=1/1.33; g.inputs['Roughness'].default_value=0.1       # slight roughness: soft sheen in the light shafts, no sharp glints
     nt.links.new(g.outputs[0],N['Material Output'].inputs['Surface'])
     return m
 

@@ -64,6 +64,18 @@ def make_lod(ratio=0.27):
     dg=bpy.context.evaluated_depsgraph_get(); me=bpy.data.meshes.new_from_object(tmp.evaluated_get(dg),preserve_all_data_layers=True,depsgraph=dg)
     me.name='body_LOD'; bpy.data.objects.remove(tmp); return me
 LOD_MESH=make_lod(); LOD_FROM=float(os.environ.get('RAS_LOD_FROM','7'))
+def matte_far_skin():
+    # distant fish are a few pixels long: any sharp sun highlight on them reads as a blinking white speck.
+    # Their simplified body gets a matte copy of the skin (no wet coat, no metal), as seen through that much water
+    m=bpy.data.materials['Fish_Shd'].copy(); m.name='Fish_far'; b=m.node_tree.nodes['Principled BSDF']
+    for k,v in (('Coat Weight',0.0),('Specular IOR Level',0.25)): b.inputs[k].default_value=v
+    for k in ('Metallic',):
+        for l in list(b.inputs[k].links): m.node_tree.links.remove(l)
+        b.inputs[k].default_value=0.0
+    for l in list(b.inputs['Roughness'].links): m.node_tree.links.remove(l)
+    b.inputs['Roughness'].default_value=0.6
+    for i in range(len(LOD_MESH.materials)): LOD_MESH.materials[i]=m
+matte_far_skin()
 def dup_fish():
     objs=[root]+[o for o in root.children_recursive if not o.name.startswith('Icosphere')]
     m={}
@@ -81,7 +93,7 @@ def swim(a,phase,v,rate=1.0):
     a.animation_data_create(); tr=a.animation_data.nla_tracks.new(); st=tr.strips.new('swim',int(fr[0]),act)
     Fl=LOOP_S*24; cyc=(fr[1]-fr[0]); n_=max(1,round(Fl/(cyc*0.9/max(0.55,min(1.6,rate))))); st.scale=Fl/(cyc*n_); st.repeat=max(30,int((F+400)/max(1,fr[1]-fr[0])/st.scale)+2)                    # close to the authored speed: calm, not violent
     st.frame_start=fr[0]-phase
-    st.use_animated_influence=True; st.influence=0.6; st.keyframe_insert('influence',frame=1)   # 60% amplitude
+    st.use_animated_influence=True; st.influence=float(os.environ.get('RAS_TAIL','0.85')); st.keyframe_insert('influence',frame=1)   # tail-beat amplitude (1 = as authored)
 arm.animation_data.action=None
 # ---------------- depth layers: schools at different distances behind the screens + loners
 # each layer has its own circuit (parallel to the screens, `behind` metres back) and does 1 lap in 90 s
@@ -171,7 +183,7 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
         if j in drop:
             for o in [r]+list(r.children_recursive): o.hide_render=True; o.hide_viewport=True
             continue
-        r.scale=(0.7/L*random.uniform(0.85,1.15)*(1.15 if ns==1 else 1.0),)*3
+        r.scale=(0.7/L*random.uniform(0.78,1.22)*(1.15 if ns==1 else 1.0)*(1.45 if random.random()<0.04 else 1.0),)*3   # a few big broodstock
         if lod:                                       # distant fish: simplified body, no eyes (sub-pixel there)
             for o in r.children_recursive:
                 if o.type=='MESH':
@@ -186,7 +198,7 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
         for f in range(F):
             v=Vt[f,j]; yaw=math.atan2(v[0],-v[1]); h=math.hypot(v[0],v[1]); pitch=max(-0.21,min(0.21,-math.atan2(v[2],h)))
             if yw is not None:
-                dy=(yaw-yw+math.pi)%(2*math.pi)-math.pi; yaw=yw+dy; bk=0.85*bk+0.15*max(-0.35,min(0.35,-dy*24*0.3))
+                dy=(yaw-yw+math.pi)%(2*math.pi)-math.pi; yaw=yw+dy; bk=0.85*bk+0.15*max(-0.5,min(0.5,-dy*24*0.45))
             yw=yaw; loc[f]=P[f,j]; rot[f]=(pitch,bk,yaw)
         # write all keys at once (keyframe_insert per frame is far too slow for 1300 fish x 2160 frames)
         r.animation_data_create(); ac=bpy.data.actions.new('swimpath'); r.animation_data.action=ac
@@ -291,9 +303,9 @@ fm=bpy.data.materials.new('floor'); fm.use_nodes=True; fm.node_tree.nodes['Princ
 def flake(bm):
     bmesh.ops.create_icosphere(bm,subdivisions=1,radius=1.0)
     for v in bm.verts: v.co*=random.uniform(0.45,1.25)
-    for v in bm.verts: v.co.z*=0.35
+    for v in bm.verts: v.co.z*=0.7
 dm=bpy.data.materials.new('snow'); dm.use_nodes=True; dn=dm.node_tree; dn.nodes.remove(dn.nodes['Principled BSDF'])
-trn=dn.nodes.new('ShaderNodeBsdfTransparent'); dsc=dn.nodes.new('ShaderNodeBsdfTranslucent'); dsc.inputs['Color'].default_value=(0.9,0.97,0.95,1)
+trn=dn.nodes.new('ShaderNodeBsdfTransparent'); dsc=dn.nodes.new('ShaderNodeBsdfDiffuse'); dsc.inputs['Color'].default_value=(0.42,0.46,0.42,1)
 dmx=dn.nodes.new('ShaderNodeMixShader'); dmx.inputs['Fac'].default_value=0.45; dn.links.new(trn.outputs[0],dmx.inputs[1]); dn.links.new(dsc.outputs[0],dmx.inputs[2])
 dn.links.new(dmx.outputs[0],dn.nodes['Material Output'].inputs['Surface'])
 fcoll=bpy.data.collections.new('Flakes'); sc.collection.children.link(fcoll)        # not hidden: hiding would hide the instances too
@@ -358,10 +370,23 @@ try:
   sc.use_nodes=True; ct=sc.node_tree; ct.nodes.clear()
   rl=ct.nodes.new('CompositorNodeRLayers'); co_=ct.nodes.new('CompositorNodeComposite')
   ld=ct.nodes.new('CompositorNodeLensdist'); ld.inputs['Dispersion'].default_value=0.012; ld.use_fit=True
-  ct.links.new(rl.outputs['Image'],ld.inputs['Image']); ct.links.new(ld.outputs['Image'],co_.inputs['Image'])   # vignette + grain are added in post (ffmpeg)
+  gl=ct.nodes.new('CompositorNodeGlare'); gl.name='GRADE_IN'; gl.glare_type='FOG_GLOW'; gl.quality='MEDIUM'; gl.threshold=0.95; gl.mix=-0.85; gl.size=8
+  cb=ct.nodes.new('CompositorNodeColorBalance'); cb.correction_method='LIFT_GAMMA_GAIN'
+  cb.lift=(1.0,1.01,1.0); cb.gamma=(0.98,1.01,1.0); cb.gain=(0.96,1.02,1.01)       # a touch of RAS green-teal
+  bc=ct.nodes.new('CompositorNodeBrightContrast'); bc.inputs['Contrast'].default_value=7.0
+  ct.links.new(rl.outputs['Image'],gl.inputs['Image']); ct.links.new(gl.outputs['Image'],cb.inputs['Image'])
+  ct.links.new(cb.outputs['Image'],bc.inputs['Image']); ct.links.new(bc.outputs['Image'],ld.inputs['Image']); ct.links.new(ld.outputs['Image'],co_.inputs['Image'])   # vignette + grain in post (ffmpeg)
 except Exception as e: print('compositor skipped:',e)
 sc.view_settings.view_transform='AgX'; sc.view_settings.look='AgX - Punchy'
 sc.render.image_settings.file_format='PNG'
+if os.environ.get('RAS_PROFILE'):
+    import time as _t
+    for f in (100,101,102,103):
+        t0=_t.time(); sc.frame_set(f); dg=bpy.context.evaluated_depsgraph_get(); t1=_t.time()
+        # what motion blur adds: two more scene evaluations per frame (shutter open/close)
+        sc.frame_set(f,subframe=0.25); sc.frame_set(f,subframe=0.75); t2=_t.time()
+        print('PROFILE frame',f,'scene update s',round(t1-t0,2),'| +motion blur steps s',round(t2-t1,2),flush=True)
+    sys.exit(0)
 if os.environ.get('RAS_LOOPCHECK'):
     # seam check: the jump from the last frame to the first must look like any other frame-to-frame step
     Fl=int(LOOP_S*24); roots=[r for r,a in fish if not r.hide_render]; arms=[a for r,a in fish if not r.hide_render]
@@ -409,11 +434,27 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
         fb=bpy.data.materials['Fish_Shd'].node_tree.nodes['Principled BSDF']
         fb.inputs['Coat Roughness'].default_value=0.22; fb.inputs['Coat Weight'].default_value=0.35
     except Exception as e: print('skip coat',e)
-    bg=sc.world.node_tree.nodes['Background']; bg.inputs[0].default_value=(0.10,0.30,0.55,1); bg.inputs[1].default_value=1.2
+    wn=sc.world.node_tree; bg=wn.nodes['Background']; bg.inputs[1].default_value=1.0
+    tco=wn.nodes.new('ShaderNodeTexCoord'); sz=wn.nodes.new('ShaderNodeSeparateXYZ'); wn.links.new(tco.outputs['Generated'],sz.inputs[0])
+    ramp=wn.nodes.new('ShaderNodeValToRGB'); wn.links.new(sz.outputs['Z'],ramp.inputs[0]); E=ramp.color_ramp.elements
+    E[0].position=0.25; E[0].color=(0.01,0.05,0.10,1); E[1].position=0.9; E[1].color=(0.45,0.7,0.9,1)
+    mid=E.new(0.55); mid.color=(0.10,0.30,0.55,1)
+    wn.links.new(ramp.outputs['Color'],bg.inputs['Color'])
     for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
         _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
     _set(dm,'surface_render_method','BLENDED')             # marine snow (transparent/translucent)
-    _set(sc.render,'use_motion_blur',True); _set(sc.render,'motion_blur_shutter',0.5); _set(ee,'motion_blur_steps',1)
+    vb=False
+    if not os.environ.get('RAS_EEVEE_RENDER_MBLUR'):
+        try:
+            vl=sc.view_layers[0]; vl.use_pass_vector=True; vl.use_pass_z=True
+            ct=sc.node_tree; rl_=[n for n in ct.nodes if n.bl_idname=='CompositorNodeRLayers'][0]
+            ld_=[n for n in ct.nodes if n.bl_idname=='CompositorNodeLensdist'][0]
+            vbn=ct.nodes.new('CompositorNodeVecBlur'); vbn.samples=16; vbn.factor=0.5; vbn.speed_max=40
+            ct.links.new(rl_.outputs['Image'],vbn.inputs['Image']); ct.links.new(rl_.outputs['Depth'],vbn.inputs[1])
+            ct.links.new(rl_.outputs['Vector'],vbn.inputs['Speed']); ct.links.new(vbn.outputs['Image'],ct.nodes['GRADE_IN'].inputs['Image'])
+            sc.render.use_motion_blur=False; vb=True; print('MBLUR vector pass',flush=True)
+        except Exception as e: print('vector blur unavailable, render motion blur:',e,flush=True)
+    if not vb: _set(sc.render,'use_motion_blur',True); _set(sc.render,'motion_blur_shutter',0.5); _set(ee,'motion_blur_steps',1)
     _set(sc.render,'use_persistent_data',False)
 FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
 ext='.png'
