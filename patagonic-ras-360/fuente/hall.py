@@ -370,7 +370,7 @@ try:
   sc.use_nodes=True; ct=sc.node_tree; ct.nodes.clear()
   rl=ct.nodes.new('CompositorNodeRLayers'); co_=ct.nodes.new('CompositorNodeComposite')
   ld=ct.nodes.new('CompositorNodeLensdist'); ld.inputs['Dispersion'].default_value=0.012; ld.use_fit=True
-  gl=ct.nodes.new('CompositorNodeGlare'); gl.name='GRADE_IN'; gl.glare_type='FOG_GLOW'; gl.quality='MEDIUM'; gl.threshold=0.95; gl.mix=-0.85; gl.size=8
+  gl=ct.nodes.new('CompositorNodeGlare'); gl.name='GRADE_IN'; gl.glare_type='FOG_GLOW'; gl.quality='MEDIUM'; gl.threshold=0.95; gl.mix=-1.0; gl.size=8   # mix -1 = glow off (it softened the whole image)
   cb=ct.nodes.new('CompositorNodeColorBalance'); cb.correction_method='LIFT_GAMMA_GAIN'
   cb.lift=(1.0,1.01,1.0); cb.gamma=(0.98,1.01,1.0); cb.gain=(0.96,1.02,1.01)       # a touch of RAS green-teal
   bc=ct.nodes.new('CompositorNodeBrightContrast'); bc.inputs['Contrast'].default_value=7.0
@@ -449,7 +449,7 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
             vl=sc.view_layers[0]; vl.use_pass_vector=True; vl.use_pass_z=True
             ct=sc.node_tree; rl_=[n for n in ct.nodes if n.bl_idname=='CompositorNodeRLayers'][0]
             ld_=[n for n in ct.nodes if n.bl_idname=='CompositorNodeLensdist'][0]
-            vbn=ct.nodes.new('CompositorNodeVecBlur'); vbn.samples=16; vbn.factor=0.5; vbn.speed_max=40
+            vbn=ct.nodes.new('CompositorNodeVecBlur'); vbn.samples=16; vbn.factor=0.3; vbn.speed_max=16
             ct.links.new(rl_.outputs['Image'],vbn.inputs['Image']); ct.links.new(rl_.outputs['Depth'],vbn.inputs[1])
             ct.links.new(rl_.outputs['Vector'],vbn.inputs['Speed']); ct.links.new(vbn.outputs['Image'],ct.nodes['GRADE_IN'].inputs['Image'])
             sc.render.use_motion_blur=False; vb=True; print('MBLUR vector pass',flush=True)
