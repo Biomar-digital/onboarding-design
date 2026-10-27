@@ -318,7 +318,7 @@ by_={s['name']:s for s in hg.SC}; cs_=[by_[k]['c'] for k in hg.ORDER]
 def travel(s):
     if s['name'] not in hg.ORDER: return s['t']                        # rotunda totems: local loops, either way
     i=hg.ORDER.index(s['name']); d=cs_[(i+1)%len(cs_)]-cs_[i-1]; return s['t'] if np.dot(s['t'],d)>=0 else -s['t']
-bmat=bubbles.material(); bng=bubbles.group(bmat); sng=bubbles.snow_group(fcoll); brng=random.Random(21)
+far_plumes=[]; bmat=bubbles.material(); bng=bubbles.group(bmat); sng=bubbles.snow_group(fcoll); brng=random.Random(21)
 for i,s in enumerate(hg.SC):
     cur=-travel(s)*CUR; up=(s['c'][2]-ZF)/((ZS-ZF-0.15)/LOOP_S)          # seconds a bubble needs to reach screen height
     def base(p): q=p-cur*up; return (q[0],q[1],ZF+0.1)                 # start upstream so the leaning column crosses the screen
@@ -329,13 +329,17 @@ for i,s in enumerate(hg.SC):
         bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,900,300+i,T0,spread_top=0.5,sway=0.2,size_min=0.0015,size_max=0.0035,current=cur)
     if i%3==0:                                                          # a distant curtain
         p=s['c']-s['n']*brng.uniform(14,22)+s['t']*brng.uniform(-4,4)
-        bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,2500,500+i,T0,spread_top=1.4,sway=0.4,current=cur)
+        far_plumes.append(bubbles.plume(sc,bng,base(p),ZS-ZF-0.15,2500,500+i,T0,spread_top=1.4,sway=0.4,current=cur))
     # marine snow drifting with the current through this screen's view
     dirc=cur/np.linalg.norm(cur); L=CUR*LOOP_S/1; ctr=s['c']-s['n']*0.2
     snow_ob=bubbles.snow(sc,sng,(ctr[0],ctr[1],s['c'][2]),math.atan2(dirc[1],dirc[0]),int(900*max(1,s['W']/2)),900+i,T0,L,1,9.0,s['H']+6)
     # local y must point away from the public (into the water): flip if needed
     yl=np.array([-dirc[1],dirc[0],0.0])
     if np.dot(yl,-s['n'])<0: snow_ob.scale=(1,-1,1)
+    if os.environ.get('RAS_NOSNOW'): snow_ob.hide_render=True
+if os.environ.get('RAS_NOBUB'):
+    for o in sc.objects:
+        if o.name.startswith('BubblePlume'): o.hide_render=True
 # ---------------- one window camera per screen (off-axis: the frustum passes exactly through the screen)
 cams=[]
 for s in hg.SC:
@@ -431,17 +435,34 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
             gobo.location.z=ZS-0.3+(0.0002 if f_%2 else 0.0); gobo.keyframe_insert('location',index=2,frame=f_)
     # the wet clear-coat is too sharp for EEVEE's sun highlight (reads as white dots): soften it
     try:
-        fb=bpy.data.materials['Fish_Shd'].node_tree.nodes['Principled BSDF']
-        fb.inputs['Coat Roughness'].default_value=0.22; fb.inputs['Coat Weight'].default_value=0.35
+        mt=bpy.data.materials['Fish_Shd'].node_tree; fb=mt.nodes['Principled BSDF']
+        fb.inputs['Coat Roughness'].default_value=0.4; fb.inputs['Coat Weight'].default_value=0.15
+        fb.inputs['Specular IOR Level'].default_value=0.3
+        # a broad, soft highlight instead of the same hot spot on every fish's belly
+        for l in list(fb.inputs['Roughness'].links): mt.links.remove(l)
+        fb.inputs['Roughness'].default_value=0.5
+        ml=fb.inputs['Metallic'].links
+        if ml:
+            mm=mt.nodes.new('ShaderNodeMath'); mm.operation='MULTIPLY'; mm.inputs[1].default_value=0.45
+            src=ml[0].from_socket; mt.links.remove(ml[0]); mt.links.new(src,mm.inputs[0]); mt.links.new(mm.outputs[0],fb.inputs['Metallic'])
     except Exception as e: print('skip coat',e)
+    sun.angle=math.radians(9)                                # softer sun: no pin-point highlights in EEVEE
     wn=sc.world.node_tree; bg=wn.nodes['Background']; bg.inputs[1].default_value=1.0
     tco=wn.nodes.new('ShaderNodeTexCoord'); sz=wn.nodes.new('ShaderNodeSeparateXYZ'); wn.links.new(tco.outputs['Generated'],sz.inputs[0])
     ramp=wn.nodes.new('ShaderNodeValToRGB'); wn.links.new(sz.outputs['Z'],ramp.inputs[0]); E=ramp.color_ramp.elements
     E[0].position=0.25; E[0].color=(0.01,0.05,0.10,1); E[1].position=0.9; E[1].color=(0.45,0.7,0.9,1)
     mid=E.new(0.55); mid.color=(0.10,0.30,0.55,1)
     wn.links.new(ramp.outputs['Color'],bg.inputs['Color'])
-    for m in (sm,bmat):                                    # water surface and bubbles: ray-traced refraction
-        _set(m,'use_raytrace_refraction',True); _set(m,'surface_render_method','DITHERED'); _set(m,'thickness_mode','SPHERE')
+    _set(sm,'use_raytrace_refraction',True); _set(sm,'surface_render_method','DITHERED'); _set(sm,'thickness_mode','SPHERE')
+    # bubbles: EEVEE's glass on mm-sized spheres collapses to one pure-white pixel that flickers (the white grain).
+    # Fake the optics instead: clear centre, soft silver rim from a facing falloff, never brighter than the water above
+    bt=bmat.node_tree; bt.nodes.clear(); bo=bt.nodes.new('ShaderNodeOutputMaterial')
+    tr=bt.nodes.new('ShaderNodeBsdfTransparent'); gl=bt.nodes.new('ShaderNodeEmission'); gl.inputs['Strength'].default_value=1.0     # rim glow, NOT a sun reflection (that is the white pixel)
+    gl.inputs['Color'].default_value=(0.32,0.5,0.62,1); lw=bt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.35
+    mr=bt.nodes.new('ShaderNodeMath'); mr.operation='MULTIPLY'; mr.inputs[1].default_value=0.45; bt.links.new(lw.outputs['Facing'],mr.inputs[0])
+    bx=bt.nodes.new('ShaderNodeMixShader'); bt.links.new(mr.outputs[0],bx.inputs[0]); bt.links.new(tr.outputs[0],bx.inputs[1]); bt.links.new(gl.outputs[0],bx.inputs[2])
+    bt.links.new(bx.outputs[0],bo.inputs['Surface']); _set(bmat,'surface_render_method','BLENDED')
+    for o in far_plumes: o.hide_render=True                # 15-20 m away mm bubbles are sub-pixel: only aliasing sparkle, no image
     _set(dm,'surface_render_method','BLENDED')             # marine snow (transparent/translucent)
     vb=False
     if not os.environ.get('RAS_EEVEE_RENDER_MBLUR'):
