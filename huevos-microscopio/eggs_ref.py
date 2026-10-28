@@ -58,8 +58,10 @@ va=N.new('ShaderNodeVolumeAbsorption'); va.inputs['Color'].default_value=(0.86,0
 nz=N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value=3.5; nz.inputs['Detail'].default_value=3
 gr=N.new('ShaderNodeMapRange'); Lk.new(nz.outputs['Fac'],gr.inputs[0]); gr.inputs[1].default_value=0.35; gr.inputs[2].default_value=0.65; gr.inputs[3].default_value=0.3; gr.inputs[4].default_value=0.55
 Lk.new(gr.outputs[0],va.inputs['Density']); Lk.new(va.outputs[0],N['Material Output'].inputs['Volume'])
+# yolk rim shading: grazing view through the yolk edge reads grey (gives the eggs their volume)
+fringe(N,Lk,b,[(0.55,(1.0,1.0,1.0)),(0.8,(0.84,0.83,0.84)),(0.95,(0.68,0.67,0.69))])
 # ---- oil globule: strong lens
-oil,N,Lk=mat('oil'); glass(N['Principled BSDF'],1.145,0.0,(0.97,0.97,0.93,1))
+oil,N,Lk=mat('oil'); glass(N['Principled BSDF'],1.15,0.0,(0.97,0.97,0.93,1))
 fringe(N,Lk,N['Principled BSDF'],[(0.0,(0.93,1.0,0.92)),(0.35,(0.97,1.0,0.96)),(0.55,(1.0,1.0,1.0)),(0.75,(1.0,0.8,0.95))])
 # ---- embryo tissue: translucent, chevron myomeres along the body
 emb,N,Lk=mat('embryo'); b=N['Principled BSDF']; glass(b,1.05,0.15,(0.98,0.97,0.96,1))   # stronger index step: bright core, dark refracting edges
@@ -130,7 +132,7 @@ inner,N,Lk=mat('inner'); glass(N['Principled BSDF'],1.03,0.3,(0.8,0.77,0.76,1))
 iv=N.new('ShaderNodeVolumeAbsorption'); iv.inputs['Color'].default_value=(0.7,0.66,0.62,1); iv.inputs['Density'].default_value=1.0; Lk.new(iv.outputs[0],N['Material Output'].inputs['Volume'])
 flw,N,Lk=mat('flower'); N.remove(N['Principled BSDF'])
 # surface shader on a flat disc (volume shaders get no texture coordinates here): granular ring, clear centre
-tw=N.new('ShaderNodeBsdfTransparent'); tg=N.new('ShaderNodeBsdfTransparent'); tg.inputs['Color'].default_value=(0.24,0.29,0.24,1)
+tw=N.new('ShaderNodeBsdfTransparent'); tg=N.new('ShaderNodeBsdfTransparent'); tg.inputs['Color'].default_value=(0.3,0.35,0.24,1)
 ftc=N.new('ShaderNodeTexCoord'); fsp=N.new('ShaderNodeSeparateXYZ'); Lk.new(ftc.outputs['Generated'],fsp.inputs[0])
 def FM(op,a,bb=None):
     n=N.new('ShaderNodeMath'); n.operation=op
@@ -158,7 +160,7 @@ def ring_mat(name,dark,blend=0.25,lo=0.35):
     mr_=N.new('ShaderNodeMapRange'); Lk.new(lw_.outputs['Facing'],mr_.inputs[0]); mr_.inputs[1].default_value=lo; mr_.inputs[2].default_value=lo+0.3
     mx_=N.new('ShaderNodeMixShader'); Lk.new(mr_.outputs[0],mx_.inputs[0]); Lk.new(t1.outputs[0],mx_.inputs[1]); Lk.new(t2.outputs[0],mx_.inputs[2]); Lk.new(mx_.outputs[0],N['Material Output'].inputs['Surface'])
     return m_
-eyecup=ring_mat('eyecup',(0.45,0.42,0.4,1),0.3,0.3)                 # optic cup: dark rim, clear centre
+eyecup=ring_mat('eyecup',(0.18,0.16,0.15,1),0.3,0.2)                 # optic cup: dark rim, clear centre
 vesm=ring_mat('vesm',(0.5,0.48,0.5,1),0.35,0.3)
 lensm,N,Lk=mat('lens'); glass(N['Principled BSDF'],1.12,0.05,(1,1,1,1))
 noto,N,Lk=mat('noto'); glass(N['Principled BSDF'],1.024,0.15,(1.0,1.0,0.99,1))
@@ -191,7 +193,7 @@ def egg_at(cx,cy,rp,emb_px):
         for k in range(12):
             t=k/12; sm.append(0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t**3))
     sm.append(pts[-1]); n=len(sm)
-    cu=bpy.data.curves.new('emb','CURVE'); cu.dimensions='3D'; cu.twist_mode='Z_UP'; thick=random.uniform(0.85,1.12); cu.bevel_depth=0.16*rad*thick; cu.bevel_resolution=8; cu.use_fill_caps=True
+    cu=bpy.data.curves.new('emb','CURVE'); cu.dimensions='3D'; cu.twist_mode='Z_UP'; thick=random.uniform(0.85,1.12); cu.bevel_depth=0.14*rad*thick; cu.bevel_resolution=8; cu.use_fill_caps=True
     sp=cu.splines.new('POLY'); sp.points.add(n-1)
     for i,p in enumerate(sm):
         u=i/(n-1); sp.points[i].co=(p.x,p.y,p.z,1); sp.points[i].radius=(0.15+0.85*math.sin(min(u/0.1,1)*math.pi/2)) if u<0.6 else 1.0-0.55*((u-0.6)/0.4)**1.4   # body starts inside the head: no flat end face
@@ -214,7 +216,7 @@ def egg_at(cx,cy,rp,emb_px):
     for e in caps: e.select_set(True)
     bpy.ops.object.join(); rm=eo.modifiers.new('weld','REMESH'); rm.mode='VOXEL'; rm.voxel_size=0.01*rad; rm.use_smooth_shade=True
     # myomere septa: thin chevron-ish discs across the trunk (the segmented look of the photo), skip head and tail tip
-    bw=0.16*rad*thick; bmps=[]
+    bw=0.14*rad*thick; bmps=[]
     for i in range(int(len(sm)*0.2),int(len(sm)*0.88),3):
         p=sm[i]; tg=(sm[min(i+1,len(sm)-1)]-sm[max(i-1,0)]).normalized()
         u=i/(len(sm)-1); rloc=bw*(1.0 if u<0.6 else 1.0-0.55*((u-0.6)/0.4)**1.4)
@@ -232,6 +234,9 @@ def egg_at(cx,cy,rp,emb_px):
     kd.balance(); mw=eo.matrix_world; mi=mw.inverted()
     for v in eo.data.vertices:
         wv=mw@v.co; co_,i_,d_=kd.find(wv); wv.z=co_.z+(wv.z-co_.z)*0.45; v.co=mi@wv
+    for _ in range(random.randint(4,9)):
+        j=random.randint(int(len(sm)*0.1),int(len(sm)*0.9)); pm=sm[j]+(sm[j]-c).normalized()*0.05*rad
+        o_=sphere('melano',rad*random.uniform(0.008,0.016),pm,10); o_.data.materials.append(debr); o_.scale=(random.uniform(1,2.2),1,0.6)
     # head interior: optic cups and brain vesicles, faint
     hp_=sm[0]; tg0=(sm[0]-sm[3]).normalized(); nrm0=(hp_-c).normalized(); side0=tg0.cross(nrm0).normalized()
     for sgn in (-1,1):                                                     # eyes: dark-rimmed optic cup + small lens
