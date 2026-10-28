@@ -62,9 +62,11 @@ echo    2 = Loop completo de 90 s, calidad media  (mitad de resolucion, para rev
 echo    3 = Loop completo de 90 s, calidad final  (resolucion nativa de cada pantalla)
 echo    4 = EEVEE (motor rapido) - loop de 90 s, pantalla concava sola, resolucion completa
 echo    5 = EEVEE (motor rapido) - loop de 90 s, las 10 pantallas, resolucion completa
+echo    6 = EEVEE (motor rapido) - prueba de 10 s, pantalla concava, resolucion completa  ^<- ~1 hora
 echo.
-choice /c 12345 /n /m "Elegi 1, 2, 3, 4 o 5: "
+choice /c 123456 /n /m "Elegi 1, 2, 3, 4, 5 o 6: "
 set "RAS_ENGINE=" & set "ONLY="
+if errorlevel 6 (set "OUT=render_eevee_concava_10s" & set "SCALE=1.0" & set "RAS_SAMPLES=32" & set "RAS_FRAMES=1-240" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & set "ONLY=concava" & goto :go)
 if errorlevel 5 (set "OUT=render_eevee_loop90" & set "SCALE=1.0" & set "RAS_SAMPLES=32" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & goto :go)
 if errorlevel 4 (set "OUT=render_eevee_concava_loop90" & set "SCALE=1.0" & set "RAS_SAMPLES=32" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_ENGINE=EEVEE" & set "ONLY=concava" & goto :go)
 if errorlevel 3 (set "OUT=render_final" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_FRAMES=1-2160" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & goto :go)
