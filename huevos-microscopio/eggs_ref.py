@@ -3,7 +3,7 @@
 # Koehler-style illumination (light only from a narrow cone below) + telecentric (ortho) camera: rays bent more than a few
 # degrees see black -> thin dark outlines, black oil drop with a bright centre, exactly how brightfield images look.
 # blender -b --factory-startup -P eggs.py -- OUT.png [samples] [width]
-import bpy, bmesh, math, random, sys, mathutils
+import bpy, bmesh, math, random, sys, mathutils, mathutils.kdtree
 args=sys.argv[sys.argv.index('--')+1:]; OUT=args[0]; SPP=int(args[1]) if len(args)>1 else 96; RW=int(args[2]) if len(args)>2 else 1600
 bpy.ops.wm.read_factory_settings(use_empty=True); sc=bpy.context.scene; random.seed(7)
 def sphere(name,r,loc,seg=48):
@@ -27,9 +27,9 @@ def glass(b,ior,rough,col=(1,1,1,1)):
     b.inputs['Transmission Weight'].default_value=1; b.inputs['IOR'].default_value=ior; b.inputs['Roughness'].default_value=rough; b.inputs['Base Color'].default_value=col
 # ---- chorion: thin transparent shell (solidified sphere) -> the crisp double line at the egg edge
 chor,N,Lk=mat('chorion'); glass(N['Principled BSDF'],1.06,0.02,(1.0,0.995,1.0,1))
-fringe(N,Lk,N['Principled BSDF'],[(0.62,(1.0,1.0,1.0)),(0.7,(1.0,0.85,0.97)),(0.76,(1.0,1.0,1.0)),(0.86,(0.72,1.0,0.78)),(0.97,(0.85,1.0,0.88))])   # near neutral: 4 interfaces per egg multiply any tint
+fringe(N,Lk,N['Principled BSDF'],[(0.62,(1.0,1.0,1.0)),(0.7,(1.0,0.93,0.98)),(0.76,(1.0,1.0,1.0)),(0.86,(0.72,1.0,0.78)),(0.97,(0.85,1.0,0.88))])   # near neutral: 4 interfaces per egg multiply any tint
 # ---- yolk: almost index-matched, fine dark stipple + soft cloudy shading
-yolk,N,Lk=mat('yolk'); b=N['Principled BSDF']; glass(b,1.008,0.1,(0.98,0.97,0.97,1))
+yolk,N,Lk=mat('yolk'); b=N['Principled BSDF']; glass(b,1.018,0.1,(0.98,0.97,0.97,1))   # yolk outline reads where the embryo lies on it
 # yolk texture matched at 1:1 on the photo: sparse soft granules (~5 px, ~20 px apart), each with its own tint
 # (grey, reddish, greenish), over a smooth surface with a soft cellular relief - not a dense fine stipple
 ytc=N.new('ShaderNodeTexCoord')
@@ -59,10 +59,10 @@ nz=N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value=3.5; nz.inputs[
 gr=N.new('ShaderNodeMapRange'); Lk.new(nz.outputs['Fac'],gr.inputs[0]); gr.inputs[1].default_value=0.35; gr.inputs[2].default_value=0.65; gr.inputs[3].default_value=0.3; gr.inputs[4].default_value=0.55
 Lk.new(gr.outputs[0],va.inputs['Density']); Lk.new(va.outputs[0],N['Material Output'].inputs['Volume'])
 # ---- oil globule: strong lens
-oil,N,Lk=mat('oil'); glass(N['Principled BSDF'],1.16,0.0,(0.97,0.97,0.93,1))
+oil,N,Lk=mat('oil'); glass(N['Principled BSDF'],1.145,0.0,(0.97,0.97,0.93,1))
 fringe(N,Lk,N['Principled BSDF'],[(0.0,(0.93,1.0,0.92)),(0.35,(0.97,1.0,0.96)),(0.55,(1.0,1.0,1.0)),(0.75,(1.0,0.8,0.95))])
 # ---- embryo tissue: translucent, chevron myomeres along the body
-emb,N,Lk=mat('embryo'); b=N['Principled BSDF']; glass(b,1.03,0.2,(0.97,0.96,0.95,1))
+emb,N,Lk=mat('embryo'); b=N['Principled BSDF']; glass(b,1.05,0.15,(0.98,0.97,0.96,1))   # stronger index step: bright core, dark refracting edges
 tc=N.new('ShaderNodeTexCoord'); sep=N.new('ShaderNodeSeparateXYZ'); Lk.new(tc.outputs['UV'],sep.inputs[0])
 def M(op,a,bb):
     n=N.new('ShaderNodeMath'); n.operation=op
@@ -79,13 +79,13 @@ hgt=M('ADD',M('ADD',M('MULTIPLY',som,0.15),M('MULTIPLY',noc,0.3)),M('MULTIPLY',t
 stripe=M('POWER',M('MULTIPLY',M('ADD',som,1.0),0.5),8.0)
 band=M('MULTIPLY',M('POWER',M('ABSOLUTE',M('COSINE',M('MULTIPLY',sep.outputs['Y'],2*math.pi),0),0),30.0),0.6)
 dark=M('MINIMUM',M('MAXIMUM',M('MULTIPLY',M('SUBTRACT',tn.outputs['Fac'],0.5),4.0),0.0),0.85)   # welded mesh has no UVs: cellular mottling only
-cr=N.new('ShaderNodeMix'); cr.data_type='RGBA'; Lk.new(dark,cr.inputs['Factor']); cr.inputs[6].default_value=(1.0,0.99,0.98,1); cr.inputs[7].default_value=(0.5,0.47,0.48,1)
-fringe(N,Lk,b,[(0.45,(1.0,1.0,1.0)),(0.62,(0.98,0.88,0.95)),(0.8,(0.86,0.8,0.74)),(0.93,(0.82,0.95,0.84))],base=cr.outputs[2])
+cr=N.new('ShaderNodeMix'); cr.data_type='RGBA'; Lk.new(dark,cr.inputs['Factor']); cr.inputs[6].default_value=(1.0,0.99,0.98,1); cr.inputs[7].default_value=(0.8,0.78,0.76,1)
+fringe(N,Lk,b,[(0.5,(1.0,1.0,1.0)),(0.66,(0.99,0.95,0.98)),(0.82,(0.9,0.87,0.83)),(0.94,(0.9,0.97,0.91))],base=cr.outputs[2])
 # brightfield outline: tissue edges seen at grazing angle read as a thin dark line, the core stays clear
 lw=N.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value=0.5
 wob=N.new('ShaderNodeTexNoise'); wob.inputs['Scale'].default_value=25; wob.inputs['Detail'].default_value=3   # irregular, wavy outline thickness
-edge=M('MINIMUM',M('MAXIMUM',M('MULTIPLY',M('SUBTRACT',lw.outputs['Facing'],M('ADD',0.3,M('MULTIPLY',wob.outputs['Fac'],0.25))),1.9),0.0),1.0)
-et=N.new('ShaderNodeBsdfTransparent'); et.inputs['Color'].default_value=(0.3,0.27,0.25,1)
+edge=M('MINIMUM',M('MAXIMUM',M('MULTIPLY',M('SUBTRACT',lw.outputs['Facing'],M('ADD',0.22,M('MULTIPLY',wob.outputs['Fac'],0.25))),2.2),0.0),1.0)
+et=N.new('ShaderNodeBsdfTransparent'); et.inputs['Color'].default_value=(0.2,0.18,0.17,1)
 emx=N.new('ShaderNodeMixShader'); Lk.new(edge,emx.inputs[0]); Lk.new(b.outputs[0],emx.inputs[1]); Lk.new(et.outputs[0],emx.inputs[2])
 Lk.new(emx.outputs[0],N['Material Output'].inputs['Surface'])
 bp=N.new('ShaderNodeBump'); bp.inputs['Strength'].default_value=0.9; Lk.new(hgt,bp.inputs['Height']); Lk.new(bp.outputs['Normal'],b.inputs['Normal'])
@@ -93,7 +93,7 @@ ev=N.new('ShaderNodeVolumeAbsorption'); ev.inputs['Color'].default_value=(0.62,0
 # cellular texture inside the tissue: volume density from world-position noise (volumes get no UV/generated coords)
 eg=N.new('ShaderNodeNewGeometry'); en=N.new('ShaderNodeTexNoise'); en.inputs['Scale'].default_value=22; en.inputs['Detail'].default_value=6; en.inputs['Roughness'].default_value=0.7
 Lk.new(eg.outputs['Position'],en.inputs['Vector']); ecv=N.new('ShaderNodeTexVoronoi'); ecv.feature='DISTANCE_TO_EDGE'; ecv.inputs['Scale'].default_value=13; Lk.new(eg.outputs['Position'],ecv.inputs['Vector'])
-emr=N.new('ShaderNodeMapRange'); Lk.new(ecv.outputs['Distance'],emr.inputs[0]); emr.inputs[1].default_value=0.01; emr.inputs[2].default_value=0.04; emr.inputs[3].default_value=12.0; emr.inputs[4].default_value=0.0
+emr=N.new('ShaderNodeMapRange'); Lk.new(ecv.outputs['Distance'],emr.inputs[0]); emr.inputs[1].default_value=0.01; emr.inputs[2].default_value=0.04; emr.inputs[3].default_value=9.0; emr.inputs[4].default_value=0.0
 emn=N.new('ShaderNodeMapRange'); Lk.new(en.outputs['Fac'],emn.inputs[0]); emn.inputs[1].default_value=0.5; emn.inputs[2].default_value=0.65; emn.inputs[3].default_value=0.0; emn.inputs[4].default_value=0.6
 Lk.new(M('ADD',emr.outputs[0],emn.outputs[0]),ev.inputs['Density'])     # cell membranes (voronoi edges) + a few denser clumps
 Lk.new(ev.outputs[0],N['Material Output'].inputs['Volume'])
@@ -151,7 +151,7 @@ fat=N.new('ShaderNodeAttribute'); fat.attribute_type='OBJECT'; fat.attribute_nam
 fm=N.new('ShaderNodeMixShader'); Lk.new(fac,fm.inputs[0]); Lk.new(tw.outputs[0],fm.inputs[1]); Lk.new(tg.outputs[0],fm.inputs[2]); Lk.new(fm.outputs[0],N['Material Output'].inputs['Surface'])
 # granular 'flowers' seen in the photo (px)
 FLOWERS=[(150,370,62,0.8),(1380,430,70,1.0),(1740,750,78,1.0),(940,590,55,0.35),(1180,1340,60,0.5),(1640,1230,62,0.5),(820,1040,50,0.35),(20,870,60,0.7),(600,225,55,0.4)]
-septm,N,Lk=mat('septum'); glass(N['Principled BSDF'],1.012,0.4,(0.9,0.88,0.87,1))
+septm,N,Lk=mat('septum'); glass(N['Principled BSDF'],1.01,0.4,(0.93,0.92,0.92,1))
 def ring_mat(name,dark,blend=0.25,lo=0.35):
     m_,N,Lk=mat(name); N.remove(N['Principled BSDF']); t1=N.new('ShaderNodeBsdfTransparent'); t2=N.new('ShaderNodeBsdfTransparent'); t2.inputs['Color'].default_value=dark
     lw_=N.new('ShaderNodeLayerWeight'); lw_.inputs['Blend'].default_value=blend
@@ -164,7 +164,7 @@ lensm,N,Lk=mat('lens'); glass(N['Principled BSDF'],1.12,0.05,(1,1,1,1))
 noto,N,Lk=mat('noto'); glass(N['Principled BSDF'],1.024,0.15,(1.0,1.0,0.99,1))
 finm,N,Lk=mat('fin'); glass(N['Principled BSDF'],1.03,0.3,(0.94,0.93,0.93,1))   # faint grey membrane                   # transparent fin fold, only its edge reads
 debr=ring_mat('debris',(0.25,0.24,0.23,1),0.5,0.0)
-slit,N,Lk=mat('slit'); N.remove(N['Principled BSDF']); ts_=N.new('ShaderNodeBsdfTransparent'); ts_.inputs['Color'].default_value=(0.55,0.56,0.55,1); Lk.new(ts_.outputs[0],N['Material Output'].inputs['Surface'])
+slit=ring_mat('slit',(0.35,0.37,0.35,1),0.4,0.15)   # fold: clear lens-shaped centre, soft dark rim
 def ell_profile(w):
     # flattened body cross-section: wide in the plane of the yolk surface, shallow towards the lens
     bpy.ops.curve.primitive_bezier_circle_add(radius=1.0); o=bpy.context.object; o.scale=(w,w*0.55,1); o.hide_render=True; return o
@@ -220,12 +220,18 @@ def egg_at(cx,cy,rp,emb_px):
         u=i/(len(sm)-1); rloc=bw*(1.0 if u<0.6 else 1.0-0.55*((u-0.6)/0.4)**1.4)
         d_=sphere('septum',1.0,p,16); d_.data.materials.append(septm)
         out_=(p-c); out_.z=0; out_=out_.normalized() if out_.length>1e-6 else out_
-        bmp=sphere('somite',rloc*0.45,p+out_*rloc*0.68+tg*rloc*0.2,16); bmps.append(bmp)
+        bmp=sphere('somite',rloc*0.38,p+out_*rloc*0.68+tg*rloc*0.2,16); bmps.append(bmp)
         d_.rotation_mode='QUATERNION'; d_.rotation_quaternion=tg.to_track_quat('X','Z'); d_.scale=(0.006*rad,rloc*0.85,rloc*0.85)
     # weld the somite bumps into the body skin (eo already carries the voxel remesh)
     bpy.ops.object.select_all(action='DESELECT')
     for o_ in bmps: o_.select_set(True)
     eo.select_set(True); bpy.context.view_layer.objects.active=eo; bpy.ops.object.join()
+    # flatten the body towards the lens (real embryos lie flat on the yolk): wide bright top, thin dark refracting rim
+    kd=mathutils.kdtree.KDTree(len(sm))
+    for i_,p_ in enumerate(sm): kd.insert(p_,i_)
+    kd.balance(); mw=eo.matrix_world; mi=mw.inverted()
+    for v in eo.data.vertices:
+        wv=mw@v.co; co_,i_,d_=kd.find(wv); wv.z=co_.z+(wv.z-co_.z)*0.45; v.co=mi@wv
     # head interior: optic cups and brain vesicles, faint
     hp_=sm[0]; tg0=(sm[0]-sm[3]).normalized(); nrm0=(hp_-c).normalized(); side0=tg0.cross(nrm0).normalized()
     for sgn in (-1,1):                                                     # eyes: dark-rimmed optic cup + small lens
@@ -264,11 +270,11 @@ for x,y,rp,kf in FLOWERS:
     me=bpy.data.meshes.new('flower'); bm=bmesh.new(); bmesh.ops.create_circle(bm,cap_ends=True,segments=48,radius=1.0); bm.to_mesh(me); bm.free()
     f=bpy.data.objects.new('flower',me); sc.collection.objects.link(f); f.location=q+mathutils.Vector((0,0,z)); f.scale=(rp*1.4/PX,rp*1.4/PX,1); f.data.materials.append(flw); f['k']=kf
     if kf>=1.0:
-        sl=sphere('slit',1.0,q+mathutils.Vector((0,0,z+0.01)),24); sl.scale=(0.035,rp*0.6/PX,0.004); sl.rotation_euler=(0,0,random.uniform(-0.3,0.3)); sl.data.materials.append(slit)
+        sl=sphere('slit',1.0,q+mathutils.Vector((0,0,z+0.01)),24); sl.scale=(0.075,rp*0.62/PX,0.03); sl.rotation_euler=(0,0,random.uniform(-0.3,0.3)); sl.data.materials.append(slit)
 for x,y,rp in OILS:
     q=P(x,y); best=min(EGGS,key=lambda E:(P(E[0],E[1])-q).length); c=P(best[0],best[1]); rad=best[2]/PX
     d=(q-c).length; z=math.sqrt(max((0.72*rad)**2-d*d,0))
-    sphere('oil',rp*1.32/PX,q+mathutils.Vector((0,0,z)),48).data.materials.append(oil)
+    sphere('oil',rp*1.3/PX,q+mathutils.Vector((0,0,z)),48).data.materials.append(oil)
 R_=random.Random(11); nd=0
 while nd<70:
     x,y=R_.uniform(0,2000),R_.uniform(0,1500); q=P(x,y)
@@ -276,7 +282,7 @@ while nd<70:
     r_=R_.uniform(0.004,0.02); o_=sphere('debris',r_,q+mathutils.Vector((0,0,R_.uniform(-0.3,0.3))),12); o_.data.materials.append(debr if R_.random()<0.6 else lensm)
     o_.scale=(1,R_.uniform(0.6,1.0),1); nd+=1
 # ---- illumination: world lights only from a narrow cone below
-w=bpy.data.worlds.new('w'); sc.world=w; w.use_nodes=True; wn=w.node_tree; wb=wn.nodes['Background']; wb.inputs['Color'].default_value=(0.93,0.922,0.93,1)   # neutral with a hint of magenta, like the photo
+w=bpy.data.worlds.new('w'); sc.world=w; w.use_nodes=True; wn=w.node_tree; wb=wn.nodes['Background']; wb.inputs['Color'].default_value=(0.928,0.926,0.928,1)   # neutral with a hint of magenta, like the photo
 wt=wn.nodes.new('ShaderNodeTexCoord'); wz=wn.nodes.new('ShaderNodeSeparateXYZ'); wn.links.new(wt.outputs['Generated'],wz.inputs[0])
 wr=wn.nodes.new('ShaderNodeMapRange'); wn.links.new(wz.outputs['Z'],wr.inputs[0]); wr.inputs[1].default_value=-0.9945; wr.inputs[2].default_value=-0.9848
 wr.inputs[3].default_value=1.0; wr.inputs[4].default_value=0.0; wr.clamp=True; wn.links.new(wr.outputs[0],wb.inputs[1])
