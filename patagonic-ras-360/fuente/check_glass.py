@@ -21,6 +21,8 @@ for k in range(12):
     plan.append(('suelto',C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,1))
 for beh,dz,ns_,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,-1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
     C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz); plan.append(('rotonda',C,S_,LEN,ph,sgn,ns_,spr,0.2,max(1,round(0.6*90/LEN))))
+for beh,dz,ns_,ph,sgn,spr in ((2.4,-0.1,16,5.0,1,0.7),(4.2,0.3,30,35.0,-1,1.0),(7.0,0.5,45,62.0,1,1.4),(3.0,-0.4,1,15.0,-1,1.0)):
+    C,S_,LEN=hg.local_loop(['cocina'],beh,dz,pad=3.0); plan.append(('cocina',C,S_,LEN,ph,sgn,ns_,spr,0.2,max(1,round(0.6*90/LEN))))
 b0=b1=0; acc_hi=0; per={}
 for q,(name,C,S_,LEN,ph,sgn,n_,spr,bob,laps) in enumerate(plan):
     if name in ('fondo','pared'): continue

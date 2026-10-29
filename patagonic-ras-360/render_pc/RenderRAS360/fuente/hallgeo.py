@@ -28,10 +28,13 @@ def screen(s):
     return dict(name=name,c=np.array([c[0],c[1],zc]),t=np.array([t[0],t[1],0.0]),n=np.array([n[0],n[1],0.0]),W=W,H=H,res=res,eye=eye,D=D)
 SC=[screen(s) for s in SCREENS]
 # swim circuit: 3.5 m behind each screen (inside the water), in this order, closed loop, smoothed
-ORDER=['banner_frontal','totem_N1','totem_N2','totem_N3','totem_N4','concava','cocina','banner_lateral']   # rotunda totems get their own local schools (local_loop)
+ORDER=['banner_frontal','totem_N1','totem_N2','totem_N3','totem_N4','concava','banner_lateral']   # cocina and rotunda totems: standalone, own local schools (local_loop)
 BEHIND=3.5
 SINGLE={'totem_R1','totem_R2'}
-LEADIN={'cocina':(8.0,-1.0)}   # extra waypoint: (metres before the screen along travel, metres further back)
+LEADIN={}
+# waypoints (x,y) after a screen: the hall circuit swings round the back of the building instead of cutting
+# through the concave screen's view on its way back to the side banner (the kitchen leg used to do this)
+VIA={'concava':[(34.0,-5.0),(26.0,-11.0),(17.0,-10.0)]}   # extra waypoint: (metres before the screen along travel, metres further back)
 def clear_views(C,clear=2.4,pad=2.6,iters=80):
     # The route must never run through what a screen shows in front of its glass (the room side): push every
     # path point that lies inside a screen's visible pyramid (widened by `pad` for the school's width) and less
@@ -56,7 +59,7 @@ def circuit(n=2000, behind=BEHIND, dz=0.0, clear=2.4, pad=2.6):
     by={s['name']:s for s in SC}
     pts=[]; cs=[by[k]['c'] for k in ORDER]
     for i,k in enumerate(ORDER):
-        s=by[k]; d=cs[(i+1)%len(cs)]-cs[i-1]; t=s['t'] if np.dot(s['t'],d)>=0 else -s['t']   # travel direction along the screen
+        s=by[k]; nx=np.array([*VIA[k][0],0.0]) if k in VIA else cs[(i+1)%len(cs)]; d=nx-cs[i-1]; d[2]=0; t=s['t'] if np.dot(s['t'],d)>=0 else -s['t']   # travel direction along the screen
         h=max(s['W']/2,1.0); z=min(max(s['c'][2],1.2),3.6)
         if k in LEADIN:                                    # come in from the side, not straight at the viewer
             a,b=LEADIN[k]; p=s['c']-s['n']*(behind+b)-t*(h+a); p=p.copy(); p[2]=z+dz; pts.append(p)
@@ -64,6 +67,9 @@ def circuit(n=2000, behind=BEHIND, dz=0.0, clear=2.4, pad=2.6):
             p=s['c']-s['n']*behind; p=p.copy(); p[2]=z+dz; pts.append(p); continue
         for u in (-h,h):                                   # two points: the path runs parallel behind every screen
             p=s['c']-s['n']*behind+t*u; p=p.copy(); p[2]=z+dz; pts.append(p)
+        for x_,y_ in VIA.get(k,[]):                       # deeper layers swing wider (pushed out from the hall centre)
+            o=np.array([x_-14.0,y_-0.0]); o/=np.linalg.norm(o); q=np.array([x_,y_])+o*max(behind-3.5,0)*0.8
+            pts.append(np.array([q[0],q[1],z+dz]))
     P=np.array(pts); N=len(P)
     # closed Catmull-Rom
     out=[]
@@ -81,6 +87,8 @@ def local_loop(names,behind,dz=0.0,n=600,pad=1.0):
     for k in names:
         s=by[k]; h=max(s['W']/2,1.0)+pad; z=min(max(s['c'][2],1.2),3.6)+dz
         for u in (-h,h): p=s['c']-s['n']*behind+s['t']*u; p=p.copy(); p[2]=z; pts.append(p)
+        if len(names)==1:                                  # a lone screen: oval loop, the return leg runs further back
+            for u in (h,-h): p=s['c']-s['n']*(behind+3.5)+s['t']*u*1.15; p=p.copy(); p[2]=z+0.3; pts.append(p)
     P=np.array(pts); m=P[:,:2].mean(0); P=P[np.argsort(np.arctan2(P[:,1]-m[1],P[:,0]-m[0]))]
     N=len(P); out=[]
     for i in range(N):

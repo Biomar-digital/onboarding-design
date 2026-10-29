@@ -129,6 +129,10 @@ for k in range(6):                                  # close passes: big salmon g
 for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,-1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
     C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz)
     plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),False))
+# kitchen screen: not part of the hall circuit (standalone loop, same look) - schools crossing it back and forth
+for beh,dz,ns,ph,sgn,spr in ((2.4,-0.1,16,5.0,1,0.7),(4.2,0.3,30,35.0,-1,1.0),(7.0,0.5,45,62.0,1,1.4),(3.0,-0.4,1,15.0,-1,1.0)):
+    C,S_,LEN=hg.local_loop(['cocina'],beh,dz,pad=3.0)
+    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),beh>=LOD_FROM))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
 def keep_behind_glass(P,margin=0.9,iters=16):
     # Each screen is a window whose near clip plane is the glass: a fish inside a screen's visible pyramid
@@ -317,7 +321,7 @@ import bubbles; bubbles.LOOP=LOOP_S
 by_={s['name']:s for s in hg.SC}; cs_=[by_[k]['c'] for k in hg.ORDER]
 def travel(s):
     if s['name'] not in hg.ORDER: return s['t']                        # rotunda totems: local loops, either way
-    i=hg.ORDER.index(s['name']); d=cs_[(i+1)%len(cs_)]-cs_[i-1]; return s['t'] if np.dot(s['t'],d)>=0 else -s['t']
+    i=hg.ORDER.index(s['name']); nx=np.array([*hg.VIA[s['name']][0],0.0]) if s['name'] in hg.VIA else cs_[(i+1)%len(cs_)]; d=nx-cs_[i-1]; d[2]=0; return s['t'] if np.dot(s['t'],d)>=0 else -s['t']
 far_plumes=[]; bmat=bubbles.material(); bng=bubbles.group(bmat); sng=bubbles.snow_group(fcoll); brng=random.Random(21)
 for i,s in enumerate(hg.SC):
     cur=-travel(s)*CUR; up=(s['c'][2]-ZF)/((ZS-ZF-0.15)/LOOP_S)          # seconds a bubble needs to reach screen height

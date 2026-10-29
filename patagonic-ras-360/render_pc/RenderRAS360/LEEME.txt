@@ -6,13 +6,15 @@ PATAGONIC RAS 360 - RENDER EN TU PC
 2. Doble clic en RENDER_RAS360.bat.
    - La primera vez baja Blender 4.2 (380 MB) y ffmpeg (200 MB). Despues ya no.
 3. Elegi:
-   1 = Prueba rapida (3 s de las 10 pantallas). Hacela primero: te dice si usa la placa de video
-       y cuanto tarda cada cuadro.
-   2 = Loop completo de 90 s, calidad media.
-   3 = Loop completo de 90 s, calidad final (resolucion nativa de cada pantalla).
-   4 = EEVEE (rapido): loop de 90 s de la pantalla concava.
-   5 = EEVEE (rapido): loop de 90 s de las 10 pantallas.
+   1 = Loop de 90 s de UNA pantalla (te pregunta cual). Es la opcion para repartir el trabajo:
+       cada PC (o cada noche) hace una pantalla distinta. Todas salen sincronizadas entre si,
+       porque la escena es identica en todas las PCs.
+   2 = Prueba de 10 s de UNA pantalla, para revisar antes del loop completo.
+   3 = Loop de 90 s de las 10 pantallas, una detras de otra.
+   4 = Loop de 90 s de las 10 pantallas con Cycles (maxima calidad, muy lento).
    El video loopea perfecto: el ultimo cuadro empalma con el primero.
+   Usa siempre el mismo zip en todas las PCs, asi las pantallas coinciden.
+   En una misma PC renderiza de a una pantalla por vez (no abras dos ventanas a la vez).
 4. Al terminar abre la carpeta con un MP4 por pantalla. Mandalos al chat y armo el mockup.
 
 - Si cerras la ventana o se apaga la PC, volve a hacer doble clic y elegi la misma opcion:
