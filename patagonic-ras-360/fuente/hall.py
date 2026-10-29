@@ -175,10 +175,12 @@ def sliced_fish(P,margin=0.45):
         m=(along>0.05)&(np.abs(ox)<(s['W']/2+0.4)*along/D)&(np.abs(oz)<(s['H']/2+0.4)*along/D)&(d<margin)
         bad|=m.any(0)
     return np.where(bad)[0]
+print('PREP armando la escena: copiando salmones...',flush=True)
 NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
 k=0
 for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
+    print('PREP simulando cardumen',q+1,'de',len(plan),'(',ns,'peces )',flush=True)
     P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr,loop=LOOP_S,darts=(2.5 if ns==1 else 1.2) if not far else 0.0)
     P=keep_behind_glass(P); drop=set(sliced_fish(P).tolist())
     if drop: print('DROPPED',len(drop),'fish of plan',q)
