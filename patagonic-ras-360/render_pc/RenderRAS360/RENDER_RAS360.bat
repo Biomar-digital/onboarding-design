@@ -103,7 +103,7 @@ echo  Renderizando en "%OUT%" ...  (cuadros %RAS_FRAMES%)
 echo  Primero prepara la escena (10-20 minutos: simula los ~1400 salmones), despues va mostrando cada cuadro terminado.
 echo  Podes cerrar esta ventana cuando quieras: al volver a abrirla sigue desde el ultimo cuadro.
 echo.
-"%BL%" -b --factory-startup -P fuente\hall.py -- "%CD%\%OUT%" 0 2160 %SCALE% %ONLY% 2>&1 | powershell -NoProfile -ExecutionPolicy Bypass -Command "$w=[IO.StreamWriter]::new((Join-Path (Get-Location) 'render_log.txt')); foreach($l in $input){ $w.WriteLine($l); if($l -match '^PREP|^GPU|^ENGINE|FRAME_DONE|^FISH|Error|Traceback|^DONE'){ Write-Host ((Get-Date -Format 'HH:mm:ss')+'  '+$l); $w.Flush() } }; $w.Close()"
+"%BL%" -b --factory-startup -P fuente\hall.py -- "%CD%\%OUT%" 0 2160 %SCALE% %ONLY% 2>&1 | powershell -NoProfile -ExecutionPolicy Bypass -Command "$w=[IO.StreamWriter]::new((Join-Path (Get-Location) 'render_log.txt')); foreach($l in $input){ $w.WriteLine($l); $w.Flush(); if($l -match '^PREP|^GPU|^ENGINE|FRAME_DONE|^FISH|Error|Traceback|^DONE|^Blender|INFO'){ Write-Host ((Get-Date -Format 'HH:mm:ss')+'  '+$l) } }; $w.Close()"
 findstr /c:"DONE" render_log.txt >nul || (echo. & echo  El render no termino bien. Mandame el archivo render_log.txt de esta carpeta. & pause & goto :eof)
 
 echo.
