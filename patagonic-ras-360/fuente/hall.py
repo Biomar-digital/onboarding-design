@@ -110,9 +110,9 @@ def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25,laps=1):
 LAYERS=[
  ('cerca',  2.2,  -0.2,  1, [(12, 0.9),(10, 31.6),(10, 61.8)],                0.7),
  ('medio',  3.5,   0.0,  1, [(55, 7.7),(45, 33.3),(50, 54.2),(40, 76.9)],     1.3),
- ('lejos',  7.5,   0.7, -1, [(70, 17.9),(60, 42.9),(60, 63.6),(55, 84.6)],    1.6),   # swims the other way
+ ('lejos',  7.5,   0.7,  1, [(70, 17.9),(60, 42.9),(60, 63.6),(55, 84.6)],    1.6),   # same direction as the rest (counter-swimmers read as collisions)
  ('fondo', 15.0,  -0.4,  1, [(140, 2.2),(120, 30.0),(120, 59.4)],             2.4),   # big schools fading into the haze
- ('pared', 26.0,   0.6, -1, [(220, 25.1),(200, 66.1)],                        3.2),   # far wall of fish: RAS density
+ ('pared', 26.0,   0.6,  1, [(220, 25.1),(200, 66.1)],                        3.2),   # far wall of fish: RAS density
 ]
 random.seed(11); rng=np.random.default_rng(3)
 plan=[]
@@ -121,16 +121,16 @@ for name,beh,dz,sgn,schools,spr in LAYERS:
     for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','999')),1,beh>=LOD_FROM))
 for k in range(12):                                   # loners: single salmon at random depths and heights
     C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.8,9.0)),dz=float(rng.uniform(-1.0,1.2)))
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%3 else -1,1,1.0,0.6,False,1,False))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1,1,1.0,0.6,False,1,False))   # everyone swims with the current: no head-on crossings
 for k in range(6):                                  # close passes: big salmon gliding ~1.1-1.5 m behind the glass
     C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.1,1.5)),dz=float(rng.uniform(-0.4,0.5)),clear=1.05,pad=0.5)
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1 if k%2 else -1,1,1.0,0.3,False,1,False))
+    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1,1,1.0,0.3,False,1,False))
 # rotunda: fish milling behind the two round-room totems on their own short loops (laps chosen for ~0.6 m/s)
-for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,-1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
+for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
     C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz)
     plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),False))
 # kitchen screen: not part of the hall circuit (standalone loop, same look) - schools crossing it back and forth
-for beh,dz,ns,ph,sgn,spr in ((2.4,-0.1,16,5.0,1,0.7),(4.2,0.3,30,35.0,-1,1.0),(7.0,0.5,45,62.0,1,1.4),(3.0,-0.4,1,15.0,-1,1.0)):
+for beh,dz,ns,ph,sgn,spr in ((2.4,-0.1,16,5.0,1,0.7),(4.2,0.3,30,35.0,1,1.0),(7.0,0.5,45,62.0,1,1.4),(3.0,-0.4,1,15.0,1,1.0)):
     C,S_,LEN=hg.local_loop(['cocina'],beh,dz,pad=3.0)
     plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),beh>=LOD_FROM))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
@@ -388,7 +388,7 @@ if os.environ.get('RAS_GPU'):
     else: print('GPU no encontrada: se usa el procesador (CPU)',flush=True)
 sc.cycles.samples=int(os.environ.get('RAS_SAMPLES','24')); sc.cycles.use_denoising=True
 sc.cycles.volume_step_rate=10; sc.cycles.max_bounces=8; sc.cycles.diffuse_bounces=1; sc.cycles.glossy_bounces=4; sc.cycles.transmission_bounces=6; sc.cycles.transparent_max_bounces=8; sc.cycles.volume_bounces=0
-sc.render.use_motion_blur=not os.environ.get('RAS_NO_MBLUR'); sc.render.motion_blur_shutter=0.5
+sc.render.use_motion_blur=not os.environ.get('RAS_NO_MBLUR'); sc.render.motion_blur_shutter=0.3   # shorter shutter: crisper fish on the LED
 try:
   sc.use_nodes=True; ct=sc.node_tree; ct.nodes.clear()
   rl=ct.nodes.new('CompositorNodeRLayers'); co_=ct.nodes.new('CompositorNodeComposite')

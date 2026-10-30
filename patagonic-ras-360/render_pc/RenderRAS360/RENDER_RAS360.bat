@@ -63,7 +63,7 @@ echo    3 = Loop de 90 s de las 10 pantallas seguidas, calidad final
 echo.
 choice /c 123 /n /m "Elegi 1, 2 o 3: "
 set "M=%errorlevel%"
-set "RAS_ENGINE=" & set "ONLY=" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_FRAMES=1-2160"
+set "RAS_ENGINE=" & set "ONLY=" & set "SCALE=1.5" & set "RAS_SAMPLES=64" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_FRAMES=1-2160"
 if "%M%"=="3" (set "OUT=render_final_loop90" & goto :go)
 if "%M%"=="2" set "RAS_FRAMES=1-240"
 echo.
@@ -106,7 +106,7 @@ findstr /c:"DONE" render_log.txt >nul || (echo. & echo  El render no termino bie
 
 echo.
 echo  Armando un video MP4 por pantalla (con vinieteo suave y grano fino)...
-for /d %%d in ("%OUT%\*") do "%FF%" -y -loglevel error -framerate 24 -start_number %START% -i "%%d\%%~nxd_%%04d.%EXT%" -vf "vignette=angle=PI/7,noise=alls=4:allf=t" -c:v libx264 -crf 14 -pix_fmt yuv420p "%OUT%\%%~nxd.mp4"
+for /d %%d in ("%OUT%\*") do "%FF%" -y -loglevel error -framerate 24 -start_number %START% -i "%%d\%%~nxd_%%04d.%EXT%" -vf "scale=trunc(iw/3)*2:trunc(ih/3)*2:flags=lanczos,unsharp=5:5:0.5,vignette=angle=PI/7,noise=alls=3:allf=t" -c:v libx264 -crf 14 -pix_fmt yuv420p "%OUT%\%%~nxd.mp4"
 echo.
 echo  Listo. Los videos estan en la carpeta "%OUT%" (uno por pantalla).
 echo  Mandalos al chat y armo el mockup del hall con ellos.
