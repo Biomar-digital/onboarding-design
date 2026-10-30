@@ -178,11 +178,24 @@ def sliced_fish(P,margin=0.45):
 print('PREP armando la escena: copiando salmones...',flush=True)
 NT=sum(p[5] for p in plan); fish=[(root,arm)]
 for i in range(NT-1): fish.append(dup_fish())
-k=0
+SIM=[]
 for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
     print('PREP simulando cardumen',q+1,'de',len(plan),'(',ns,'peces )',flush=True)
     P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr,loop=LOOP_S,darts=(2.5 if ns==1 else 1.2) if not far else 0.0)
-    P=keep_behind_glass(P); drop=set(sliced_fish(P).tolist())
+    SIM.append((keep_behind_glass(P),Vt))
+# schools are simulated separately: make fish of different schools swerve round each other where their paths cross
+from avoid import avoid_schools
+print('PREP evitando choques entre cardumenes...',flush=True)
+_own=np.concatenate([[q]*SIM[q][0].shape[1] for q in range(len(SIM))]).astype(int)
+_P,_V=avoid_schools(np.concatenate([x[0] for x in SIM],1),np.concatenate([x[1] for x in SIM],1),_own)
+_o=0; SIM2=[]
+for q,(P0,V0) in enumerate(SIM):
+    n_=P0.shape[1]; SIM2.append((_P[:,_o:_o+n_],_V[:,_o:_o+n_])); _o+=n_
+del SIM,_P,_V
+k=0
+for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
+    P,Vt=SIM2[q]
+    P=keep_behind_glass(P); drop=set(sliced_fish(P).tolist())   # the swerves must not undo the glass clearance
     if drop: print('DROPPED',len(drop),'fish of plan',q)
     for j in range(ns):
         r,a=fish[k]; k+=1
