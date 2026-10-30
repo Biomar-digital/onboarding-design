@@ -57,16 +57,14 @@ del "%TOOLS%\ffmpeg.zip"
 
 echo.
 echo  Que queres renderizar?
-echo    1 = Loop de 90 s de UNA pantalla, calidad final (EEVEE)   ^<- para repartir el trabajo entre PCs
-echo    2 = Prueba de 10 s de UNA pantalla (EEVEE)
-echo    3 = Loop de 90 s de las 10 pantallas seguidas (EEVEE)
-echo    4 = Loop de 90 s de las 10 pantallas, motor Cycles (muy lento, maxima calidad)
+echo    1 = Loop de 90 s de UNA pantalla, calidad final (resolucion nativa)   ^<- para repartir el trabajo
+echo    2 = Prueba de 10 s de UNA pantalla, calidad final
+echo    3 = Loop de 90 s de las 10 pantallas seguidas, calidad final
 echo.
-choice /c 1234 /n /m "Elegi 1, 2, 3 o 4: "
+choice /c 123 /n /m "Elegi 1, 2 o 3: "
 set "M=%errorlevel%"
-set "RAS_ENGINE=EEVEE" & set "ONLY=" & set "SCALE=1.0" & set "RAS_SAMPLES=32" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_FRAMES=1-2160"
-if "%M%"=="4" (set "RAS_ENGINE=" & set "RAS_SAMPLES=64" & set "OUT=render_cycles_loop90" & goto :go)
-if "%M%"=="3" (set "OUT=render_eevee_loop90" & goto :go)
+set "RAS_ENGINE=" & set "ONLY=" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_FRAMES=1-2160"
+if "%M%"=="3" (set "OUT=render_final_loop90" & goto :go)
 if "%M%"=="2" set "RAS_FRAMES=1-240"
 echo.
 echo  Que pantalla?
@@ -93,8 +91,8 @@ if "%P%"=="7"  set "ONLY=concava"
 if "%P%"=="8"  set "ONLY=cocina"
 if "%P%"=="9"  set "ONLY=totem_R1"
 if "%P%"=="10" set "ONLY=totem_R2"
-set "OUT=render_eevee_%ONLY%"
-if "%M%"=="2" set "OUT=render_eevee_%ONLY%_10s"
+set "OUT=render_final_%ONLY%"
+if "%M%"=="2" set "OUT=render_final_%ONLY%_10s"
 :go
 set "RAS_GPU=AUTO"
 set "RAS_FRAMEMAJOR=1"
