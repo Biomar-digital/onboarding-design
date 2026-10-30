@@ -3,7 +3,24 @@
 # apart sideways/vertically (never along their own heading, so nobody brakes or speeds up). The push is spread
 # over time with the same wrap-around smoothing as the glass avoidance, so the loop stays seamless.
 import numpy as np
-from scipy.spatial import cKDTree
+
+def close_pairs(X,R):
+    # all pairs (i<j) closer than R, numpy only (Blender's Python has no scipy): uniform grid of cell size R
+    c=np.floor(X/R).astype(np.int64); c-=c.min(0); M=c.max(0)+3
+    key=lambda q: ((q[:,0]+1)*M[1]+(q[:,1]+1))*M[2]+(q[:,2]+1)
+    k0=key(c); order=np.argsort(k0,kind='stable'); sk=k0[order]
+    A=[];B=[]
+    for dx in (-1,0,1):
+        for dy in (-1,0,1):
+            for dz in (-1,0,1):
+                kt=key(c+np.array([dx,dy,dz])); lo=np.searchsorted(sk,kt,'left'); hi=np.searchsorted(sk,kt,'right')
+                cnt=hi-lo
+                if cnt.sum()==0: continue
+                ii=np.repeat(np.arange(len(X)),cnt); jj=order[np.repeat(lo,cnt)+(np.arange(cnt.sum())-np.repeat(np.cumsum(cnt)-cnt,cnt))]
+                A.append(ii); B.append(jj)
+    a=np.concatenate(A); b=np.concatenate(B); m=a<b; a,b=a[m],b[m]
+    d=np.linalg.norm(X[a]-X[b],axis=1); m=d<R
+    return np.stack([a[m],b[m]],1)
 def avoid_schools(P, V, owner, R=0.6, iters=9, win=48, sigma=10.0):
     F,N,_=P.shape; out=P.copy()
     G=np.exp(-0.5*(np.arange(-3*int(sigma),3*int(sigma)+1)/sigma)**2); G/=G.sum(); hw=len(G)//2
@@ -11,7 +28,7 @@ def avoid_schools(P, V, owner, R=0.6, iters=9, win=48, sigma=10.0):
     for it in range(iters):
         tot=np.zeros_like(out); hits=0
         for f in range(F):
-            X=out[f]; pr=cKDTree(X).query_pairs(R,output_type='ndarray')
+            X=out[f]; pr=close_pairs(X,R)
             if len(pr)==0: continue
             a,b=pr[:,0],pr[:,1]; m=owner[a]!=owner[b]; a,b=a[m],b[m]
             if len(a)==0: continue
