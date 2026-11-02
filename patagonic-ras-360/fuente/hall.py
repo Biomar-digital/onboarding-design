@@ -499,12 +499,32 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
 FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
 ext='.png'
 if os.environ.get('RAS_JPG'): sc.render.image_settings.file_format='JPEG'; sc.render.image_settings.quality=93; ext='.jpg'
+def _done(path): return os.path.exists(path) and os.path.getsize(path)>2048     # tiny/empty = cut mid-write
+if F>1:
+    # resume after a cut: report what is already rendered per screen and drop the newest file of each screen
+    # (if the PC went off while it was being written it can be truncated; it is simply rendered again)
+    for s,co in cams:
+        if ONLY and s['name'] not in ONLY: continue
+        d=os.path.join(OUT,s['name'])
+        if not os.path.isdir(d): continue
+        fs=[os.path.join(d,x) for x in os.listdir(d) if x.endswith(ext) and x.startswith(s['name']+'_')]
+        if not fs: continue
+        n=sum(1 for f in range(FA,FB+1) if _done(os.path.join(d,f"{s['name']}_{f:04d}{ext}")))
+        if n<FB-FA+1:
+            newest=max(fs,key=os.path.getmtime)
+            try: os.remove(newest)
+            except OSError: pass
+            n=sum(1 for f in range(FA,FB+1) if _done(os.path.join(d,f"{s['name']}_{f:04d}{ext}")))
+            first=next(f for f in range(FA,FB+1) if not _done(os.path.join(d,f"{s['name']}_{f:04d}{ext}")))
+            print('PREP retomando',s['name'],':',n,'de',FB-FA+1,'cuadros ya hechos, sigue desde el cuadro',first,flush=True)
+        else:
+            print('PREP',s['name'],': ya estaba completa (',n,'cuadros)',flush=True)
 if F>1 and os.environ.get('RAS_FRAMEMAJOR'):
     # frame by frame across all screens, keeping the synced scene (BVH) between cameras: much less overhead
     sc.render.use_persistent_data=True
     for f in range(FA,FB+1):
         todo=[(s,co) for s,co in cams if not (ONLY and s['name'] not in ONLY)
-              and not os.path.exists(os.path.join(OUT,s['name'],f"{s['name']}_{f:04d}{ext}"))]
+              and not _done(os.path.join(OUT,s['name'],f"{s['name']}_{f:04d}{ext}"))]
         if not todo: continue
         sc.frame_set(f)
         for s,co in todo:
