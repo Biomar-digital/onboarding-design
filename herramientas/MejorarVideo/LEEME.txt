@@ -1,0 +1,31 @@
+MEJORAR VIDEO - mas resolucion y mas cuadros por segundo, con IA en tu placa de video
+=====================================================================================
+
+QUE HACE
+- Sube la resolucion con IA (Real-ESRGAN) y crea cuadros intermedios con IA (RIFE) para
+  pasar a 60 fps (o 50/30), con movimiento fluido.
+- Mantiene SIEMPRE la proporcion del video: horizontal, vertical (9:16), cuadrado, 3:2...
+  Full HD = el lado corto queda en 1080 (ej. 1088x800 -> 1468x1080; 9:16 -> 1080x1920).
+  4K      = el lado corto queda en 2160.
+- Conserva el audio y la duracion.
+
+COMO SE USA
+1. Descomprimi el zip: clic derecho -> Extraer todo (no dentro de OneDrive, mejor C:\MejorarVideo).
+2. Arrastra uno o varios videos ENCIMA de MEJORAR_VIDEO.bat
+   (o copialos en la carpeta y hace doble clic en el .bat).
+3. Elegi: tipo de video, resolucion y fps.
+   La primera vez baja Real-ESRGAN, RIFE y ffmpeg (unos 700 MB, una sola vez).
+4. El video nuevo queda al lado del original: nombre_HD_60fps_MEJORADO.mp4
+
+TIPO DE VIDEO
+  1 = Video de IA, 3D o animacion: rapido y muy bueno (Higgsfield, Kling, renders).
+  2 = Filmacion real: un poco mas de detalle, varias veces mas lento.
+
+TIEMPOS Y ESPACIO (aprox. con una RTX)
+- Clip de 8 s a Full HD 60 fps: unos 2-4 minutos.
+- Guarda los cuadros como imagenes mientras trabaja: un clip de 10 s en 4K puede usar 5-10 GB
+  temporales (se borran solos al terminar). Para videos largos, ir de a clips.
+
+SI ALGO FALLA
+Abri la carpeta, escribi cmd en la barra de direcciones, Enter, y corre MEJORAR_VIDEO.bat
+desde esa ventana negra: asi no se cierra y se ve el error. Mandale una captura a Claude.
