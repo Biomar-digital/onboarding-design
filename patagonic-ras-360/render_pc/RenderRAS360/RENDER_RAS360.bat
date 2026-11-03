@@ -5,6 +5,7 @@ cd /d "%~dp0"
 echo.
 echo  ===  Patagonic RAS 360 - render de las 10 pantallas  ===
 echo  Carpeta del proyecto: %CD%
+echo "%CD%" | find /i "OneDrive" >nul && (echo. & echo  OJO: esta carpeta esta dentro de OneDrive. OneDrive intenta subir miles de imagenes mientras & echo  renderiza y puede trabar o cortar el render. Mejor mover la carpeta RenderRAS360 a C:\RenderRAS360 & echo.)
 if not exist "fuente\hall.py" (
   echo.
   echo  No encuentro fuente\hall.py
@@ -104,7 +105,7 @@ for /d %%d in (render_final_*) do (
   set /a K+=1
   set "R!K!=%%~nxd"
   set "C=0"
-  for /r "%%d" %%p in (*.png) do set /a C+=1
+  for /f %%c in ('dir /s /b /a-d "%%~fd\*.png" 2^>nul ^| find /c /v ""') do set "C=%%c"
   echo    !K! = %%~nxd   ^(!C! cuadros hechos^)
 )
 if "%K%"=="0" (echo  No hay ningun render para retomar en esta carpeta. & pause & goto :eof)
