@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mejorar Video (IA)</title>
+<style>
+  :root { --bg:#232323; --panel:#2c2c2c; --line:#3a3a3a; --text:#d6d6d6; --dim:#9a9a9a; --accent:#2d9cdb; --ok:#5fbf6a; --err:#e06c5a; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:12px; background:var(--bg); color:var(--text); font:12px/1.4 "Segoe UI",Arial,sans-serif; }
+  h1 { font-size:13px; margin:0 0 10px; font-weight:600; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:10px; margin-bottom:10px; }
+  label { display:block; color:var(--dim); margin:8px 0 3px; }
+  label:first-child { margin-top:0; }
+  select { width:100%; background:#1b1b1b; color:var(--text); border:1px solid var(--line); border-radius:3px; padding:5px; }
+  button { width:100%; padding:9px; border:0; border-radius:3px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; margin-top:4px; }
+  button:disabled { background:#555; cursor:default; }
+  #clip { color:var(--dim); min-height:16px; word-break:break-all; }
+  .bar { height:6px; background:#1b1b1b; border-radius:3px; overflow:hidden; margin:8px 0 4px; }
+  .bar div { height:100%; width:0; background:var(--accent); transition:width .3s; }
+  #log { white-space:pre-wrap; color:var(--dim); max-height:170px; overflow:auto; font-family:Consolas,monospace; font-size:11px; }
+  .ok { color:var(--ok); } .err { color:var(--err); }
+</style>
+</head>
+<body>
+<h1>Mejorar Video (IA)</h1>
+<div class="box">
+  <label>Clip</label>
+  <div id="clip">Selecciona un clip de video en la linea de tiempo y toca "Mejorar".</div>
+</div>
+<div class="box">
+  <label for="kind">Tipo de video</label>
+  <select id="kind">
+    <option value="anime">Video de IA, 3D o animacion (rapido)</option>
+    <option value="real">Filmacion real (mas lento)</option>
+  </select>
+  <label for="res">Resolucion (se mantiene la proporcion)</label>
+  <select id="res">
+    <option value="1080">Full HD: lado corto 1080</option>
+    <option value="2160">4K: lado corto 2160</option>
+    <option value="0">El doble del original</option>
+  </select>
+  <label for="fps">Cuadros por segundo</label>
+  <select id="fps">
+    <option value="seq">Igual a la secuencia</option>
+    <option value="60">60 fps</option>
+    <option value="50">50 fps</option>
+    <option value="30">30 fps</option>
+    <option value="0">Los del clip original</option>
+  </select>
+  <button id="go">Mejorar clip seleccionado</button>
+</div>
+<div class="box">
+  <div id="status">Listo.</div>
+  <div class="bar"><div id="bar"></div></div>
+  <div id="log"></div>
+</div>
+<script src="main.js"></script>
+</body>
+</html>

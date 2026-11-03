@@ -1,0 +1,33 @@
+MEJORAR VIDEO (IA) - PANEL PARA PREMIERE PRO
+============================================
+
+Sube la resolucion (Real-ESRGAN) y los cuadros por segundo (RIFE) del clip que elijas en la
+linea de tiempo, sin salir de Premiere. Mantiene la proporcion del video.
+
+INSTALACION (una sola vez)
+1. Descomprimi el zip (clic derecho -> Extraer todo).
+2. Doble clic en INSTALAR.bat
+3. Cerra y volve a abrir Premiere Pro.
+4. Menu Ventana > Extensiones > Mejorar Video (IA). Podes acoplar el panel donde quieras.
+
+USO
+1. En la linea de tiempo, selecciona UN clip de video (ya recortado como quieras).
+2. En el panel elegi tipo de video, resolucion y fps:
+   - "Igual a la secuencia" crea los cuadros que faltan para que el clip vaya fluido a la
+     velocidad de tu secuencia (ej. clip de IA a 24 fps en secuencia de 30 o 60).
+3. Toca "Mejorar clip seleccionado".
+   - Procesa SOLO el tramo que usas del clip (no el archivo entero): mucho mas rapido.
+   - El resultado entra al bin "Mejorados (IA)" y se coloca en la pista de ARRIBA del original,
+     en el mismo lugar. El original queda abajo intacto (si no hay pista arriba, lo reemplaza).
+   - El archivo se guarda en la carpeta "Mejorados (IA)" al lado del proyecto.
+   - El clip nuevo va sin audio: el audio original sigue en su pista.
+
+La primera vez descarga las herramientas (~700 MB, una sola vez) en
+%LOCALAPPDATA%\MejorarVideo. Necesita una placa de video (NVIDIA/AMD/Intel con Vulkan).
+
+LIMITES
+- Clips con velocidad cambiada (ej. 50%) se procesan a 100% y se colocan al inicio del clip.
+- Graficos, colores y secuencias anidadas no se pueden procesar (no tienen archivo de video).
+
+SI ALGO FALLA
+El panel muestra el error en su recuadro de abajo. Saca una captura y mandasela a Claude.
