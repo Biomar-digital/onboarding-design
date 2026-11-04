@@ -8,7 +8,7 @@ INSTALACION (una sola vez)
 1. Descomprimi el zip (clic derecho -> Extraer todo).
 2. Doble clic en INSTALAR.bat
 3. Cerra y volve a abrir Premiere Pro.
-4. Menu Ventana > Extensiones > Mejorar Video (IA). Podes acoplar el panel donde quieras.
+4. Menu Ventana > Extensiones > Mejorar Video (IA). En Premiere 2025 o mas nuevo: Ventana > Extensiones (heredadas). Podes acoplar el panel donde quieras.
 
 USO
 1. En la linea de tiempo, selecciona UN clip de video (ya recortado como quieras).
