@@ -4,6 +4,7 @@ import bpy, bmesh, sys, math, random, mathutils, os
 import numpy as np
 HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
 import hallgeo as hg; from school import simulate
+from formation import formation
 args=sys.argv[sys.argv.index('--')+1:]
 LOOP_S=float(os.environ.get('RAS_LOOP','90'))     # seamless loop length (s): every motion in the scene repeats exactly
 OUT=args[0]; T0=float(args[1]); F=int(args[2]); SCALE=float(args[3]); ONLY=args[4].split(',') if len(args)>4 else None   # optional: only these screens
@@ -106,33 +107,42 @@ def lead_fn(C,S_,LEN,phase_s,sgn=1,bob=0.25,laps=1):
         p=p.copy(); p[2]+=bob*math.sin(wb*(t+T0)+phase_s)
         return p,d
     return lead
-# (name, behind m, height offset m, direction, [(fish, phase s), ...], spread)
+def lead_line(A,B,phase_s,sgn=1,bob=0.1,laps=1):
+    # straight lane A->B (or B->A): constant speed, re-enters at the start once past the end (both ends off-screen)
+    A=np.array(A,float); B=np.array(B,float); L=np.linalg.norm(B-A); u=(B-A)/L*sgn; V=laps*L/LOOP_S
+    wb=2*math.pi*max(1,round(0.4*LOOP_S/(2*math.pi)))/LOOP_S
+    def lead(t):
+        x=(V*(t+T0+phase_s))%L; p=(A+u*x) if sgn>0 else (B+u*x)
+        p=p.copy(); p[2]+=bob*math.sin(wb*(t+T0)+phase_s); return p,u*V
+    return lead
+# Simple, readable motion: each depth band is its own lane. Schools in a lane swim one way at constant speed,
+# neighbouring lanes may swim the other way, and lanes never overlap in depth (nor share heights), so schools
+# never cross through each other. Fish hold their place in the school (formation.py): no turns, no darts.
+# (name, behind m, height offset m, direction, [(fish, phase s), ...], (along, depth, height) half-size m)
 LAYERS=[
- ('cerca',  2.2,  -0.2,  1, [(12, 0.9),(10, 31.6),(10, 61.8)],                0.7),
- ('medio',  3.5,   0.0,  1, [(55, 7.7),(45, 33.3),(50, 54.2),(40, 76.9)],     1.3),
- ('lejos',  7.5,   0.7,  1, [(70, 17.9),(60, 42.9),(60, 63.6),(55, 84.6)],    1.6),   # same direction as the rest (counter-swimmers read as collisions)
- ('fondo', 15.0,  -0.4,  1, [(140, 2.2),(120, 30.0),(120, 59.4)],             2.4),   # big schools fading into the haze
- ('pared', 26.0,   0.6,  1, [(220, 25.1),(200, 66.1)],                        3.2),   # far wall of fish: RAS density
+ ('cerca',  2.5,  -0.6,  1, [(12, 0.9),(10, 31.6),(10, 61.8)],                (2.4, 0.35, 0.35)),
+ ('medio',  4.8,   0.5, -1, [(55, 7.7),(45, 33.3),(50, 54.2),(40, 76.9)],     (5.0, 0.6, 0.6)),
+ ('lejos',  7.6,  -0.2,  1, [(70, 17.9),(60, 42.9),(60, 63.6),(55, 84.6)],    (6.0, 0.8, 0.8)),
+ ('fondo', 12.5,   0.6, -1, [(140, 2.2),(120, 30.0),(120, 59.4)],             (9.0, 1.5, 1.0)),
+ ('pared', 22.0,   1.0,  1, [(220, 25.1),(200, 66.1)],                        (14.0, 1.8, 1.0)),
 ]
 random.seed(11); rng=np.random.default_rng(3)
 plan=[]
 for name,beh,dz,sgn,schools,spr in LAYERS:
     C,S_,LEN=hg.circuit(behind=beh,dz=dz)
-    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.25,beh>=float(os.environ.get('RAS_STATIC_FROM','999')),1,beh>=LOD_FROM))
-for k in range(12):                                   # loners: single salmon at random depths and heights
-    C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.8,9.0)),dz=float(rng.uniform(-1.0,1.2)))
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1,1,1.0,0.6,False,1,False))   # everyone swims with the current: no head-on crossings
-for k in range(6):                                  # close passes: big salmon gliding ~1.1-1.5 m behind the glass
-    C,S_,LEN=hg.circuit(behind=float(rng.uniform(1.1,1.5)),dz=float(rng.uniform(-0.4,0.5)),clear=1.05,pad=0.5)
-    plan.append((C,S_,LEN,float(rng.uniform(0,90)),1,1,1.0,0.3,False,1,False))
-# rotunda: fish milling behind the two round-room totems on their own short loops (laps chosen for ~0.6 m/s)
-for beh,dz,ns,ph,sgn,spr in ((2.6,0.0,14,0.0,1,0.6),(4.5,0.4,18,40.0,1,0.8),(3.4,-0.3,1,20.0,1,1.0)):
-    C,S_,LEN=hg.local_loop(['totem_R1','totem_R2'],beh,dz)
-    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),False))
-# kitchen screen: not part of the hall circuit (standalone loop, same look) - schools crossing it back and forth
-for beh,dz,ns,ph,sgn,spr in ((2.4,-0.1,16,5.0,1,0.7),(4.2,0.3,30,35.0,1,1.0),(7.0,0.5,45,62.0,1,1.4),(3.0,-0.4,1,15.0,1,1.0)):
-    C,S_,LEN=hg.local_loop(['cocina'],beh,dz,pad=3.0)
-    plan.append((C,S_,LEN,ph,sgn,ns,spr,0.2,False,max(1,round(0.6*LOOP_S/LEN)),beh>=LOD_FROM))
+    for ns,ph in schools: plan.append((C,S_,LEN,ph,sgn,ns,spr,0.15,beh>=float(os.environ.get('RAS_STATIC_FROM','999')),1,beh>=LOD_FROM))
+for k in range(4):                                  # close passes: a few big salmon gliding ~1.4 m behind the glass
+    C,S_,LEN=hg.circuit(behind=1.4,dz=0.2,clear=1.05,pad=0.5)
+    plan.append((C,S_,LEN,8.0+22.5*k,1,1,(0.0,0.0,0.0),0.1,False,1,False))
+# standalone screens (rotunda totems, kitchen): straight lanes parallel to the glass at separate depths and
+# heights, alternating direction. Each lane is long enough that both ends are off-screen: fish cross at constant
+# speed and re-enter at the far end out of sight (hidden on that frame) - nobody ever turns around on screen.
+for names,lanes in ((['totem_R1','totem_R2'],((2.6,-0.3,1,(14,16),(1.8,0.35,0.35)),(6.5,0.4,-1,(22,20),(3.0,0.5,0.4)))),
+                    (['cocina'],((2.4,-0.6,1,(16,20),(2.0,0.35,0.35)),(5.5,0.5,-1,(26,24),(3.0,0.5,0.45)),(9.0,-0.1,1,(30,35),(4.0,0.7,0.5))))):
+    for beh,dz,sgn,counts,spr in lanes:
+        A,B=hg.straight_lane(names,beh,dz,margin=1.5+spr[0]*0.0)
+        LEN=float(np.linalg.norm(B-A)); laps=max(1,round(0.7*LOOP_S/LEN))
+        for j,ns in enumerate(counts): plan.append((('line',A,B),None,LEN,LOOP_S*(0.25+0.5*j)/laps,sgn,ns,spr,0.1,False,laps,beh>=LOD_FROM))
 if os.environ.get('FEWFISH'): plan=plan[:2]          # quick look-dev of the environment
 def keep_behind_glass(P,margin=0.9,iters=16):
     # Each screen is a window whose near clip plane is the glass: a fish inside a screen's visible pyramid
@@ -181,17 +191,12 @@ for i in range(NT-1): fish.append(dup_fish())
 SIM=[]
 for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
     print('PREP simulando cardumen',q+1,'de',len(plan),'(',ns,'peces )',flush=True)
-    P,Vt=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,ns,seed=5+q,spread=spr,loop=LOOP_S,darts=(2.5 if ns==1 else 1.2) if not far else 0.0)
+    ld=lead_line(C[1],C[2],ph,sgn,bob,laps) if isinstance(C,tuple) else lead_fn(C,S_,LEN,ph,sgn,bob,laps)
+    P,Vt=formation(ld,F,ns,laps*LEN/LOOP_S,seed=5+q,half=spr,loop=LOOP_S)
     SIM.append((keep_behind_glass(P),Vt))
-# schools are simulated separately: make fish of different schools swerve round each other where their paths cross
-from avoid import avoid_schools
-print('PREP evitando choques entre cardumenes...',flush=True)
-_own=np.concatenate([[q]*SIM[q][0].shape[1] for q in range(len(SIM))]).astype(int)
-_P,_V=avoid_schools(np.concatenate([x[0] for x in SIM],1),np.concatenate([x[1] for x in SIM],1),_own)
-_o=0; SIM2=[]
-for q,(P0,V0) in enumerate(SIM):
-    n_=P0.shape[1]; SIM2.append((_P[:,_o:_o+n_],_V[:,_o:_o+n_])); _o+=n_
-del SIM,_P,_V
+# lanes never overlap (checked: no school passes through another on any screen), so no avoidance pass is
+# needed: no extra swerves, every fish just follows its lane
+SIM2=SIM
 k=0
 for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
     P,Vt=SIM2[q]
@@ -202,7 +207,7 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
         if j in drop:
             for o in [r]+list(r.children_recursive): o.hide_render=True; o.hide_viewport=True
             continue
-        r.scale=(0.7/L*random.uniform(0.78,1.22)*(1.15 if ns==1 else 1.0)*(1.45 if random.random()<0.04 else 1.0),)*3   # a few big broodstock
+        r.scale=(0.7/L*random.uniform(0.96,1.04),)*3   # same-size fish (same year class in a RAS tank)
         if lod:                                       # distant fish: simplified body, no eyes (sub-pixel there)
             for o in r.children_recursive:
                 if o.type=='MESH':
@@ -227,6 +232,16 @@ for q,(C,S_,LEN,ph,sgn,ns,spr,bob,far,laps,lod) in enumerate(plan):
                 fc=ac.fcurves.new(path,index=ax); fc.keyframe_points.add(F)
                 fc.keyframe_points.foreach_set('co',np.c_[fr_,arr[:,ax]].ravel())
                 fc.update()
+        jumps=np.where(np.linalg.norm(np.roll(loc,-1,0)-loc,axis=1)>2.0)[0]
+        if len(jumps):
+            # straight lane wrap (off-screen): hide the fish on the two frames around the jump so motion blur
+            # never streaks it across the scene
+            for o in [r]+[c for c in r.children_recursive if c.type=='MESH']:
+                o.hide_render=False; o.keyframe_insert('hide_render',frame=1)
+                for jj in jumps:
+                    for fh,val in ((jj,True),(jj+1,True),(jj+2,False)):
+                        fh_=(fh%F)+1; o.hide_render=val; o.keyframe_insert('hide_render',frame=fh_)
+                o.hide_render=False
         if far:
             # 15-26 m away the tail beat is invisible: drop the skinning so all far fish share one static mesh
             # (Cycles instances them instead of rebuilding ~700 deformed meshes every frame)

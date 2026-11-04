@@ -66,7 +66,7 @@ echo.
 choice /c 1234 /n /m "Elegi 1, 2, 3 o 4: "
 set "M=%errorlevel%"
 set "RAS_ENGINE=" & set "ONLY=" & set "SCALE=1.0" & set "RAS_SAMPLES=64" & set "RAS_JPG=" & set "EXT=png" & set "START=1" & set "RAS_FRAMES=1-2160"
-if "%M%"=="3" (set "OUT=render_final_loop90" & goto :go)
+if "%M%"=="3" (set "OUT=render_v2_loop90" & goto :go)
 if "%M%"=="4" goto :resume
 if "%M%"=="2" set "RAS_FRAMES=1-240"
 echo.
@@ -94,14 +94,14 @@ if "%P%"=="7"  set "ONLY=concava"
 if "%P%"=="8"  set "ONLY=cocina"
 if "%P%"=="9"  set "ONLY=totem_R1"
 if "%P%"=="10" set "ONLY=totem_R2"
-set "OUT=render_final_%ONLY%"
-if "%M%"=="2" set "OUT=render_final_%ONLY%_10s"
+set "OUT=render_v2_%ONLY%"
+if "%M%"=="2" set "OUT=render_v2_%ONLY%_10s"
 goto :go
 :resume
 echo.
 echo  Renders encontrados en esta carpeta:
 set "K=0"
-for /d %%d in (render_final_*) do (
+for /d %%d in (render_v2_*) do (
   set /a K+=1
   set "R!K!=%%~nxd"
   set "C=0"
@@ -113,8 +113,8 @@ echo.
 set /p "SEL=Numero del render a retomar: "
 set "OUT=!R%SEL%!"
 if "%OUT%"=="" (echo  Numero invalido. & pause & goto :eof)
-if /i "%OUT%"=="render_final_loop90" goto :go
-set "ONLY=%OUT:render_final_=%"
+if /i "%OUT%"=="render_v2_loop90" goto :go
+set "ONLY=%OUT:render_v2_=%"
 if /i "%ONLY:~-4%"=="_10s" (set "ONLY=%ONLY:~0,-4%" & set "RAS_FRAMES=1-240")
 echo  Retomando "%OUT%" ^(pantalla %ONLY%^): primero prepara la escena y despues sigue desde el ultimo cuadro.
 :go

@@ -1,7 +1,7 @@
 # Simulates every school exactly as hall.py does (same plan, seeds, glass avoidance, drops) and caches positions.
 import numpy as np, math, random, os, sys
 import hallgeo as hg
-from school import simulate
+from formation import formation
 src=open('hall.py').read()
 ns={'np':np,'hg':hg,'math':math,'random':random,'os':os,'LOOP_S':90.0,'T0':0.0,'LOD_FROM':7.0}
 exec(src[src.index('def lead_fn'):src.index("if os.environ.get('FEWFISH')")],ns)
@@ -9,7 +9,8 @@ exec(src[src.index('def keep_behind_glass'):src.index('print(\'PREP armando')],n
 plan=ns['plan']; lead_fn=ns['lead_fn']; kbg=ns['keep_behind_glass']; sliced=ns['sliced_fish']
 F=2160; Ps=[]; Vs=[]; owner=[]
 for q,(C,S_,LEN,ph,sgn,n_,spr,bob,far,laps,lod) in enumerate(plan):
-    P,V=simulate(lead_fn(C,S_,LEN,ph,sgn,bob,laps),F,n_,seed=5+q,spread=spr,loop=90.0,darts=(2.5 if n_==1 else 1.2) if not far else 0.0)
+    ld=ns['lead_line'](C[1],C[2],ph,sgn,bob,laps) if isinstance(C,tuple) else lead_fn(C,S_,LEN,ph,sgn,bob,laps)
+    P,V=formation(ld,F,n_,laps*LEN/90.0,seed=5+q,half=spr,loop=90.0)
     P=kbg(P); Ps.append(P); Vs.append(V); owner+= [q]*n_; print('plan',q,n_,'fish',flush=True)
 P=np.concatenate(Ps,1); V=np.concatenate(Vs,1); owner=np.array(owner)
 if len(sys.argv)>2:

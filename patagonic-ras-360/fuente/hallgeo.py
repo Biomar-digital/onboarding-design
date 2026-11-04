@@ -55,6 +55,21 @@ def clear_views(C,clear=2.4,pad=2.6,iters=80):
         for _ in range(3): C=0.5*C+0.25*(np.roll(C,1,0)+np.roll(C,-1,0))
         if not moved and it>8: break
     return C
+
+def resample(C,step=0.2):
+    # closed curve -> points every `step` metres
+    Q=np.vstack([C,C[:1]]); seg=np.linalg.norm(np.diff(Q,axis=0),axis=1); s=np.concatenate([[0],np.cumsum(seg)]); L=s[-1]
+    t=np.arange(0,L,step); return np.stack([np.interp(t,s,Q[:,k]) for k in range(3)],1)
+def smooth_loop(C,sigma=2.5,step=0.2):
+    # gaussian smoothing along the arc (sigma in metres): no kinks, so fish offset sideways in a school
+    # (up to ~2.5 m) never fold back or flip heading on a corner
+    C=resample(C,step); n=len(C); k=int(3*sigma/step); g=np.exp(-0.5*(np.arange(-k,k+1)*step/sigma)**2); g/=g.sum()
+    out=np.zeros_like(C)
+    for j,w in zip(range(-k,k+1),g): out+=w*np.roll(C,j,0)
+    return out
+def finish(C,clear,pad,sigma):
+    for _ in range(3): C=smooth_loop(clear_views(C,clear,pad),sigma)
+    return C
 def circuit(n=2000, behind=BEHIND, dz=0.0, clear=2.4, pad=2.6):
     by={s['name']:s for s in SC}
     pts=[]; cs=[by[k]['c'] for k in ORDER]
@@ -77,23 +92,49 @@ def circuit(n=2000, behind=BEHIND, dz=0.0, clear=2.4, pad=2.6):
         p0,p1,p2,p3=P[i-1],P[i],P[(i+1)%N],P[(i+2)%N]
         for u in np.linspace(0,1,n//N,endpoint=False):
             out.append(0.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u**3))
-    C=clear_views(np.array(out),clear,pad); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1); L=seg.sum()
+    C=finish(np.array(out),clear,pad,sigma=min(3.0,1.2+0.12*behind)); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1); L=seg.sum()
     s=np.concatenate([[0],np.cumsum(seg)])
     return C,s,L
 
-def local_loop(names,behind,dz=0.0,n=600,pad=1.0):
-    # small closed loop through the water behind a group of screens (each crossed parallel to its glass)
-    by={s['name']:s for s in SC}; pts=[]
-    for k in names:
-        s=by[k]; h=max(s['W']/2,1.0)+pad; z=min(max(s['c'][2],1.2),3.6)+dz
-        for u in (-h,h): p=s['c']-s['n']*behind+s['t']*u; p=p.copy(); p[2]=z; pts.append(p)
-        if len(names)==1:                                  # a lone screen: oval loop, the return leg runs further back
-            for u in (h,-h): p=s['c']-s['n']*(behind+3.5)+s['t']*u*1.15; p=p.copy(); p[2]=z+0.3; pts.append(p)
-    P=np.array(pts); m=P[:,:2].mean(0); P=P[np.argsort(np.arctan2(P[:,1]-m[1],P[:,0]-m[0]))]
-    N=len(P); out=[]
-    for i in range(N):
-        p0,p1,p2,p3=P[i-1],P[i],P[(i+1)%N],P[(i+2)%N]
-        for u in np.linspace(0,1,n//N,endpoint=False):
-            out.append(0.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u**3))
-    C=clear_views(np.array(out)); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1)
+def local_loop(names,behind,dz=0.0,n=600,pad=8.0,gap=5.0):
+    # Standalone screens: a "stadium" loop behind the screen(s): a straight leg `behind` m back and a return leg
+    # `gap` m further back, joined by half-circles. The legs run parallel to the glass and reach `pad` m past the
+    # screens on each side, so the fish only ever turn far outside what the screen shows: on screen there are
+    # just schools crossing one way (front leg) and the other way (back leg), at two different depths.
+    by={s['name']:s for s in SC}; ss=[by[k] for k in names]
+    nrm=np.mean([s['n'] for s in ss],0); nrm[2]=0; nrm/=np.linalg.norm(nrm); tan=np.array([-nrm[1],nrm[0],0.0])
+    ctr=np.mean([s['c'] for s in ss],0); z=min(max(np.mean([s['c'][2] for s in ss]),1.2),3.6)+dz
+    ext=[(s['c']-ctr)@tan+sgn*s['W']/2 for s in ss for sgn in (-1,1)]
+    a0,a1=min(ext)-pad,max(ext)+pad; r=gap/2; mid=behind+r
+    L1=a1-a0; Lt=2*L1+2*math.pi*r; out=[]
+    for u in np.linspace(0,Lt,n,endpoint=False):
+        if u<L1: x,yb=a0+u,behind                                            # front leg
+        elif u<L1+math.pi*r: th=(u-L1)/r; x,yb=a1+r*math.sin(th),mid-r*math.cos(th)
+        elif u<2*L1+math.pi*r: x,yb=a1-(u-L1-math.pi*r),behind+gap         # back leg
+        else: th=(u-2*L1-math.pi*r)/r; x,yb=a0-r*math.sin(th),mid+r*math.cos(th)
+        p=ctr+tan*x-nrm*yb; p=p.copy(); p[2]=z; out.append(p)
+    C=smooth_loop(np.array(out),0.5); seg=np.linalg.norm(np.diff(np.vstack([C,C[:1]]),axis=0),axis=1)   # exact stadium: legs already clear of the glass
     return C,np.concatenate([[0],np.cumsum(seg)]),seg.sum()
+
+def visible_from_any(p,margin=1.0,maxd=60.0):
+    # is point p inside any screen's viewing pyramid (widened by `margin` m)?
+    for s in SC:
+        c,n,t=s['c'],s['n'],s['t']; e=s['eye']; D=s['D']; rel=p-e; along=rel@(-n)
+        if along<D or along-D>maxd: continue
+        ox=rel@t-((c-e)@t)*along/D; oz=rel[2]-(c[2]-e[2])*along/D
+        if abs(ox)<(s['W']/2)*along/D+margin and abs(oz)<(s['H']/2)*along/D+margin: return True
+    return False
+
+def straight_lane(names,behind,dz=0.0,margin=1.5):
+    # Standalone screens: a straight lane parallel to the glass, long enough that both ends are outside every
+    # screen's view. Fish cross it at constant speed and re-enter at the far end (out of sight): no turns at all.
+    by={s['name']:s for s in SC}; ss=[by[k] for k in names]
+    nrm=np.mean([s['n'] for s in ss],0); nrm[2]=0; nrm/=np.linalg.norm(nrm); tan=np.array([-nrm[1],nrm[0],0.0])
+    ctr=np.mean([s['c'] for s in ss],0); z=min(max(np.mean([s['c'][2] for s in ss]),1.2),3.6)+dz
+    base=ctr-nrm*behind; base=np.array([base[0],base[1],z])
+    def out(a): return not any(visible_from_any(base+tan*a+dv,margin) for dv in (np.zeros(3),-nrm*1.0,nrm*1.0,np.array([0,0,1.0]),np.array([0,0,-1.0])))
+    A0=4.0
+    while not out(-A0): A0+=0.5
+    A1=4.0
+    while not out(A1): A1+=0.5
+    return base-tan*A0, base+tan*A1
