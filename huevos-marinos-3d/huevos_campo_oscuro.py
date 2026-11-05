@@ -36,9 +36,10 @@ class G:                                                      # ayuda para armar
     def lit(s):                                               # cuanto mira la normal hacia LDIR (0..1)
         g = s.N.new('ShaderNodeNewGeometry'); v = s.N.new('ShaderNodeVectorMath'); v.operation = 'DOT_PRODUCT'
         s.Lk.new(g.outputs['Normal'], v.inputs[0]); v.inputs[1].default_value = LDIR; return s.m('MAXIMUM', v.outputs['Value'], 0.0)
-    def glow(s, strength, col=(1, 1, 1), trans=(1, 1, 1)):
+    def glow(s, strength, col=(1, 1, 1), trans=(1, 1, 1), ior=None):
         e = s.N.new('ShaderNodeEmission'); e.inputs['Color'].default_value = (*col, 1); s.Lk.new(strength, e.inputs['Strength'])
-        t = s.N.new('ShaderNodeBsdfTransparent'); t.inputs['Color'].default_value = (*trans, 1)
+        if ior: t = s.N.new('ShaderNodeBsdfRefraction'); t.inputs['IOR'].default_value = ior; t.inputs['Roughness'].default_value = 0.0; t.inputs['Color'].default_value = (*trans, 1)
+        else: t = s.N.new('ShaderNodeBsdfTransparent'); t.inputs['Color'].default_value = (*trans, 1)
         a = s.N.new('ShaderNodeAddShader'); s.Lk.new(t.outputs[0], a.inputs[0]); s.Lk.new(e.outputs[0], a.inputs[1])
         s.Lk.new(a.outputs[0], s.N['Material Output'].inputs['Surface'])
 K = lambda k, d: float(os.environ.get(k, d))
@@ -46,7 +47,7 @@ K = lambda k, d: float(os.environ.get(k, d))
 chor, N, Lk = mat('chorion'); g = G(N, Lk); f = g.facing()
 line = g.rng(f, 0.93, 0.995)
 sheen = g.m('MULTIPLY', g.rng(f, 0.45, 0.97, 0.0, 1.0), g.m('ADD', 0.25, g.m('MULTIPLY', g.lit(), 1.2)))
-g.glow(g.m('ADD', g.m('MULTIPLY', line, K('LINE', '1.5')), g.m('MULTIPLY', sheen, K('SHEEN', '0.16'))), (0.97, 0.95, 0.9))
+g.glow(g.m('ADD', g.m('MULTIPLY', line, K('LINE', '1.5')), g.m('MULTIPLY', sheen, K('SHEEN', '0.16'))), (0.97, 0.95, 0.9), (1, 1, 1), K('CIOR', '1.04'))
 # ---- vitelo: segunda linea interior, mas tenue, y un velo lechoso apenas visible
 yolk, N, Lk = mat('yolk'); g = G(N, Lk); f = g.facing()
 g.glow(g.m('ADD', g.m('MULTIPLY', g.rng(f, 0.9, 0.99), K('YLINE', '0.45')), g.m('MULTIPLY', g.rng(f, 0.3, 0.9), 0.03)), (0.9, 0.9, 0.88), (0.97, 0.97, 0.97))
@@ -58,7 +59,8 @@ g.glow(g.m('ADD', g.m('ADD', g.rng(f, 0.4, 0.95, 0.18, K('PEARL', '1.25')), g.m(
 emb, N, Lk = mat('embryo'); g = G(N, Lk); f = g.facing()
 tc = N.new('ShaderNodeTexCoord'); nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 9; nz.inputs['Detail'].default_value = 5; Lk.new(tc.outputs['Object'], nz.inputs['Vector'])
 fine = N.new('ShaderNodeTexNoise'); fine.inputs['Scale'].default_value = 90; fine.inputs['Detail'].default_value = 2; Lk.new(tc.outputs['Object'], fine.inputs['Vector'])
-fill = g.m('ADD', g.m('MULTIPLY', g.rng(nz.outputs['Fac'], 0.4, 0.7), 0.16), g.m('MULTIPLY', fine.outputs['Fac'], 0.06))
+vo = N.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value = 30; Lk.new(tc.outputs['Object'], vo.inputs['Vector'])
+fill = g.m('ADD', g.m('ADD', g.m('MULTIPLY', g.rng(nz.outputs['Fac'], 0.4, 0.7), 0.14), g.m('MULTIPLY', fine.outputs['Fac'], 0.05)), g.m('MULTIPLY', g.rng(vo.outputs['Distance'], 0.15, 0.45, 1.0, 0.0), 0.1))
 edge = g.m('MULTIPLY', g.rng(f, 0.55, 0.97), g.m('ADD', 0.45, g.m('MULTIPLY', g.lit(), 0.9)))
 g.glow(g.m('ADD', g.m('MULTIPLY', edge, K('EDGE', '1.05')), fill), (0.97, 0.93, 0.85), (0.85, 0.85, 0.85))
 # cabeza (vesicula): bulbo translucido granulado y con brillo de borde
@@ -80,7 +82,7 @@ for k, ((cx, cy, rp, z), (hd, tl)) in enumerate(zip(EGGS, EMB)):
     # embrion: tubo casi recto apoyado sobre el vitelo, con leve curva, de cabeza a cola
     h = P(*hd) - P(cx, cy); t = P(*tl) - P(cx, cy)
     for v in (h, t):
-        if v.length > 0.7 * R: v *= 0.7 * R / v.length
+        if v.length > 0.62 * R: v *= 0.62 * R / v.length
     ph1, ph2 = R_.uniform(0, 6.28), R_.uniform(0, 6.28); n = 40; side = mathutils.Vector((-(t - h).y, (t - h).x, 0)).normalized(); bend = R_.uniform(-0.12, 0.12) * R
     pts = []
     for i in range(n):
@@ -92,14 +94,20 @@ for k, ((cx, cy, rp, z), (hd, tl)) in enumerate(zip(EGGS, EMB)):
         u = i / (n - 1); sp.points[i].co = (p.x, p.y, p.z, 1); base = 0.75 + 0.25 * math.sin(math.pi * min(u * 1.2, 1)) if u < 0.85 else 0.75 - 1.6 * (u - 0.85)
         sp.points[i].radius = base * (1 + 0.14 * math.sin(u * 9.0 + ph1) + 0.08 * math.sin(u * 23.0 + ph2))   # ancho que cambia: cuerpo organico
     eo = bpy.data.objects.new('embryo', cu); sc.collection.objects.link(eo); cu.materials.append(emb); eo.scale = (1, 1, 1)
+    ax0 = (pts[0] - pts[4]).normalized(); hb = sphere('headb', 0.21 * R, pts[0] + ax0 * 0.05 * R, 48); hb.rotation_mode = 'QUATERNION'; hb.rotation_quaternion = ax0.to_track_quat('X', 'Z'); hb.scale = (1.15, 1.0, 0.75)
+    ax1 = (pts[-1] - pts[-5]).normalized(); tb = sphere('tailb', 0.12 * R, pts[-1] - ax1 * 0.02 * R, 32); tb.rotation_mode = 'QUATERNION'; tb.rotation_quaternion = ax1.to_track_quat('X', 'Z'); tb.scale = (1.3, 1.0, 0.7)
     bpy.ops.object.select_all(action='DESELECT'); eo.select_set(True); bpy.context.view_layer.objects.active = eo; bpy.ops.object.convert(target='MESH')
+    hb.select_set(True); tb.select_set(True); bpy.ops.object.join()
+    for i_, (sx_, sy_) in enumerate(((0.07, 0.0), (-0.07, 0.0))):               # copas opticas tenues dentro de la cabeza
+        sd_ = ax0.cross(mathutils.Vector((0, 0, 1))).normalized(); eye = sphere('yolk', 0.055 * R, pts[0] + ax0 * 0.08 * R + sd_ * sx_ * R + mathutils.Vector((0, 0, 0.04 * R)), 24); eye.data.materials.append(yolk)
+    cn = bpy.data.curves.new('noto', 'CURVE'); cn.dimensions = '3D'; cn.bevel_depth = 0.022 * R; cn.bevel_resolution = 3; spn = cn.splines.new('POLY'); spn.points.add(n - 9)
+    for i in range(n - 8):
+        q = pts[i + 4] + mathutils.Vector((0, 0, 0.05 * R)); spn.points[i].co = (q.x, q.y, q.z, 1)
+    on_ = bpy.data.objects.new('noto', cn); sc.collection.objects.link(on_); cn.materials.append(yolk)   # notocorda: linea interior
     rmh = eo.modifiers.new('r', 'REMESH'); rmh.mode = 'VOXEL'; rmh.voxel_size = 0.012 * R; rmh.use_smooth_shade = True
     tx = bpy.data.textures.new('bump%d' % k, 'CLOUDS'); tx.noise_scale = 0.12 * R; tx.noise_depth = 3
     dm = eo.modifiers.new('d', 'DISPLACE'); dm.texture = tx; dm.strength = 0.045 * R; dm.mid_level = 0.5; dm.texture_coords = 'GLOBAL'   # borde irregular
     eo.modifiers.new('s', 'SMOOTH').iterations = 3
-    hp = pts[0] + (pts[0] - pts[3]).normalized() * 0.03 * R
-    hb = sphere('head', 0.2 * R, hp, 48); hb.data.materials.append(head); hb.scale = (1.0, 1.0, 0.8)
-    tb = sphere('head', 0.14 * R, pts[-1], 32); tb.data.materials.append(head); tb.scale = (1.0, 1.0, 0.7)   # extremo de la cola (yema caudal)
     # racimos de perlitas: sobre el embrion y sueltos en el vitelo (racimos tipo uva, perlas de tamano parecido)
     def cluster(cc, nn, spread, rr=(0.018, 0.027), flat=0.35):
         for _ in range(nn):
