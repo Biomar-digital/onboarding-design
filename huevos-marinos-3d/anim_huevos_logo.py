@@ -78,13 +78,26 @@ rng = np.random.default_rng(7)
 W_, H_ = 30.0, 30.0 * 9 / 16                                   # campo visible en el plano de la placa
 LW, LH = 18.0, 18.0 * 584 / 2000                               # logo en el fondo, centrado
 start = [(-11.5, 4.6), (-8.9, 5.9), (11.0, 5.6), (12.4, 3.0), (-12.3, -4.4), (-9.4, -5.8), (10.2, -5.2), (12.6, -2.6)]   # 8 huevos alrededor del logo
-NFALL = int(os.environ.get('NFALL', '46'))
+# destino: todo el rectangulo de la imagen lleno (una capa en panal, con jitter, mas una segunda capa parcial)
+cells = []
+dx_ = 2 * R * 1.01; dy_ = dx_ * math.sqrt(3) / 2
+for r_ in range(-6, 7):
+    for c_ in range(-8, 9):
+        x = c_ * dx_ + (dx_ / 2 if r_ % 2 else 0); y = r_ * dy_
+        if abs(x) > W_ / 2 + R * 0.6 or abs(y) > H_ / 2 + R * 0.6: continue
+        if min(math.hypot(x - sx, y - sy) for sx, sy in start) < 2 * R: continue
+        cells.append((x, y, 0))
+for _ in range(int(os.environ.get('NTOP', '34'))):
+    cells.append((rng.uniform(-W_ / 2, W_ / 2), rng.uniform(-H_ / 2, H_ / 2), 1))
+NFALL = len(cells)
 N_ = len(start) + NFALL
 pos = np.zeros((N_, 3)); vel = np.zeros((N_, 3)); t0 = np.zeros(N_)
 pos[:len(start), :2] = start; pos[:len(start), 2] = R
-for i in range(len(start), N_):                                # caen sobre el logo, en olas escalonadas
-    pos[i, 0] = rng.uniform(-LW / 2 - 0.5, LW / 2 + 0.5); pos[i, 1] = rng.normal(0.0, LH * 0.45)
-    pos[i, 2] = rng.uniform(11, 19); t0[i] = 1.5 + (i - len(start)) / NFALL * 5.5 + rng.uniform(-0.3, 0.3)
+order = rng.permutation(NFALL)
+for k_, i in enumerate(range(len(start), N_)):                # caen sobre todo el cuadro, en olas escalonadas (la 2a capa al final)
+    x, y, lay = cells[order[k_]]
+    pos[i, 0] = x + rng.normal(0, 0.25); pos[i, 1] = y + rng.normal(0, 0.25)
+    pos[i, 2] = rng.uniform(11, 19); t0[i] = (5.0 + rng.uniform(0, 2.0)) if lay else (1.3 + rng.uniform(0, 5.2))
 active = np.zeros(N_, bool); active[:len(start)] = True
 quat = np.tile([1.0, 0, 0, 0], (N_, 1)); w_ = rng.normal(0, 0.9, (N_, 3)); w_[:len(start)] = 0
 def qmul(a, b):
