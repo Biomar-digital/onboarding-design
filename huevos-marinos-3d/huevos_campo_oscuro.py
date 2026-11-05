@@ -60,7 +60,7 @@ tc = N.new('ShaderNodeTexCoord'); nz = N.new('ShaderNodeTexNoise'); nz.inputs['S
 fine = N.new('ShaderNodeTexNoise'); fine.inputs['Scale'].default_value = 90; fine.inputs['Detail'].default_value = 2; Lk.new(tc.outputs['Object'], fine.inputs['Vector'])
 fill = g.m('ADD', g.m('MULTIPLY', g.rng(nz.outputs['Fac'], 0.4, 0.7), 0.16), g.m('MULTIPLY', fine.outputs['Fac'], 0.06))
 edge = g.m('MULTIPLY', g.rng(f, 0.55, 0.97), g.m('ADD', 0.45, g.m('MULTIPLY', g.lit(), 0.9)))
-g.glow(g.m('ADD', g.m('MULTIPLY', edge, K('EDGE', '0.75')), fill), (0.97, 0.93, 0.85), (0.85, 0.85, 0.85))
+g.glow(g.m('ADD', g.m('MULTIPLY', edge, K('EDGE', '1.05')), fill), (0.97, 0.93, 0.85), (0.85, 0.85, 0.85))
 # cabeza (vesicula): bulbo translucido granulado y con brillo de borde
 head, N, Lk = mat('head'); g = G(N, Lk); f = g.facing()
 tc = N.new('ShaderNodeTexCoord'); vo = N.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value = 26; Lk.new(tc.outputs['Object'], vo.inputs['Vector'])
@@ -81,7 +81,7 @@ for k, ((cx, cy, rp, z), (hd, tl)) in enumerate(zip(EGGS, EMB)):
     h = P(*hd) - P(cx, cy); t = P(*tl) - P(cx, cy)
     for v in (h, t):
         if v.length > 0.7 * R: v *= 0.7 * R / v.length
-    n = 40; side = mathutils.Vector((-(t - h).y, (t - h).x, 0)).normalized(); bend = R_.uniform(-0.12, 0.12) * R
+    ph1, ph2 = R_.uniform(0, 6.28), R_.uniform(0, 6.28); n = 40; side = mathutils.Vector((-(t - h).y, (t - h).x, 0)).normalized(); bend = R_.uniform(-0.12, 0.12) * R
     pts = []
     for i in range(n):
         u = i / (n - 1); q = h.lerp(t, u) + side * bend * math.sin(math.pi * u); d = q.length
@@ -89,23 +89,29 @@ for k, ((cx, cy, rp, z), (hd, tl)) in enumerate(zip(EGGS, EMB)):
     cu = bpy.data.curves.new('emb', 'CURVE'); cu.dimensions = '3D'; cu.bevel_depth = 0.12 * R; cu.bevel_resolution = 6; cu.use_fill_caps = True
     sp = cu.splines.new('POLY'); sp.points.add(n - 1)
     for i, p in enumerate(pts):
-        u = i / (n - 1); sp.points[i].co = (p.x, p.y, p.z, 1); sp.points[i].radius = 0.75 + 0.25 * math.sin(math.pi * min(u * 1.2, 1)) if u < 0.85 else 0.75 - 1.6 * (u - 0.85)
+        u = i / (n - 1); sp.points[i].co = (p.x, p.y, p.z, 1); base = 0.75 + 0.25 * math.sin(math.pi * min(u * 1.2, 1)) if u < 0.85 else 0.75 - 1.6 * (u - 0.85)
+        sp.points[i].radius = base * (1 + 0.14 * math.sin(u * 9.0 + ph1) + 0.08 * math.sin(u * 23.0 + ph2))   # ancho que cambia: cuerpo organico
     eo = bpy.data.objects.new('embryo', cu); sc.collection.objects.link(eo); cu.materials.append(emb); eo.scale = (1, 1, 1)
+    bpy.ops.object.select_all(action='DESELECT'); eo.select_set(True); bpy.context.view_layer.objects.active = eo; bpy.ops.object.convert(target='MESH')
+    rmh = eo.modifiers.new('r', 'REMESH'); rmh.mode = 'VOXEL'; rmh.voxel_size = 0.012 * R; rmh.use_smooth_shade = True
+    tx = bpy.data.textures.new('bump%d' % k, 'CLOUDS'); tx.noise_scale = 0.12 * R; tx.noise_depth = 3
+    dm = eo.modifiers.new('d', 'DISPLACE'); dm.texture = tx; dm.strength = 0.045 * R; dm.mid_level = 0.5; dm.texture_coords = 'GLOBAL'   # borde irregular
+    eo.modifiers.new('s', 'SMOOTH').iterations = 3
     hp = pts[0] + (pts[0] - pts[3]).normalized() * 0.03 * R
     hb = sphere('head', 0.2 * R, hp, 48); hb.data.materials.append(head); hb.scale = (1.0, 1.0, 0.8)
     tb = sphere('head', 0.14 * R, pts[-1], 32); tb.data.materials.append(head); tb.scale = (1.0, 1.0, 0.7)   # extremo de la cola (yema caudal)
     # racimos de perlitas: sobre el embrion y sueltos en el vitelo (racimos tipo uva, perlas de tamano parecido)
-    def cluster(cc, nn, spread, rr=(0.016, 0.024), flat=0.35):
+    def cluster(cc, nn, spread, rr=(0.018, 0.027), flat=0.35):
         for _ in range(nn):
             q = cc + mathutils.Vector((R_.gauss(0, spread), R_.gauss(0, spread), R_.gauss(0, spread * flat)))
             if (q - c).length > 0.88 * R: continue
             sphere('pearl', R * R_.uniform(*rr), q, 16).data.materials.append(pearl)
-    for _ in range(R_.randint(3, 5)):
-        p = R_.choice(pts[4:-4]); cluster(p + mathutils.Vector((0, 0, 0.1 * R)), R_.randint(15, 40), R_.uniform(0.04, 0.07) * R)
-    for _ in range(R_.randint(9, 14)):
+    for _ in range(R_.randint(2, 3)):
+        p = R_.choice(pts[4:-4]); nn = R_.randint(15, 35); cluster(p + mathutils.Vector((0, 0, 0.1 * R)), nn, 0.016 * R * math.sqrt(nn))
+    for _ in range(R_.randint(4, 7)):
         a = R_.uniform(0, 6.28); r_ = R * 0.75 * math.sqrt(R_.random())
         cc = c + mathutils.Vector((r_ * math.cos(a), r_ * math.sin(a), 0)); cc.z = c.z + math.sqrt(max((0.85 * R) ** 2 - r_ * r_, 0)) * R_.uniform(-0.6, 0.6)
-        cluster(cc, R_.randint(10, 45), R_.uniform(0.03, 0.08) * R)
+        nn = R_.randint(15, 45); cluster(cc, nn, 0.015 * R * math.sqrt(nn))
     for _ in range(90):                                       # motas finas
         a = R_.uniform(0, 6.28); r_ = R * 0.86 * math.sqrt(R_.random())
         q = c + mathutils.Vector((r_ * math.cos(a), r_ * math.sin(a), R_.uniform(-0.5, 0.5) * R))
