@@ -13,8 +13,9 @@ LOGO = os.environ.get('LOGO', os.path.join(HERE, 'referencia', 'logo_larviva_bro
 src = open(os.path.join(HERE, 'huevos_campo_oscuro.py')).read()
 pre = src[:src.index('# ---- disposicion trazada')]
 pre = pre.replace("args = sys.argv[sys.argv.index('--') + 1:]; OUT = args[0]", "OUT = ''").replace("SPP = int(args[1]) if len(args) > 1 else 48; RW = int(args[2]) if len(args) > 2 else 1000", "")
+os.environ.setdefault('CIOR', '1.015')                         # menos lente: los huevos ya no 'agrandan' el logo como bolas blancas
 exec(pre)
-FPS, NF = 24, 288                                             # 12 s
+FPS, NF = 24, int(os.environ.get('NF', '360'))                # 15 s
 sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
 R = 1.28                                                       # radio del huevo (mismo que en la foto)
 # ---------------------------------------------------------------- variantes de huevo (colecciones instanciables)
@@ -41,8 +42,6 @@ def build_variant(k, seed):
     bpy.ops.object.select_all(action='DESELECT'); eo.select_set(True); bpy.context.view_layer.objects.active = eo; bpy.ops.object.convert(target='MESH')
     hb.select_set(True); tb.select_set(True); bpy.ops.object.join()
     rmh = eo.modifiers.new('r', 'REMESH'); rmh.mode = 'VOXEL'; rmh.voxel_size = 0.014 * R; rmh.use_smooth_shade = True
-    tx = bpy.data.textures.new('bump%d' % k, 'CLOUDS'); tx.noise_scale = 0.12 * R; tx.noise_depth = 3
-    dm = eo.modifiers.new('d', 'DISPLACE'); dm.texture = tx; dm.strength = 0.045 * R; dm.texture_coords = 'LOCAL'
     eo.modifiers.new('s', 'SMOOTH').iterations = 3
     bpy.ops.object.select_all(action='DESELECT'); eo.select_set(True); bpy.context.view_layer.objects.active = eo
     for m_ in list(eo.modifiers): bpy.ops.object.modifier_apply(modifier=m_.name)
@@ -71,84 +70,88 @@ def build_variant(k, seed):
         for cl in list(o.users_collection): cl.objects.unlink(o)
         col.objects.link(o)
     return col
-NV = int(os.environ.get('NV', '8'))
+NV = int(os.environ.get('NV', '16'))
 VARS = [build_variant(k, 100 + k) for k in range(NV)]
-# ---------------------------------------------------------------- simulacion de esferas en agua (numpy)
+# ---------------------------------------------------------------- simulacion (numpy): caen desde arriba del cuadro
+# Vista de la placa: la gravedad apunta hacia abajo de la pantalla (-y). Los huevos viven en una capa (z ~ R), entran
+# por el borde superior (nunca aparecen de golpe), caen frenados por el agua, chocan suave, ruedan sobre los de abajo
+# (giro en el plano: el embrion se sigue viendo de frente) y se apilan desde abajo hasta llenar todo el rectangulo.
 rng = np.random.default_rng(7)
 W_, H_ = 30.0, 30.0 * 9 / 16                                   # campo visible en el plano de la placa
 LW, LH = 18.0, 18.0 * 584 / 2000                               # logo en el fondo, centrado
-start = [(-11.5, 4.6), (-8.9, 5.9), (11.0, 5.6), (12.4, 3.0), (-12.3, -4.4), (-9.4, -5.8), (10.2, -5.2), (12.6, -2.6)]   # 8 huevos alrededor del logo
-# destino: todo el rectangulo de la imagen lleno (una capa en panal, con jitter, mas una segunda capa parcial)
-cells = []
-dx_ = 2 * R * 1.01; dy_ = dx_ * math.sqrt(3) / 2
-for r_ in range(-6, 7):
-    for c_ in range(-8, 9):
-        x = c_ * dx_ + (dx_ / 2 if r_ % 2 else 0); y = r_ * dy_
-        if abs(x) > W_ / 2 + R * 0.6 or abs(y) > H_ / 2 + R * 0.6: continue
-        if min(math.hypot(x - sx, y - sy) for sx, sy in start) < 2 * R: continue
-        cells.append((x, y, 0))
-for _ in range(int(os.environ.get('NTOP', '34'))):
-    cells.append((rng.uniform(-W_ / 2, W_ / 2), rng.uniform(-H_ / 2, H_ / 2), 1))
-NFALL = len(cells)
-N_ = len(start) + NFALL
+PHOTO = [(205, 492), (468, 355), (895, 212), (675, 508), (932, 518), (545, 830), (858, 800), (850, 1108)]   # los 8 de la foto (px)
+start = [((x - 1000) / 100.0 - 1.5, -(y - 750) / 100.0) for x, y in PHOTO]
+NS = len(start); NFALL = int(os.environ.get('NFALL', '96')); N_ = NS + NFALL
+XW = W_ / 2 + 0.45 * R - R; YF = -H_ / 2 - 0.45 * R + R           # paredes y piso apenas fuera de cuadro: se llena de borde a borde
 pos = np.zeros((N_, 3)); vel = np.zeros((N_, 3)); t0 = np.zeros(N_)
-pos[:len(start), :2] = start; pos[:len(start), 2] = R
-order = rng.permutation(NFALL)
-for k_, i in enumerate(range(len(start), N_)):                # caen sobre todo el cuadro, en olas escalonadas (la 2a capa al final)
-    x, y, lay = cells[order[k_]]
-    pos[i, 0] = x + rng.normal(0, 0.25); pos[i, 1] = y + rng.normal(0, 0.25)
-    pos[i, 2] = rng.uniform(11, 19); t0[i] = (5.0 + rng.uniform(0, 2.0)) if lay else (1.3 + rng.uniform(0, 5.2))
-active = np.zeros(N_, bool); active[:len(start)] = True
-quat = np.tile([1.0, 0, 0, 0], (N_, 1)); w_ = rng.normal(0, 0.9, (N_, 3)); w_[:len(start)] = 0
+pos[:NS, :2] = start; pos[:, 2] = R + rng.uniform(-0.08, 0.08, N_) * R
+for k_, i in enumerate(range(NS, N_)):                         # fila de espera arriba, fuera de cuadro; se sueltan escalonados
+    pos[i, 0] = rng.uniform(-XW, XW); pos[i, 1] = H_ / 2 + R * 1.2 + rng.uniform(0, 1.5)
+    t0[i] = 0.8 + 7.4 * (k_ / NFALL) ** 0.9 + rng.uniform(-0.15, 0.15)
+zc = pos[:, 2].copy()
+state = np.zeros(N_, int); state[:NS] = 1                      # 0 esperando, 1 pegado a la placa (los de la foto), 2 libre
+quat = np.zeros((N_, 4)); w_ = np.zeros((N_, 3))
 def qmul(a, b):
     w1, x1, y1, z1 = a; w2, x2, y2, z2 = b
     return np.array([w1*w2 - x1*x2 - y1*y2 - z1*z2, w1*x2 + x1*w2 + y1*z2 - z1*y2, w1*y2 - x1*z2 + y1*w2 + z1*x2, w1*z2 + x1*y2 - y1*x2 + z1*w2])
-for i in range(N_):                                            # orientacion inicial aleatoria (embrion en cualquier angulo)
-    ax = rng.normal(size=3); ax /= np.linalg.norm(ax); an = rng.uniform(0, math.pi) if i >= len(start) else rng.uniform(0, 6.28)
-    if i < len(start): ax = np.array([0, 0, 1.0])
-    quat[i] = [math.cos(an / 2), *(math.sin(an / 2) * ax)]
-G_, DRAG, SUB = -9.0, 1.7, 12                                  # terminal ~5 u/s (hundimiento en agua)
+def qax(ax, an): ax = np.asarray(ax, float); ax = ax / np.linalg.norm(ax); return np.array([math.cos(an / 2), *(math.sin(an / 2) * ax)])
+for i in range(N_):                                            # embrion de frente a la camara, girado en el plano, leve inclinacion
+    q = qax([0, 0, 1], rng.uniform(0, 6.28))
+    if i >= NS: q = qmul(qax([rng.normal(), rng.normal(), 0], rng.uniform(0, 0.35)), q); w_[i] = [rng.normal(0, 0.12), rng.normal(0, 0.12), rng.normal(0, 0.7)]
+    quat[i] = q
+G_, DRAG, SUB, IT = 9.0, 1.7, 10, 3                            # caida frenada por el agua (~5 u/s)
 dt = 1.0 / FPS / SUB
-P_ = np.zeros((NF, N_, 3)); Q_ = np.zeros((NF, N_, 4)); VIS = np.zeros((NF, N_), bool)
+P_ = np.zeros((NF, N_, 3)); Q_ = np.zeros((NF, N_, 4))
 for f in range(NF):
-    for s in range(SUB):
-        t = (f + s / SUB) / FPS; active |= t >= t0
-        a = np.where(active[:, None], np.array([0, 0, G_]) - DRAG * vel, 0.0)
-        vel += a * dt; pos += np.where(active[:, None], vel * dt, 0.0)
-        # choques entre huevos: separar y amortiguar la velocidad relativa (rebote casi nulo, con roce)
-        d = pos[:, None, :] - pos[None, :, :]; dist = np.linalg.norm(d, axis=-1) + np.eye(N_) * 1e9
-        ii, jj = np.where((dist < 2 * R) & active[:, None] & active[None, :])
-        for i, j in zip(ii, jj):
-            if i >= j: continue
-            nrm = d[i, j] / dist[i, j]; pen = 2 * R - dist[i, j]
-            pos[i] += nrm * pen * 0.5; pos[j] -= nrm * pen * 0.5
-            rv = vel[i] - vel[j]; vn = rv @ nrm
-            if vn < 0:
-                imp = -(1 + 0.05) * vn * 0.5; vel[i] += imp * nrm; vel[j] -= imp * nrm
-                vt = rv - (rv @ nrm) * nrm; vel[i] -= vt * 0.08; vel[j] += vt * 0.08
-        # placa
-        low = pos[:, 2] < R
-        pos[low, 2] = R; vel[low, 2] = np.maximum(vel[low, 2], 0) * 0.05
-        vel[low, :2] *= (1 - 1.8 * dt)                          # roce con la placa: terminan quietos
-        # giro: rodadura al tocar algo, giro lento (que se va frenando) mientras caen
-        support = low | (np.min(dist, axis=1) < 2 * R + 1e-3)
-        roll = np.cross(np.array([0, 0, 1.0]), vel) / R
-        w_ = np.where(support[:, None], roll, w_ * (1 - 0.15 * dt))
-        for i in np.where(active)[0]:
+    for s_ in range(SUB):
+        t = (f + s_ / SUB) / FPS
+        state[(state == 0) & (t >= t0)] = 2
+        fr = state == 2
+        vel[fr, 1] += (-G_) * dt; vel[fr] -= DRAG * vel[fr] * dt
+        pos[fr] += vel[fr] * dt
+        nsum = np.zeros((N_, 3)); touch = np.zeros(N_, bool)
+        for _ in range(IT):                                    # contactos (varias pasadas: sin huevos encimados)
+            d = pos[:, None, :] - pos[None, :, :]; dist = np.linalg.norm(d, axis=-1) + np.eye(N_) * 1e9
+            ii, jj = np.where(np.triu(dist < 2 * R * 0.999))
+            ii, jj = ii[(state[ii] > 0) & (state[jj] > 0)], jj[(state[ii] > 0) & (state[jj] > 0)]
+            for i, j in zip(ii, jj):
+                nrm = d[i, j] / dist[i, j]; pen = 2 * R - dist[i, j]
+                if state[i] == 1 and state[j] == 2: state[i] = 2        # un huevo de la foto empujado: se suelta
+                if state[j] == 1 and state[i] == 2: state[j] = 2
+                mi = 1.0 if state[i] == 2 else 0.0; mj = 1.0 if state[j] == 2 else 0.0
+                if mi + mj == 0: continue
+                pos[i] += nrm * pen * mi / (mi + mj); pos[j] -= nrm * pen * mj / (mi + mj)
+                rv = vel[i] - vel[j]; vn = rv @ nrm
+                if vn < 0:
+                    imp = -(1 + 0.05) * vn / (mi + mj); vel[i] += imp * mi * nrm; vel[j] -= imp * mj * nrm
+                    vt = rv - vn * nrm; vel[i] -= vt * 0.05 * mi; vel[j] += vt * 0.05 * mj
+                nsum[i] += nrm; nsum[j] -= nrm; touch[i] = touch[j] = True
+        fl = pos[:, 1] < YF; pos[fl, 1] = YF; vel[fl, 1] = np.maximum(vel[fl, 1], 0) * 0.05; nsum[fl] += [0, 1, 0]; touch |= fl
+        for sgn in (-1, 1):
+            wl = sgn * pos[:, 0] > XW; pos[wl, 0] = sgn * XW; vel[wl, 0] = 0; nsum[wl] += [-sgn, 0, 0]; touch |= wl
+        pos[:, 2] += (zc - pos[:, 2]) * 0.5; vel[:, 2] = 0          # todos en la capa de la placa
+        vel[touch & fr] *= (1 - 3.0 * dt)                           # roce: al apoyarse se van quedando quietos
+        slow = touch & (np.linalg.norm(vel, axis=1) < 0.06) & (t > t0 + 1.5); vel[slow] = 0
+        # giro: rodadura sobre lo que lo sostiene (eje z: en el plano), si no, giro lento que se frena
+        for i in np.where(fr)[0]:
+            if touch[i] and np.linalg.norm(nsum[i]) > 1e-6:
+                n_ = nsum[i] / np.linalg.norm(nsum[i]); w_[i] = np.cross(n_, vel[i]) / R
+            else: w_[i] *= (1 - 0.2 * dt)
             om = np.linalg.norm(w_[i])
-            if om > 1e-6:
-                ax = w_[i] / om; an = om * dt; quat[i] = qmul([math.cos(an / 2), *(math.sin(an / 2) * ax)], quat[i]); quat[i] /= np.linalg.norm(quat[i])
-    P_[f] = pos; Q_[f] = quat; VIS[f] = active
-np.savez(os.path.join(OUTD, 'sim.npz'), P=P_, Q=Q_, V=VIS)
-print('SIM ok: altura final max %.2f, huevos %d' % (P_[-1, :, 2].max(), N_))
+            if om > 1e-6: quat[i] = qmul(qax(w_[i], om * dt), quat[i]); quat[i] /= np.linalg.norm(quat[i])
+    P_[f] = pos; Q_[f] = quat
+np.savez(os.path.join(OUTD, 'sim.npz'), P=P_, Q=Q_)
+inside = (np.abs(P_[-1, :, 0]) < W_ / 2) & (np.abs(P_[-1, :, 1]) < H_ / 2)
+d = np.linalg.norm(P_[-1][:, None] - P_[-1][None], axis=-1) + np.eye(N_) * 9
+print('SIM ok: huevos %d, en cuadro al final %d, solape max %.3f R, vel final max %.3f, y max %.2f (borde %.2f)' % (
+    N_, inside.sum(), max(0, (2 * R - d.min()) / R), np.abs(P_[-1] - P_[-2]).max() * FPS, P_[-1, :, 1].max(), H_ / 2))
+if os.environ.get('SIMONLY'): raise SystemExit
 # ---------------------------------------------------------------- instancias animadas
 for i in range(N_):
     e = bpy.data.objects.new('egg%d' % i, None); e.instance_type = 'COLLECTION'; e.instance_collection = VARS[i % NV]; sc.collection.objects.link(e)
     e.rotation_mode = 'QUATERNION'
     for f in range(NF):
         e.location = P_[f, i]; e.rotation_quaternion = Q_[f, i]; e.keyframe_insert('location', frame=f + 1); e.keyframe_insert('rotation_quaternion', frame=f + 1)
-        if f == 0 or VIS[f, i] != VIS[f - 1, i]:
-            e.hide_render = not VIS[f, i]; e.keyframe_insert('hide_render', frame=f + 1)
     for fc in e.animation_data.action.fcurves:
         for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 # ---------------------------------------------------------------- logo en el fondo de la placa (bajo los huevos)
@@ -178,7 +181,7 @@ ring.location = (-6.0, 8.0, -11.0); ring.scale = (26.0, 25.0, 1)
 ring.modifiers.new('w', 'SKIN')
 for v in ring.data.skin_vertices[0].data: v.radius = (0.035, 0.035)
 ring.modifiers.new('s', 'SUBSURF').levels = 2
-rm, N, Lk = mat('ring'); g = G(N, Lk); f = g.facing(0.5); g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.0), 0.55), (0.82, 0.8, 1.0)); ring.data.materials.append(rm)
+rm, N, Lk = mat('ring'); g = G(N, Lk); f = g.facing(0.5); g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.0), 0.35), (0.82, 0.8, 1.0)); ring.data.materials.append(rm)
 Rr = random.Random(5)
 fib, N, Lk = mat('fiber'); g = G(N, Lk); f = g.facing(0.5); tc = N.new('ShaderNodeTexCoord'); bn = N.new('ShaderNodeTexNoise'); bn.inputs['Scale'].default_value = 4.0; bn.inputs['Detail'].default_value = 1; Lk.new(tc.outputs['Object'], bn.inputs['Vector'])
 g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.2), g.m('ADD', 0.12, g.rng(bn.outputs['Fac'], 0.55, 0.75, 0.0, 0.6))), (0.88, 0.87, 0.82))
