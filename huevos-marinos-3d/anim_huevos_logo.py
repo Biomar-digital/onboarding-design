@@ -88,7 +88,8 @@ pos[:NS, :2] = start; pos[:, 2] = R + rng.uniform(-0.08, 0.08, N_) * R
 for k_, i in enumerate(range(NS, N_)):                         # fila de espera arriba, fuera de cuadro; se sueltan escalonados
     pos[i, 0] = rng.uniform(-XW, XW); pos[i, 1] = H_ / 2 + R * 1.2 + rng.uniform(0, 1.5)
     t0[i] = 0.8 + 7.4 * (k_ / NFALL) ** 0.9 + rng.uniform(-0.15, 0.15)
-zc = pos[:, 2].copy()
+zc = pos[:, 2].copy(); home = pos[:NS].copy()
+wph = rng.uniform(0, 6.28, (NS, 2)); wfr = rng.uniform(0.18, 0.32, (NS, 2)); wspin = rng.uniform(-0.18, 0.18, NS)   # vaiven suave de los 8 iniciales
 state = np.zeros(N_, int); state[:NS] = 1                      # 0 esperando, 1 pegado a la placa (los de la foto), 2 libre
 quat = np.zeros((N_, 4)); w_ = np.zeros((N_, 3))
 def qmul(a, b):
@@ -106,6 +107,10 @@ for f in range(NF):
     for s_ in range(SUB):
         t = (f + s_ / SUB) / FPS
         state[(state == 0) & (t >= t0)] = 2
+        for i in np.where(state[:NS] == 1)[0]:                 # los 8 de la foto: flotan apenas (deriva lenta + giro lento en el plano)
+            tgt = home[i] + np.array([0.22 * math.sin(6.283 * wfr[i, 0] * t + wph[i, 0]), 0.18 * math.sin(6.283 * wfr[i, 1] * t + wph[i, 1]), 0.0])
+            vel[i] = (tgt - pos[i]) / dt * 0.5 if t > 0 else 0; pos[i] = tgt
+            quat[i] = qmul(qax([0, 0, 1], wspin[i] * dt), quat[i])
         fr = state == 2
         vel[fr, 1] += (-G_) * dt; vel[fr] -= DRAG * vel[fr] * dt
         pos[fr] += vel[fr] * dt
@@ -165,9 +170,11 @@ for poly in lo.data.polygons:
 lo.scale = (LW, LH, 1); lo.location = (0, 0.4, -0.05)
 lm, N, Lk = mat('logo'); tx = N.new('ShaderNodeTexImage'); tx.image = img
 le = N.new('ShaderNodeEmission'); le.inputs['Color'].default_value = (0.95, 0.95, 0.97, 1); lt = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
-sm = N.new('ShaderNodeMath'); sm.operation = 'MULTIPLY'; sm.inputs[1].default_value = float(os.environ.get('LOGOB', '0.85')); Lk.new(tx.outputs['Alpha'], sm.inputs[0])
-Lk.new(tx.outputs['Alpha'], mx.inputs[0]); Lk.new(lt.outputs[0], mx.inputs[1]); Lk.new(le.outputs[0], mx.inputs[2]); Lk.new(sm.outputs[0], le.inputs['Strength'])
+sm = N.new('ShaderNodeMath'); sm.operation = 'MULTIPLY'; sm.inputs[1].default_value = float(os.environ.get('LOGOB', '0.85')); amr = N.new('ShaderNodeMapRange'); Lk.new(tx.outputs['Alpha'], amr.inputs[0]); amr.inputs[1].default_value = 0.15; amr.inputs[2].default_value = 0.6   # sin velo en los bordes del png
+Lk.new(amr.outputs[0], sm.inputs[0])
+Lk.new(amr.outputs[0], mx.inputs[0]); Lk.new(lt.outputs[0], mx.inputs[1]); Lk.new(le.outputs[0], mx.inputs[2]); Lk.new(sm.outputs[0], le.inputs['Strength'])
 Lk.new(mx.outputs[0], N['Material Output'].inputs['Surface']); lo.data.materials.append(lm)
+if os.environ.get('NOLOGO'): lo.hide_render = True
 # ---------------------------------------------------------------- fondo de la placa (velo, aro de luz, fibras, polvo)
 pl = bpy.data.objects.new('plate', bpy.data.meshes.new('plate')); sc.collection.objects.link(pl)
 bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=30); bm.to_mesh(pl.data); bm.free(); pl.location = (0, 0, -14)
@@ -175,26 +182,61 @@ pm, N, Lk = mat('plate'); g = G(N, Lk); tc = N.new('ShaderNodeTexCoord'); sx = N
 veil = g.rng(sx.outputs['X'], 6.0, -22.0, 0.0, 0.1); nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.15; Lk.new(tc.outputs['Object'], nz.inputs['Vector'])
 e = N.new('ShaderNodeEmission'); e.inputs['Color'].default_value = (0.8, 0.8, 0.72, 1)
 Lk.new(g.m('MULTIPLY', veil, g.m('ADD', 0.6, g.m('MULTIPLY', nz.outputs['Fac'], 0.8))), e.inputs['Strength']); Lk.new(e.outputs[0], N['Material Output'].inputs['Surface']); pl.data.materials.append(pm)
-ring = bpy.data.objects.new('ring', bpy.data.meshes.new('ring')); sc.collection.objects.link(ring)
-bm = bmesh.new(); bmesh.ops.create_circle(bm, cap_ends=False, segments=256, radius=1.0); bm.to_mesh(ring.data); bm.free()
-ring.location = (-6.0, 8.0, -11.0); ring.scale = (26.0, 25.0, 1)
-ring.modifiers.new('w', 'SKIN')
-for v in ring.data.skin_vertices[0].data: v.radius = (0.035, 0.035)
-ring.modifiers.new('s', 'SUBSURF').levels = 2
-rm, N, Lk = mat('ring'); g = G(N, Lk); f = g.facing(0.5); g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.0), 0.35), (0.82, 0.8, 1.0)); ring.data.materials.append(rm)
+# Fondo como en la foto real: todo esta muy fuera de foco, asi que se arma ya "desenfocado" (perfiles suaves en el
+# shader) en vez de depender solo del foco de la camara: el aro de luz es una franja ancha de luz con nucleo blanco
+# y bordes lila que se desvanecen; las fibras son cintas suaves con tramos brillantes; el polvo son manchas redondas
+# difusas de varios tamanos (bokeh), algunas con el borde un poco mas marcado.
+def strip_mesh(name, pts, width, z):
+    me = bpy.data.meshes.new(name); vs = []; fs = []; uv = []
+    for i, p in enumerate(pts):
+        a = pts[max(i - 1, 0)]; b = pts[min(i + 1, len(pts) - 1)]; tg = (b - a).normalized(); nn = mathutils.Vector((-tg.y, tg.x, 0))
+        vs += [(p + nn * width / 2).to_tuple(), (p - nn * width / 2).to_tuple()]
+        if i: fs.append((2 * i - 2, 2 * i, 2 * i + 1, 2 * i - 1))
+    me.from_pydata([(x, y, z) for x, y, _ in vs], [], fs); lay = me.uv_layers.new()
+    L = sum((pts[i + 1] - pts[i]).length for i in range(len(pts) - 1)); acc = [0.0]
+    for i in range(len(pts) - 1): acc.append(acc[-1] + (pts[i + 1] - pts[i]).length)
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            vi = me.loops[li].vertex_index; lay.data[li].uv = (acc[vi // 2] / L, vi % 2)
+    o = bpy.data.objects.new(name, me); sc.collection.objects.link(o); return o
+def across(N, Lk, g):                                         # 0 en los bordes de la cinta, 1 en el centro
+    tc = N.new('ShaderNodeTexCoord'); sx = N.new('ShaderNodeSeparateXYZ'); Lk.new(tc.outputs['UV'], sx.inputs[0])
+    return g.m('SUBTRACT', 1.0, g.m('ABSOLUTE', g.m('SUBTRACT', g.m('MULTIPLY', sx.outputs['Y'], 2.0), 1.0))), sx.outputs['X']
+# aro de luz: franja ancha (borde iluminado de la placa), arco que entra abajo y sube por la derecha
+RC, RCX, RCY, RW_ = 25.0, -6.0, 8.0, 4.5
+arc = [mathutils.Vector((RCX + RC * math.cos(a), RCY + RC * math.sin(a), 0)) for a in np.linspace(-2.25, 0.45, 200)]
+ring = strip_mesh('ring', arc, RW_, -11.0)
+rm, N, Lk = mat('ring'); g = G(N, Lk); xw, xu = across(N, Lk, g)
+core = g.rng(xw, 0.3, 0.9); halo = g.rng(xw, 0.0, 0.6)
+col = N.new('ShaderNodeMix'); col.data_type = 'RGBA'; Lk.new(core, col.inputs['Factor']); col.inputs[6].default_value = (0.66, 0.62, 0.95, 1); col.inputs[7].default_value = (1.0, 0.98, 1.0, 1)
+re_ = N.new('ShaderNodeEmission'); Lk.new(col.outputs[2], re_.inputs['Color'])
+Lk.new(g.m('ADD', g.m('MULTIPLY', core, K('RINGC', '0.85')), g.m('MULTIPLY', halo, K('RINGH', '0.4'))), re_.inputs['Strength'])
+rt = N.new('ShaderNodeBsdfTransparent'); ra = N.new('ShaderNodeAddShader'); Lk.new(rt.outputs[0], ra.inputs[0]); Lk.new(re_.outputs[0], ra.inputs[1]); Lk.new(ra.outputs[0], N['Material Output'].inputs['Surface'])
+ring.data.materials.append(rm)
 Rr = random.Random(5)
-fib, N, Lk = mat('fiber'); g = G(N, Lk); f = g.facing(0.5); tc = N.new('ShaderNodeTexCoord'); bn = N.new('ShaderNodeTexNoise'); bn.inputs['Scale'].default_value = 4.0; bn.inputs['Detail'].default_value = 1; Lk.new(tc.outputs['Object'], bn.inputs['Vector'])
-g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.2), g.m('ADD', 0.12, g.rng(bn.outputs['Fac'], 0.55, 0.75, 0.0, 0.6))), (0.88, 0.87, 0.82))
-dust, N, Lk = mat('dust'); g = G(N, Lk); f = g.facing(0.5); g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.0), 0.9), (0.9, 0.9, 0.9))
-for (a, b_, w) in (((-17, -8), (-6, 10), 0.06), ((6, 9), (12, 3), 0.07), ((-14, -10), (-9, -4), 0.05)):
-    A = mathutils.Vector((*a, -9.0)); B = mathutils.Vector((*b_, -9.0)); cu = bpy.data.curves.new('fib', 'CURVE'); cu.dimensions = '3D'; cu.bevel_depth = w * 0.8; cu.bevel_resolution = 3
-    sp = cu.splines.new('POLY'); sp.points.add(7)
-    for i in range(8):
-        q = A.lerp(B, i / 7) + mathutils.Vector((Rr.gauss(0, 0.05), Rr.gauss(0, 0.05), 0)); sp.points[i].co = (q.x, q.y, q.z, 1); sp.points[i].radius = Rr.uniform(0.5, 1.4)
-    o = bpy.data.objects.new('fiber', cu); sc.collection.objects.link(o); cu.materials.append(fib)
-for _ in range(260):
-    q = mathutils.Vector((Rr.uniform(-17, 17), Rr.uniform(-10, 10), Rr.uniform(-8.0, -0.5)))
-    sphere('dust', Rr.uniform(0.008, 0.025), q, 8).data.materials.append(dust)
+# fibras: cintas suaves, con tramos mas brillantes (nudos) a lo largo
+fib, N, Lk = mat('fiber'); g = G(N, Lk); xw, xu = across(N, Lk, g)
+bn = N.new('ShaderNodeTexNoise'); bn.inputs['Scale'].default_value = 9.0; bn.inputs['Detail'].default_value = 2
+cm = N.new('ShaderNodeCombineXYZ'); Lk.new(xu, cm.inputs['X']); Lk.new(cm.outputs[0], bn.inputs['Vector'])
+fe = N.new('ShaderNodeEmission'); fe.inputs['Color'].default_value = (0.9, 0.9, 0.85, 1)
+Lk.new(g.m('MULTIPLY', g.rng(xw, 0.0, 1.0), g.m('ADD', 0.06, g.rng(bn.outputs['Fac'], 0.5, 0.72, 0.0, 0.35))), fe.inputs['Strength'])
+ft = N.new('ShaderNodeBsdfTransparent'); fa = N.new('ShaderNodeAddShader'); Lk.new(ft.outputs[0], fa.inputs[0]); Lk.new(fe.outputs[0], fa.inputs[1]); Lk.new(fa.outputs[0], N['Material Output'].inputs['Surface'])
+for (a, b_, w) in (((-19, -10), (-5, 11), 0.7), ((5, 10), (12, 2.5), 0.9), ((-15, -11), (-8, -3), 0.55)):
+    A = mathutils.Vector((*a, 0)); B = mathutils.Vector((*b_, 0)); side = mathutils.Vector((-(B - A).y, (B - A).x, 0)).normalized()
+    ph_ = Rr.uniform(0, 3); pts = [A.lerp(B, float(u)) + side * 0.35 * math.sin(float(u) * 2.0 + ph_) for u in np.linspace(0, 1, 40)]
+    strip_mesh('fiber', pts, w, -9.0).data.materials.append(fib)
+# polvo: manchas redondas difusas (bokeh) de varios tamanos
+dmat, N, Lk = mat('bokeh'); g = G(N, Lk); tc = N.new('ShaderNodeTexCoord'); sx = N.new('ShaderNodeSeparateXYZ'); Lk.new(tc.outputs['Generated'], sx.inputs[0])
+dx = g.m('SUBTRACT', sx.outputs['X'], 0.5); dy = g.m('SUBTRACT', sx.outputs['Y'], 0.5); rr_ = g.m('MULTIPLY', g.m('SQRT', g.m('ADD', g.m('MULTIPLY', dx, dx), g.m('MULTIPLY', dy, dy))), 2.0)
+at_ = N.new('ShaderNodeAttribute'); at_.attribute_type = 'OBJECT'; at_.attribute_name = 'b'
+disc = g.m('ADD', g.rng(rr_, 1.0, 0.55), g.m('MULTIPLY', g.rng(g.m('ABSOLUTE', g.m('SUBTRACT', rr_, 0.85)), 0.15, 0.0), 0.35))
+de = N.new('ShaderNodeEmission'); de.inputs['Color'].default_value = (0.88, 0.88, 0.86, 1); Lk.new(g.m('MULTIPLY', disc, at_.outputs['Fac']), de.inputs['Strength'])
+dt_ = N.new('ShaderNodeBsdfTransparent'); da = N.new('ShaderNodeAddShader'); Lk.new(dt_.outputs[0], da.inputs[0]); Lk.new(de.outputs[0], da.inputs[1]); Lk.new(da.outputs[0], N['Material Output'].inputs['Surface'])
+dme = bpy.data.meshes.new('bokeh'); bm = bmesh.new(); bmesh.ops.create_circle(bm, cap_ends=True, segments=24, radius=1.0); bm.to_mesh(dme); bm.free(); dme.materials.append(dmat)
+for _ in range(220):
+    big = Rr.random() < 0.18; r_ = Rr.uniform(0.15, 0.45) if big else Rr.uniform(0.025, 0.09)
+    o = bpy.data.objects.new('dust', dme); sc.collection.objects.link(o); o.location = (Rr.uniform(-18, 18), Rr.uniform(-11, 11), -8.5); o.scale = (r_, r_, 1)
+    o['b'] = Rr.uniform(0.04, 0.12) if big else Rr.uniform(0.25, 0.9)
 # ---------------------------------------------------------------- camara: lupa mirando hacia abajo, foco en la placa
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.nodes['Background'].inputs['Color'].default_value = (0.004, 0.005, 0.005, 1)
 cd = bpy.data.cameras.new('cam'); cd.lens = 72; cd.sensor_width = 36
