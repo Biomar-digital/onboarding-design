@@ -13,7 +13,7 @@ LOGO = os.environ.get('LOGO', os.path.join(HERE, 'referencia', 'logo_larviva_bro
 src = open(os.path.join(HERE, 'huevos_campo_oscuro.py')).read()
 pre = src[:src.index('# ---- disposicion trazada')]
 pre = pre.replace("args = sys.argv[sys.argv.index('--') + 1:]; OUT = args[0]", "OUT = ''").replace("SPP = int(args[1]) if len(args) > 1 else 48; RW = int(args[2]) if len(args) > 2 else 1000", "")
-os.environ.setdefault('CIOR', '1.015'); os.environ.setdefault('YT', '0.12'); os.environ.setdefault('CT', '0.6')   # el interior del huevo atenua lo que hay detras: los huevos tapan el logo                         # menos lente: los huevos ya no 'agrandan' el logo como bolas blancas
+os.environ.setdefault('CIOR', '1.015'); os.environ.setdefault('YT', '0.12'); os.environ.setdefault('CT', '0.12')   # el interior del huevo atenua lo que hay detras: los huevos tapan el logo                         # menos lente: los huevos ya no 'agrandan' el logo como bolas blancas
 exec(pre)
 FPS, NF = 24, int(os.environ.get('NF', '360'))                # 15 s
 sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
