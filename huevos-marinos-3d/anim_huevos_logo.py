@@ -13,7 +13,7 @@ LOGO = os.environ.get('LOGO', os.path.join(HERE, 'referencia', 'logo_larviva_bro
 src = open(os.path.join(HERE, 'huevos_campo_oscuro.py')).read()
 pre = src[:src.index('# ---- disposicion trazada')]
 pre = pre.replace("args = sys.argv[sys.argv.index('--') + 1:]; OUT = args[0]", "OUT = ''").replace("SPP = int(args[1]) if len(args) > 1 else 48; RW = int(args[2]) if len(args) > 2 else 1000", "")
-os.environ.setdefault('CIOR', '1.015'); os.environ.setdefault('YT', '0.12'); os.environ.setdefault('CT', '0.12')   # el interior del huevo atenua lo que hay detras: los huevos tapan el logo                         # menos lente: los huevos ya no 'agrandan' el logo como bolas blancas
+os.environ.setdefault('CIOR', '1.015'); os.environ.setdefault('YT', '0.9'); os.environ.setdefault('CT', '0.92')   # el interior del huevo atenua lo que hay detras: los huevos tapan el logo                         # menos lente: los huevos ya no 'agrandan' el logo como bolas blancas
 exec(pre)
 FPS, NF = 24, int(os.environ.get('NF', '360'))                # 15 s
 sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
@@ -171,8 +171,11 @@ lo.scale = (LW, LH, 1); lo.location = (0, 0.4, -0.35)   # debajo de la base de l
 lm, N, Lk = mat('logo'); tx = N.new('ShaderNodeTexImage'); tx.image = img
 le = N.new('ShaderNodeEmission'); le.inputs['Color'].default_value = (0.95, 0.95, 0.97, 1); lt = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
 sm = N.new('ShaderNodeMath'); sm.operation = 'MULTIPLY'; sm.inputs[1].default_value = float(os.environ.get('LOGOB', '0.85')); amr = N.new('ShaderNodeMapRange'); Lk.new(tx.outputs['Alpha'], amr.inputs[0]); amr.inputs[1].default_value = 0.15; amr.inputs[2].default_value = 0.6   # sin velo en los bordes del png
-Lk.new(amr.outputs[0], sm.inputs[0])
-Lk.new(amr.outputs[0], mx.inputs[0]); Lk.new(lt.outputs[0], mx.inputs[1]); Lk.new(le.outputs[0], mx.inputs[2]); Lk.new(sm.outputs[0], le.inputs['Strength'])
+lp_ = N.new('ShaderNodeLightPath'); dep = N.new('ShaderNodeMath'); dep.operation = 'ADD'; Lk.new(lp_.outputs['Transparent Depth'], dep.inputs[0]); Lk.new(lp_.outputs['Transmission Depth'], dep.inputs[1])
+vis_ = N.new('ShaderNodeMath'); vis_.operation = 'LESS_THAN'; Lk.new(dep.outputs[0], vis_.inputs[0]); vis_.inputs[1].default_value = 0.5   # visto a traves de un huevo: no se ve (los huevos lo tapan)
+fac_ = N.new('ShaderNodeMath'); fac_.operation = 'MULTIPLY'; Lk.new(amr.outputs[0], fac_.inputs[0]); Lk.new(vis_.outputs[0], fac_.inputs[1])
+Lk.new(fac_.outputs[0], sm.inputs[0])
+Lk.new(fac_.outputs[0], mx.inputs[0]); Lk.new(lt.outputs[0], mx.inputs[1]); Lk.new(le.outputs[0], mx.inputs[2]); Lk.new(sm.outputs[0], le.inputs['Strength'])
 Lk.new(mx.outputs[0], N['Material Output'].inputs['Surface']); lo.data.materials.append(lm)
 if os.environ.get('NOLOGO'): lo.hide_render = True
 # ---------------------------------------------------------------- fondo de la placa (velo, aro de luz, fibras, polvo)

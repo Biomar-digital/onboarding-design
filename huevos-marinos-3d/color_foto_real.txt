@@ -1,0 +1,4 @@
+# Correccion de color medida sobre la foto real (recorte del huevo): oscuros gris azulado (70,74,77),
+# tejido/cabeza gris calido (154,146,140), perlas y bordes crema (230,223,212). Se aplica al armar el video:
+# ffmpeg -framerate 24 -i f_%04d.png -vf "<filtro>" ...
+curves=r='0/0 0.22/0.275 0.44/0.604 0.812/0.902 1/1':g='0/0 0.22/0.29 0.44/0.573 0.804/0.875 1/1':b='0/0 0.204/0.302 0.42/0.549 0.78/0.831 1/1'
