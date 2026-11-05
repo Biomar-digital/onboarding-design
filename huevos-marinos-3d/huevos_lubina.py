@@ -203,45 +203,56 @@ if os.environ.get('LOOK') == 'dark':
             for m_ in list(o.modifiers): o.modifiers.remove(m_)
     for l in list(egg.node_tree.links):
         if l.to_socket == glow.inputs['Strength']: egg.node_tree.links.remove(l)
-    # embrion: tejido lechoso que dispersa la luz (difuso + translucido), granulos blancos en lugar de pigmento oscuro
+    # embrion en campo oscuro: cuerpo transparente cuyo contorno brilla (la luz rasante se dispersa en los bordes),
+    # relleno lechoso tenue con textura celular; los melanoforos se ven como motas grises sobre el tejido claro
     N, Lk = emb.node_tree.nodes, emb.node_tree.links
-    tl = N.new('ShaderNodeBsdfTranslucent'); tl.inputs['Color'].default_value = (0.95, 0.94, 0.92, 1)
-    df = N.new('ShaderNodeBsdfDiffuse'); df.inputs['Color'].default_value = (0.9, 0.89, 0.87, 1)
-    tr = N.new('ShaderNodeBsdfTransparent')
-    milk = N.new('ShaderNodeMixShader'); milk.inputs[0].default_value = 0.2; Lk.new(tl.outputs[0], milk.inputs[1]); Lk.new(df.outputs[0], milk.inputs[2])
-    bv = N.new('ShaderNodeTexVoronoi'); bv.inputs['Scale'].default_value = 40; Lk.new(tc.outputs['Object'], bv.inputs['Vector'])
-    bfac = MATH(N, Lk, 'MINIMUM', 1.0, MATH(N, Lk, 'ADD', MATH(N, Lk, 'MULTIPLY', MATH(N, Lk, 'LESS_THAN', bv.outputs['Distance'], 0.3), 0.55), MATH(N, Lk, 'MULTIPLY', nz.outputs['Fac'], 0.45)))
-    body = N.new('ShaderNodeMixShader'); Lk.new(bfac, body.inputs[0]); Lk.new(tr.outputs[0], body.inputs[1]); Lk.new(milk.outputs[0], body.inputs[2])
-    wd_ = N.new('ShaderNodeBsdfTranslucent'); wd_.inputs['Color'].default_value = (1, 1, 1, 1)
-    gm = N.new('ShaderNodeMixShader'); Lk.new(MATH(N, Lk, 'MINIMUM', 1.0, MATH(N, Lk, 'ADD', mel, ery)), gm.inputs[0]); Lk.new(body.outputs[0], gm.inputs[1]); Lk.new(wd_.outputs[0], gm.inputs[2])
-    Lk.new(gm.outputs[0], N['Material Output'].inputs['Surface'])
+    elw = N.new('ShaderNodeLayerWeight'); elw.inputs['Blend'].default_value = 0.5
+    eed = N.new('ShaderNodeMapRange'); Lk.new(elw.outputs['Facing'], eed.inputs[0]); eed.inputs[1].default_value = 0.7; eed.inputs[2].default_value = 0.97; eed.interpolation_type = 'SMOOTHSTEP'
+    ecl = N.new('ShaderNodeTexVoronoi'); ecl.inputs['Scale'].default_value = 60; Lk.new(tc.outputs['Object'], ecl.inputs['Vector'])
+    cell = MATH(N, Lk, 'MULTIPLY', MATH(N, Lk, 'LESS_THAN', ecl.outputs['Distance'], 0.32), 0.12)
+    fill = MATH(N, Lk, 'ADD', MATH(N, Lk, 'ADD', 0.0, MATH(N, Lk, 'MULTIPLY', MATH(N, Lk, 'MAXIMUM', MATH(N, Lk, 'SUBTRACT', nz.outputs['Fac'], 0.45), 0.0), 0.35)), MATH(N, Lk, 'MULTIPLY', cell, 0.0))
+    est = MATH(N, Lk, 'ADD', MATH(N, Lk, 'MULTIPLY', eed.outputs[0], float(os.environ.get('EDGE', '1.1'))), fill)
+    est = MATH(N, Lk, 'MULTIPLY', est, MATH(N, Lk, 'SUBTRACT', 1.0, MATH(N, Lk, 'MULTIPLY', mel, 0.3)))
+    est = MATH(N, Lk, 'ADD', est, MATH(N, Lk, 'MULTIPLY', ery, 0.25))
+    eem = N.new('ShaderNodeEmission'); eem.inputs['Color'].default_value = (0.96, 0.95, 0.93, 1); Lk.new(est, eem.inputs['Strength'])
+    etr = N.new('ShaderNodeBsdfTransparent'); etr.inputs['Color'].default_value = (0.9, 0.9, 0.9, 1)
+    eadd = N.new('ShaderNodeAddShader'); Lk.new(etr.outputs[0], eadd.inputs[0]); Lk.new(eem.outputs[0], eadd.inputs[1])
+    Lk.new(eadd.outputs[0], N['Material Output'].inputs['Surface'])
     # gota de aceite: lente de vidrio clara
     N, Lk = oil.node_tree.nodes, oil.node_tree.links
     og = N.new('ShaderNodeBsdfPrincipled'); og.inputs['Transmission Weight'].default_value = 1; og.inputs['IOR'].default_value = 1.15; og.inputs['Roughness'].default_value = 0.05
     og.inputs['Base Color'].default_value = (1, 0.97, 0.88, 1); Lk.new(og.outputs[0], N['Material Output'].inputs['Surface'])
     for o in list(sc.objects):
         if o.name.startswith(('yolk', 'wisp')): o.hide_render = True
-    # racimos de granulos blancos dentro de cada huevo
-    gmat, N, Lk = mat('gran'); N.remove(N['Principled BSDF']); gd = N.new('ShaderNodeBsdfDiffuse'); gd.inputs['Color'].default_value = (0.95, 0.95, 0.95, 1)
-    gt = N.new('ShaderNodeBsdfTranslucent'); gx = N.new('ShaderNodeMixShader'); gx.inputs[0].default_value = 0.85
-    Lk.new(gd.outputs[0], gx.inputs[1]); Lk.new(gt.outputs[0], gx.inputs[2])
-    gl_ = N.new('ShaderNodeLayerWeight'); ge = N.new('ShaderNodeEmission'); ge.inputs['Color'].default_value = (1, 1, 1, 1)
-    gr_ = N.new('ShaderNodeMapRange'); Lk.new(gl_.outputs['Facing'], gr_.inputs[0]); gr_.inputs[3].default_value = 0.7; gr_.inputs[4].default_value = 0.15; Lk.new(gr_.outputs[0], ge.inputs['Strength'])
-    ga_ = N.new('ShaderNodeAddShader'); Lk.new(gx.outputs[0], ga_.inputs[0]); Lk.new(ge.outputs[0], ga_.inputs[1]); Lk.new(ga_.outputs[0], N['Material Output'].inputs['Surface'])
-    gme = bpy.data.meshes.new('g'); bmg = bmesh.new(); bmesh.ops.create_icosphere(bmg, subdivisions=2, radius=1.0); bmg.to_mesh(gme); bmg.free()
+    # racimos de granulos tipo burbuja (borde brillante, centro oscuro) dentro de cada huevo y sobre el embrion
+    gmat, N, Lk = mat('gran'); N.remove(N['Principled BSDF'])
+    gl_ = N.new('ShaderNodeLayerWeight'); gl_.inputs['Blend'].default_value = 0.5
+    gr_ = N.new('ShaderNodeMapRange'); Lk.new(gl_.outputs['Facing'], gr_.inputs[0]); gr_.inputs[1].default_value = 0.35; gr_.inputs[2].default_value = 0.9
+    gr_.inputs[3].default_value = 0.25; gr_.inputs[4].default_value = float(os.environ.get('GRB', '1.1'))
+    ge = N.new('ShaderNodeEmission'); ge.inputs['Color'].default_value = (1, 1, 1, 1); Lk.new(gr_.outputs[0], ge.inputs['Strength'])
+    gt = N.new('ShaderNodeBsdfTransparent'); gt.inputs['Color'].default_value = (0.6, 0.6, 0.6, 1)
+    ga_ = N.new('ShaderNodeAddShader'); Lk.new(gt.outputs[0], ga_.inputs[0]); Lk.new(ge.outputs[0], ga_.inputs[1]); Lk.new(ga_.outputs[0], N['Material Output'].inputs['Surface'])
+    gme = bpy.data.meshes.new('g'); bmg = bmesh.new(); bmesh.ops.create_uvsphere(bmg, u_segments=16, v_segments=8, radius=1.0); bmg.to_mesh(gme); bmg.free()
     for p_ in gme.polygons: p_.use_smooth = True
     gme.materials.append(gmat); R_ = random.Random(21)
-    for (c, R) in CR:
-        for _ in range(14):
-            a = R_.uniform(0, 6.28); r_ = R * 0.78 * math.sqrt(R_.random()); cc = c + mathutils.Vector((r_ * math.cos(a), r_ * math.sin(a), R_.uniform(-0.3, 0.5) * R))
-            sz = R_.uniform(0.05, 0.13) * R
-            for _ in range(R_.randint(6, 22)):
-                q = cc + mathutils.Vector((R_.gauss(0, sz), R_.gauss(0, sz), R_.gauss(0, sz * 0.4)))
-                if (q - c).length > 0.9 * R: continue
-                g = bpy.data.objects.new('gran', gme); sc.collection.objects.link(g); g.location = q; g.scale = (R * R_.uniform(0.014, 0.026),) * 3
-        for _ in range(40):                                  # puntitos sueltos
-            a = R_.uniform(0, 6.28); r_ = R * 0.85 * math.sqrt(R_.random()); q = c + mathutils.Vector((r_ * math.cos(a), r_ * math.sin(a), R_.uniform(-0.4, 0.5) * R))
-            g = bpy.data.objects.new('gran', gme); sc.collection.objects.link(g); g.location = q; g.scale = (R * R_.uniform(0.006, 0.012),) * 3
+    def cluster(cc, c, R, n, spread, flat=0.4, rmin=0.014, rmax=0.022):
+        for _ in range(n):
+            q = cc + mathutils.Vector((R_.gauss(0, spread), R_.gauss(0, spread), R_.gauss(0, spread * flat)))
+            if (q - c).length > 0.92 * R: continue
+            g = bpy.data.objects.new('gran', gme); sc.collection.objects.link(g); g.location = q; g.scale = (R * R_.uniform(rmin, rmax),) * 3
+    for k, (c, R) in enumerate(CR):
+        for _ in range(9):                                   # racimos sueltos en el huevo (algunos mas profundos: desenfocados)
+            a = R_.uniform(0, 6.28); r_ = R * 0.8 * math.sqrt(R_.random()); cc = c + mathutils.Vector((r_ * math.cos(a), r_ * math.sin(a), R_.uniform(-0.6, 0.4) * R))
+            cluster(cc, c, R, R_.randint(12, 45), R_.uniform(0.04, 0.09) * R)
+        for _ in range(70):                                  # puntitos sueltos
+            a = R_.uniform(0, 6.28); r_ = R * 0.88 * math.sqrt(R_.random())
+            cluster(c + mathutils.Vector((r_ * math.cos(a), r_ * math.sin(a), R_.uniform(-0.5, 0.5) * R)), c, R, 1, 0.0, rmin=0.006, rmax=0.011)
+    for o in [o for o in sc.objects if o.name.startswith('embryo')]:   # racimos sobre el lomo del embrion
+        k = min(range(len(CR)), key=lambda i: (o.matrix_world @ o.data.vertices[0].co - CR[i][0]).length); c, R = CR[k]
+        vs = [o.matrix_world @ v.co for v in o.data.vertices]
+        top = [v for v in vs if v.z > c.z]
+        for _ in range(6):
+            v = R_.choice(top); cluster(v + mathutils.Vector((0, 0, 0.02 * R)), c, R, R_.randint(10, 35), R_.uniform(0.03, 0.06) * R, 0.3)
     # aro de luz desenfocado detras (el borde iluminado de la placa)
     bpy.ops.mesh.primitive_torus_add(major_radius=9.0, minor_radius=1.1, major_segments=128, minor_segments=24, location=(11.5, -3.5, -9))
     ring = bpy.context.object; ring.scale = (0.75, 1.0, 1.0)
@@ -255,6 +266,15 @@ if os.environ.get('LOOK') == 'dark':
     pm_, N, Lk = mat('plate'); N.remove(N['Principled BSDF']); pe = N.new('ShaderNodeEmission'); pn = N.new('ShaderNodeTexNoise'); pn.inputs['Scale'].default_value = 0.08
     pr = N.new('ShaderNodeMapRange'); Lk.new(pn.outputs['Fac'], pr.inputs[0]); pr.inputs[3].default_value = 0.008; pr.inputs[4].default_value = 0.09
     pe.inputs['Color'].default_value = (0.55, 0.62, 0.58, 1); Lk.new(pr.outputs[0], pe.inputs['Strength']); Lk.new(pe.outputs[0], N['Material Output'].inputs['Surface']); pl.data.materials.append(pm_)
+    dmat, N, Lk = mat('dust'); N.remove(N['Principled BSDF']); de = N.new('ShaderNodeEmission'); de.inputs['Color'].default_value = (0.85, 0.85, 0.85, 1); de.inputs['Strength'].default_value = 0.6
+    Lk.new(de.outputs[0], N['Material Output'].inputs['Surface'])
+    for _ in range(160):                                     # motas de polvo sobre la placa (desenfocadas)
+        x_, y_ = R_.uniform(-7, 7), R_.uniform(-5, 5); d_ = sphere('dust', R_.uniform(0.008, 0.03), mathutils.Vector((x_, y_, R_.uniform(-3, -1))), 8); d_.data.materials.append(dmat)
+    for _ in range(3):                                       # rayas finas de la placa
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.025, depth=R_.uniform(6, 12), location=(R_.uniform(-5, 5), R_.uniform(-4, 4), -3.5)); cy = bpy.context.object
+        cy.rotation_euler = (math.pi / 2, 0, R_.uniform(0.4, 1.2)); cy.name = 'scratch'
+        smat, N, Lk = mat('scr'); N.remove(N['Principled BSDF']); se = N.new('ShaderNodeEmission'); se.inputs['Color'].default_value = (0.6, 0.6, 0.6, 1); se.inputs['Strength'].default_value = 0.25
+        Lk.new(se.outputs[0], N['Material Output'].inputs['Surface']); cy.data.materials.append(smat)
 if os.environ.get('HIDE'):
     for o in sc.objects:
         if o.name.startswith(tuple(os.environ['HIDE'].split(','))): o.hide_render = True
