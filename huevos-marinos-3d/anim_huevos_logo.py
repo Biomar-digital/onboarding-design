@@ -167,7 +167,7 @@ lo.data.uv_layers.new();
 for poly in lo.data.polygons:
     for li in poly.loop_indices:
         v = lo.data.vertices[lo.data.loops[li].vertex_index].co; lo.data.uv_layers[0].data[li].uv = (v.x + 0.5, v.y + 0.5)
-lo.scale = (LW, LH, 1); lo.location = (0, 0.4, -0.05)
+lo.scale = (LW, LH, 1); lo.location = (0, 0.4, -0.35)   # debajo de la base de los huevos (antes los cortaba y se veia por delante)
 lm, N, Lk = mat('logo'); tx = N.new('ShaderNodeTexImage'); tx.image = img
 le = N.new('ShaderNodeEmission'); le.inputs['Color'].default_value = (0.95, 0.95, 0.97, 1); lt = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
 sm = N.new('ShaderNodeMath'); sm.operation = 'MULTIPLY'; sm.inputs[1].default_value = float(os.environ.get('LOGOB', '0.85')); amr = N.new('ShaderNodeMapRange'); Lk.new(tx.outputs['Alpha'], amr.inputs[0]); amr.inputs[1].default_value = 0.15; amr.inputs[2].default_value = 0.6   # sin velo en los bordes del png
