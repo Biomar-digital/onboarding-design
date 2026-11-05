@@ -36,10 +36,13 @@ class G:                                                      # ayuda para armar
     def lit(s):                                               # cuanto mira la normal hacia LDIR (0..1)
         g = s.N.new('ShaderNodeNewGeometry'); v = s.N.new('ShaderNodeVectorMath'); v.operation = 'DOT_PRODUCT'
         s.Lk.new(g.outputs['Normal'], v.inputs[0]); v.inputs[1].default_value = LDIR; return s.m('MAXIMUM', v.outputs['Value'], 0.0)
-    def glow(s, strength, col=(1, 1, 1), trans=(1, 1, 1), ior=None):
+    def glow(s, strength, col=(1, 1, 1), trans=(1, 1, 1), ior=None, back=None):
         e = s.N.new('ShaderNodeEmission'); e.inputs['Color'].default_value = (*col, 1); s.Lk.new(strength, e.inputs['Strength'])
         if ior: t = s.N.new('ShaderNodeBsdfRefraction'); t.inputs['IOR'].default_value = ior; t.inputs['Roughness'].default_value = 0.0; t.inputs['Color'].default_value = (*trans, 1)
         else: t = s.N.new('ShaderNodeBsdfTransparent'); t.inputs['Color'].default_value = (*trans, 1)
+        if back is not None and back < 0.999:                # cara trasera (al salir del huevo): atenua lo que hay detras, no lo de adentro
+            gb = s.N.new('ShaderNodeNewGeometry'); mc = s.N.new('ShaderNodeMix'); mc.data_type = 'RGBA'; s.Lk.new(gb.outputs['Backfacing'], mc.inputs['Factor'])
+            mc.inputs[6].default_value = (*trans, 1); mc.inputs[7].default_value = (back, back, back, 1); s.Lk.new(mc.outputs[2], t.inputs['Color'])
         a = s.N.new('ShaderNodeAddShader'); s.Lk.new(t.outputs[0], a.inputs[0]); s.Lk.new(e.outputs[0], a.inputs[1])
         s.Lk.new(a.outputs[0], s.N['Material Output'].inputs['Surface'])
 K = lambda k, d: float(os.environ.get(k, d))
@@ -47,10 +50,10 @@ K = lambda k, d: float(os.environ.get(k, d))
 chor, N, Lk = mat('chorion'); g = G(N, Lk); f = g.facing()
 line = g.rng(f, 0.93, 0.995)
 sheen = g.m('MULTIPLY', g.rng(f, 0.45, 0.97, 0.0, 1.0), g.m('ADD', 0.25, g.m('MULTIPLY', g.lit(), 1.2)))
-g.glow(g.m('ADD', g.m('MULTIPLY', line, K('LINE', '1.5')), g.m('MULTIPLY', sheen, K('SHEEN', '0.16'))), (0.97, 0.95, 0.9), (1, 1, 1), K('CIOR', '1.04'))
+g.glow(g.m('ADD', g.m('MULTIPLY', line, K('LINE', '1.5')), g.m('MULTIPLY', sheen, K('SHEEN', '0.16'))), (0.97, 0.95, 0.9), (1, 1, 1), K('CIOR', '1.04'), K('CT', '1'))
 # ---- vitelo: segunda linea interior, mas tenue, y un velo lechoso apenas visible
 yolk, N, Lk = mat('yolk'); g = G(N, Lk); f = g.facing()
-g.glow(g.m('ADD', g.m('MULTIPLY', g.rng(f, 0.9, 0.99), K('YLINE', '0.45')), g.m('MULTIPLY', g.rng(f, 0.3, 0.9), 0.03)), (0.9, 0.9, 0.88), (0.97, 0.97, 0.97))
+g.glow(g.m('ADD', g.m('MULTIPLY', g.rng(f, 0.9, 0.99), K('YLINE', '0.45')), g.m('MULTIPLY', g.rng(f, 0.3, 0.9), 0.03)), (0.9, 0.9, 0.88), (0.97, 0.97, 0.97), None, K('YT', '1'))
 # ---- perlitas (granulos/gotitas de lipido): borde brillante, centro oscuro, punto de brillo del lado de la luz
 pearl, N, Lk = mat('pearl'); g = G(N, Lk); f = g.facing(0.4)
 spec = g.m('POWER', g.lit(), 6.0)
