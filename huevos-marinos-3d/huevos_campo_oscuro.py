@@ -46,21 +46,21 @@ K = lambda k, d: float(os.environ.get(k, d))
 chor, N, Lk = mat('chorion'); g = G(N, Lk); f = g.facing()
 line = g.rng(f, 0.93, 0.995)
 sheen = g.m('MULTIPLY', g.rng(f, 0.45, 0.97, 0.0, 1.0), g.m('ADD', 0.25, g.m('MULTIPLY', g.lit(), 1.2)))
-g.glow(g.m('ADD', g.m('MULTIPLY', line, K('LINE', '1.5')), g.m('MULTIPLY', sheen, K('SHEEN', '0.16'))), (0.93, 0.93, 0.95))
+g.glow(g.m('ADD', g.m('MULTIPLY', line, K('LINE', '1.5')), g.m('MULTIPLY', sheen, K('SHEEN', '0.16'))), (0.97, 0.95, 0.9))
 # ---- vitelo: segunda linea interior, mas tenue, y un velo lechoso apenas visible
 yolk, N, Lk = mat('yolk'); g = G(N, Lk); f = g.facing()
 g.glow(g.m('ADD', g.m('MULTIPLY', g.rng(f, 0.9, 0.99), K('YLINE', '0.45')), g.m('MULTIPLY', g.rng(f, 0.3, 0.9), 0.03)), (0.9, 0.9, 0.88), (0.97, 0.97, 0.97))
 # ---- perlitas (granulos/gotitas de lipido): borde brillante, centro oscuro, punto de brillo del lado de la luz
 pearl, N, Lk = mat('pearl'); g = G(N, Lk); f = g.facing(0.4)
 spec = g.m('POWER', g.lit(), 6.0)
-g.glow(g.m('ADD', g.m('ADD', g.rng(f, 0.4, 0.95, 0.18, K('PEARL', '1.25')), g.m('MULTIPLY', spec, 1.6)), 0.0), (1.0, 0.98, 0.95), (0.55, 0.55, 0.55))
+g.glow(g.m('ADD', g.m('ADD', g.rng(f, 0.4, 0.95, 0.18, K('PEARL', '1.25')), g.m('MULTIPLY', spec, 1.6)), 0.0), (1.0, 0.96, 0.88), (0.55, 0.55, 0.55))
 # ---- embrion: tejido translucido, contorno luminoso suave, relleno lechoso con grano fino
 emb, N, Lk = mat('embryo'); g = G(N, Lk); f = g.facing()
 tc = N.new('ShaderNodeTexCoord'); nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 9; nz.inputs['Detail'].default_value = 5; Lk.new(tc.outputs['Object'], nz.inputs['Vector'])
 fine = N.new('ShaderNodeTexNoise'); fine.inputs['Scale'].default_value = 90; fine.inputs['Detail'].default_value = 2; Lk.new(tc.outputs['Object'], fine.inputs['Vector'])
 fill = g.m('ADD', g.m('MULTIPLY', g.rng(nz.outputs['Fac'], 0.4, 0.7), 0.16), g.m('MULTIPLY', fine.outputs['Fac'], 0.06))
 edge = g.m('MULTIPLY', g.rng(f, 0.55, 0.97), g.m('ADD', 0.45, g.m('MULTIPLY', g.lit(), 0.9)))
-g.glow(g.m('ADD', g.m('MULTIPLY', edge, K('EDGE', '0.75')), fill), (0.95, 0.94, 0.9), (0.85, 0.85, 0.85))
+g.glow(g.m('ADD', g.m('MULTIPLY', edge, K('EDGE', '0.75')), fill), (0.97, 0.93, 0.85), (0.85, 0.85, 0.85))
 # cabeza (vesicula): bulbo translucido granulado y con brillo de borde
 head, N, Lk = mat('head'); g = G(N, Lk); f = g.facing()
 tc = N.new('ShaderNodeTexCoord'); vo = N.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value = 26; Lk.new(tc.outputs['Object'], vo.inputs['Vector'])
@@ -112,32 +112,33 @@ for k, ((cx, cy, rp, z), (hd, tl)) in enumerate(zip(EGGS, EMB)):
         sphere('pearl', R * R_.uniform(0.005, 0.01), q, 8).data.materials.append(pearl)
 # ---- placa de fondo (emisiva, fuera de foco): negra a la derecha, velo gris a la izquierda, fibras y polvo
 pl = bpy.data.objects.new('plate', bpy.data.meshes.new('plate')); sc.collection.objects.link(pl)
-bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=16); bm.to_mesh(pl.data); bm.free(); pl.location = (0, 0, -6)
+bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=16); bm.to_mesh(pl.data); bm.free(); pl.location = (0, 0, -14)
 pm, N, Lk = mat('plate'); g = G(N, Lk); tc = N.new('ShaderNodeTexCoord'); sx = N.new('ShaderNodeSeparateXYZ'); Lk.new(tc.outputs['Object'], sx.inputs[0])
 veil = g.rng(sx.outputs['X'], 4.0, -12.0, 0.0, K('VEIL', '0.11'))                  # gris a la izquierda
 nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.25; Lk.new(tc.outputs['Object'], nz.inputs['Vector'])
-e = N.new('ShaderNodeEmission'); e.inputs['Color'].default_value = (0.8, 0.82, 0.78, 1)
+e = N.new('ShaderNodeEmission'); e.inputs['Color'].default_value = (0.8, 0.8, 0.72, 1)
 Lk.new(g.m('MULTIPLY', veil, g.m('ADD', 0.6, g.m('MULTIPLY', nz.outputs['Fac'], 0.8))), e.inputs['Strength']); Lk.new(e.outputs[0], N['Material Output'].inputs['Surface']); pl.data.materials.append(pm)
 # aro de luz lila de la placa (abajo a la derecha subiendo hacia arriba a la derecha)
 ring = bpy.data.objects.new('ring', bpy.data.meshes.new('ring')); sc.collection.objects.link(ring)
 bm = bmesh.new(); bmesh.ops.create_circle(bm, cap_ends=False, segments=256, radius=1.0); bm.to_mesh(ring.data); bm.free()
-ring.location = P(200, -300, -5.0); ring.scale = (18.5, 19.7, 1); ring.rotation_euler = (0, 0, 0.0)
+ring.location = P(200, -300, -11.0); ring.scale = (18.5, 19.7, 1); ring.rotation_euler = (0, 0, 0.0)
 sk = ring.modifiers.new('w', 'SKIN')
-for v in ring.data.skin_vertices[0].data: v.radius = (0.045, 0.045)
+for v in ring.data.skin_vertices[0].data: v.radius = (0.035, 0.035)
 ring.modifiers.new('s', 'SUBSURF').levels = 2
 rm, N, Lk = mat('ring'); g = G(N, Lk); f = g.facing(0.5)
 g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.0), K('RING', '0.6')), (0.82, 0.8, 1.0))
 ring.data.materials.append(rm)
-fib, N, Lk = mat('fiber'); g = G(N, Lk); f = g.facing(0.5); g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.2), 0.16), (0.85, 0.85, 0.85))
+fib, N, Lk = mat('fiber'); g = G(N, Lk); f = g.facing(0.5); tc = N.new('ShaderNodeTexCoord'); bn = N.new('ShaderNodeTexNoise'); bn.inputs['Scale'].default_value = 4.0; bn.inputs['Detail'].default_value = 1; Lk.new(tc.outputs['Object'], bn.inputs['Vector'])
+g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.2), g.m('ADD', 0.12, g.rng(bn.outputs['Fac'], 0.55, 0.75, 0.0, 0.6))), (0.88, 0.87, 0.82))
 for (a, b_, w) in (((180, 1230), (860, -40), 0.05), ((1240, 110), (1560, 480), 0.07), ((300, 1430), (560, 1100), 0.04)):
-    A = P(*a, -2.5); B = P(*b_, -2.5); cu = bpy.data.curves.new('fib', 'CURVE'); cu.dimensions = '3D'; cu.bevel_depth = w; cu.bevel_resolution = 3
+    A = P(*a, -9.0); B = P(*b_, -9.0); cu = bpy.data.curves.new('fib', 'CURVE'); cu.dimensions = '3D'; cu.bevel_depth = w * 0.8; cu.bevel_resolution = 3
     sp = cu.splines.new('POLY'); sp.points.add(7)
     for i in range(8):
         q = A.lerp(B, i / 7) + mathutils.Vector((R_.gauss(0, 0.05), R_.gauss(0, 0.05), 0)); sp.points[i].co = (q.x, q.y, q.z, 1); sp.points[i].radius = R_.uniform(0.5, 1.4)
     o = bpy.data.objects.new('fiber', cu); sc.collection.objects.link(o); cu.materials.append(fib)
 dust, N, Lk = mat('dust'); g = G(N, Lk); f = g.facing(0.5); g.glow(g.m('MULTIPLY', g.rng(f, 1.0, 0.0), 0.9), (0.9, 0.9, 0.9))
 for _ in range(220):
-    q = P(R_.uniform(0, IW), R_.uniform(0, IH), R_.uniform(-3.0, 0.6))
+    q = P(R_.uniform(0, IW), R_.uniform(0, IH), R_.uniform(-8.0, 0.4))
     if any((q.xy - P(cx, cy).xy).length < rp / PX * 1.02 for cx, cy, rp, _ in EGGS) and q.z > -1: continue
     sphere('dust', R_.uniform(0.006, 0.02), q, 8).data.materials.append(dust)
 # ---- mundo negro; camara de lupa con foco corto (lo que esta fuera del plano de los huevos se desenfoca)
@@ -146,7 +147,7 @@ cd = bpy.data.cameras.new('cam'); cd.type = 'ORTHO'; cd.ortho_scale = IW / PX
 cam = bpy.data.objects.new('cam', cd); sc.collection.objects.link(cam); cam.location = (0, 0, 30); sc.camera = cam
 if os.environ.get('ZOOM'):                                    # ZOOM=x,y,ancho_px: acercamiento sobre la foto
     zx, zy, zw = [float(v) for v in os.environ['ZOOM'].split(',')]; q = P(zx, zy); cam.location = (q.x, q.y, 30); cd.ortho_scale = zw / PX
-cd.dof.use_dof = True; cd.dof.focus_distance = 30.0; cd.dof.aperture_fstop = K('FSTOP', '0.3')
+cd.dof.use_dof = True; cd.dof.focus_distance = 30.0; cd.dof.aperture_fstop = K('FSTOP', '0.4')
 sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = SPP; sc.cycles.use_denoising = False
 sc.cycles.max_bounces = 16; sc.cycles.transparent_max_bounces = 64
 sc.render.resolution_x = RW; sc.render.resolution_y = RW * IH // IW
