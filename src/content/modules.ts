@@ -38,7 +38,6 @@ export const modules: Module[] = [
         note: "Powered by Partnership. Driven by Innovation.",
       },
     ],
-    quiz: [],
     exercises: [],
   },
 
@@ -78,31 +77,6 @@ export const modules: Module[] = [
           "Isidora Silva Ch. — Graphic Designer. 3 years at BioMar. Graphic & print design (external and internal). Supporting brand consistency across markets. Works with campaigns & corporate communication.",
           "Andres Bernadou — Multimedia Designer. 2 years at BioMar. Video & digital design (external and internal). Supporting storytelling and concept creation across markets. Works with campaigns & corporate communication.",
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "What does the Design Hub combine? (select all)",
-        options: [
-          "Creative execution",
-          "Brand governance",
-          "Technical, technology-based knowledge",
-          "Sales forecasting",
-        ],
-        correct: [0, 1, 2],
-        explanation:
-          "The Design Hub combines creative execution, brand governance and technical/technology-based knowledge — not sales forecasting.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "The Design Hub completes more than 1000 tasks annually.",
-        options: ["True", "False"],
-        correct: [0],
-        explanation:
-          "True — the Hub does more than 1000 tasks a year, ranging from a few hours to several months of work.",
       },
     ],
     exercises: [
@@ -189,26 +163,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "Which are pillars of the Design Hub? (select all)",
-        options: ["Consistency", "Efficiency", "Discounting", "Brand & Product Protection"],
-        correct: [0, 1, 3],
-        explanation:
-          "The five pillars are Consistency, Efficiency, Quality, Scalability and Brand & Product Protection.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Which ownership area covers art direction and strategic guidance?",
-        options: ["Graphic Design", "Motion & Video", "Brand & Creative Direction", "Production & Coordination"],
-        correct: [2],
-        explanation:
-          "Brand & Creative Direction owns visual consistency, art direction and strategic guidance.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -274,25 +228,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "boolean",
-        prompt: "The Design Hub describes its approach as transactional rather than collaborative.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — it is explicitly collaborative rather than transactional.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What visual element unifies the brand family after the rebrand?",
-        options: ["A drop shadow", "The swoosh", "A gradient", "A serif wordmark"],
-        correct: [1],
-        explanation: "The swoosh unifies the family so the brands read as sharing one parent.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -342,29 +277,6 @@ export const modules: Module[] = [
           "Automation, improved workflows and transparency",
         ],
         note: "Looking ahead: product ownership.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "File & asset management and version control fall under which rhythm?",
-        options: ["Weekly", "Daily", "Always-on", "Monthly"],
-        correct: [2],
-        explanation: "Always-on — shared systems, version control and accessibility run continuously.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What is one current (Hub 2.0) challenge mentioned?",
-        options: [
-          "Too few requests",
-          "Global consistency vs local flexibility",
-          "No markets to serve",
-          "Excess designers",
-        ],
-        correct: [1],
-        explanation: "Balancing global consistency with local flexibility is a named current challenge.",
       },
     ],
     exercises: [
@@ -443,26 +355,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "Which are the three working areas of Marketing? (select all)",
-        options: ["Global Marketing", "Divisional Marketing", "Local Marketing", "Fleet Operations"],
-        correct: [0, 1, 2],
-        explanation:
-          "The three areas are Global Marketing, Divisional Marketing and Local Marketing.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Who leads Global Marketing, the Design Hub's home team?",
-        options: ["Carlos Díaz", "Katherine Bryar", "Bitsch & Bitsch", "Marcel Huijsmans"],
-        correct: [1],
-        explanation:
-          "Katherine Bryar is the Global Marketing Director. Bitsch & Bitsch provides external Creative Direction; Marcel Huijsmans directs Salmon Marketing.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -511,36 +403,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What principle orders the marketing manager introductions?",
-        options: [
-          "Alphabetical by country",
-          "How much the Design Hub works with each market",
-          "By time zone only",
-          "Randomly",
-        ],
-        correct: [1],
-        explanation:
-          "Meet them based on how much the Hub works with each market — the closest collaborators first.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What is the difference between regular and special meetings?",
-        options: [
-          "Regular meetings never happen",
-          "Regular = recurring cadence; Special = ad hoc sessions",
-          "Special meetings are for social events only",
-          "There is no difference",
-        ],
-        correct: [1],
-        explanation:
-          "Regular meetings are a recurring alignment cadence; special meetings are ad hoc (planning, reviews, initiatives).",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -581,25 +443,6 @@ export const modules: Module[] = [
       {
         heading: "Budgets",
         note: "Budget processes and figures are managed by Marketing leadership. As a designer, the practical impact is on prioritisation and turnaround — see the Design Hub 2026 chapter for how priority and turnaround work day to day.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You need to submit a brand-new task. Which channel?",
-        options: ["Teams chat", "Email", "A hallway chat", "SMS"],
-        correct: [1],
-        explanation:
-          "New tasks/projects and formal feedback go by email; Teams is for follow-ups; meetings are for defining/reviewing.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "The 2026 Global Marketing Plan is organized at which two levels?",
-        options: ["Group and Global", "Weekly and Monthly", "Print and Digital", "EMEA and Asia"],
-        correct: [0],
-        explanation: "Group and Global — organisation-wide vs Global Marketing-specific.",
       },
     ],
     exercises: [
@@ -670,34 +513,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "A brief mentions a RAS (recirculating aquaculture system) hatchery project. Which brand is it most likely for?",
-        options: ["SmartCare", "ORBIT / LARVIVA ORBIT", "VetCare", "Blue Impact"],
-        correct: [1],
-        explanation:
-          "ORBIT is BioMar's feed range for advanced farming tech like RAS; LARVIVA ORBIT applies that specifically to marine nurseries.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What is BioMar's brand archetype?",
-        options: ["The Ruler", "The Innocent", "The Enabler", "The Jester"],
-        correct: [2],
-        explanation:
-          "BioMar is positioned as the Enabler — a catalyst for change through collaboration with industry partners.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "Which brand is BioMar's preventative health feed programme?",
-        options: ["SmartCare", "LARVIVA", "EXIA", "P 3.0"],
-        correct: [0],
-        explanation: "SmartCare — \"You care. We care.\" — is the preventative health feed range.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -750,24 +565,6 @@ export const modules: Module[] = [
           { label: "Task", value: "Small, short — not many reviews or much info needed. E.g. ads, handouts, brochures." },
           { label: "Project", value: "A group of tasks toward a bigger goal. E.g. logos, new product branding, global campaigns." },
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "A single event flyer with one round of review is a…",
-        options: ["Project", "Task", "Campaign", "Program"],
-        correct: [1],
-        explanation: "A small, short, self-contained deliverable is a Task.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Launching a new product brand (logo, guidelines, campaign) is a…",
-        options: ["Task", "Project"],
-        correct: [1],
-        explanation: "Multiple interdependent deliverables toward one bigger goal = a Project.",
       },
     ],
     exercises: [
@@ -827,37 +624,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What are the two dates every request must have?",
-        options: ["Start date and end date", "First Draft Date and Final Due Date", "ASAP and EOD", "Draft and review"],
-        correct: [1],
-        explanation: "First Draft Date and Final Due Date — 'ASAP' is not a deadline.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "Priority is set by whoever asks the loudest.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation: "False — priority is set by business value and impact.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "What problem does the InCopy + InDesign workflow solve?",
-        options: [
-          "Rendering 3D",
-          "Letting writers and designers work on the same layout without clashing",
-          "Video editing",
-          "Color management",
-        ],
-        correct: [1],
-        explanation: "InCopy integrates with InDesign so writers and designers work in unison, avoiding back-and-forth.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -908,24 +674,6 @@ export const modules: Module[] = [
         note: "For video feedback, comments must reference a timestamp written as HH:MM:SS.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Where does Marketing send the Brief form?",
-        options: ["design@biomar.com", "Any team member's personal email", "Slack", "It's submitted verbally only"],
-        correct: [0],
-        explanation: "The Brief form is filled out and sent via email to design@biomar.com.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "How must video feedback be referenced?",
-        options: ["By frame number", "By a timestamp written as HH:MM:SS", "By color", "It can't be — video isn't reviewed"],
-        correct: [1],
-        explanation: "Video feedback must include a timestamp in HH:MM:SS.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -969,24 +717,6 @@ export const modules: Module[] = [
         heading: "Yearly calendar",
         bullets: ["Sustainability Booklet", "Christmas Artwork", "Easter", "Summer"],
         note: "Plan around the yearly calendar so recurring work is booked ahead.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What ending marks a file for the Draft Date?",
-        options: ["FINAL", "PROOF", "PRINT", "DIGITAL"],
-        correct: [1],
-        explanation: "The file for review, tied to the Draft Date, ends in PROOF.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "Submitting earlier gets you a more accurate timeframe on the calendar.",
-        options: ["True", "False"],
-        correct: [0],
-        explanation: "True — the sooner you submit, the sooner it's on the calendar with an accurate timeframe.",
       },
     ],
     exercises: [
@@ -1036,24 +766,6 @@ export const modules: Module[] = [
         note: "Download the Brief Template below and use it to submit new requests with all the required information.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "An in-depth review of the artwork is best done…",
-        options: ["By email only", "In a verbal meeting", "Via Flaticon", "Never"],
-        correct: [1],
-        explanation: "In-depth artwork review and clarifying/defining projects are handled verbally.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Who must inform the relevant Forum member about current tasks/projects?",
-        options: ["The Design Hub", "Marketing Managers", "IT", "External partners"],
-        correct: [1],
-        explanation: "Marketing Managers must inform their relevant Forum member of current tasks/projects.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -1096,31 +808,6 @@ export const modules: Module[] = [
           "Wall dimensions approx. 1.2m × 2.5m",
         ],
         note: "Compare this against the four minimum-info items from earlier: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What makes this example brief strong?",
-        options: [
-          "It's very short",
-          "It gives exact, concrete specifications (sizes, location)",
-          "It has no deadline",
-          "It was submitted verbally",
-        ],
-        correct: [1],
-        explanation:
-          "Exact specs (60×40cm signage, ~1.2×2.5m wall) are exactly the kind of concrete detail a good brief includes.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "This example is meant to be memorised as general BioMar facility information, not as a brief-writing example.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — it's a worked example attached to the Brief Template, illustrating good specificity, not standalone facility trivia.",
       },
     ],
     exercises: [
@@ -1183,24 +870,6 @@ export const modules: Module[] = [
         note: "If the minimum information is missing, move the request to Waiting and ask for what's missing before starting.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "Which of these are part of the minimum information a brief must include?",
-        options: ["Purpose (what it's for)", "Draft and final dates", "Format & specifications", "The designer's mood"],
-        correct: [0, 1, 2],
-        explanation: "Purpose, timeline and specifications are required, along with copy/assets.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "A brief is missing the final delivery date and specs. What do you do?",
-        options: ["Start anyway and guess", "Move it to Waiting and request the missing info", "Close the task", "Escalate to the CEO"],
-        correct: [1],
-        explanation: "Move it to Waiting and ask for the missing information before starting.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -1251,29 +920,6 @@ export const modules: Module[] = [
           "Notes — always include: draft deadline, final deadline, email subject",
         ],
         note: "Adding the email subject to Notes is especially important — it's how you jump back to the original thread.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "An email has no 'Teams' tag. What should you assume?",
-        options: [
-          "It's already in the task manager",
-          "It has not been added to the task manager yet",
-          "It's spam",
-          "It's already completed",
-        ],
-        correct: [1],
-        explanation: "No tag means assume it has not yet been added and needs to be reviewed.",
-      },
-      {
-        id: "q2",
-        type: "multi",
-        prompt: "What must the Notes section of a card always include?",
-        options: ["Draft deadline", "Final deadline", "Email subject", "The client's phone number"],
-        correct: [0, 1, 2],
-        explanation: "Always include the draft deadline, final deadline and email subject.",
       },
     ],
     exercises: [
@@ -1336,24 +982,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Which follows the design-file naming pattern?",
-        options: ["brochure_final_v2.pdf", "2022-03 ES_Orbit_Brochure", "orbit thing.ai", "FINAL FINAL real.pdf"],
-        correct: [1],
-        explanation: "The pattern is Year-Month Language_Market Brand/Product-FileType.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Where do superseded PROOF versions go once feedback arrives?",
-        options: ["Trash", "Files Provided", "Previous Versions", "The requester's inbox"],
-        correct: [2],
-        explanation: "Move them into the Previous Versions folder.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -1408,32 +1036,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Which version stage is ready to be shown to the counterpart for review?",
-        options: ["DRAFT", "PROOF", "FINAL", "None — never show them anything"],
-        correct: [1],
-        explanation: "PROOF is the review stage sent to the counterpart.",
-      },
-      {
-        id: "q2",
-        type: "multi",
-        prompt: "Closing a task happens in which two places?",
-        options: ["The task manager", "The email inbox", "LinkedIn", "The printer's portal"],
-        correct: [0, 1],
-        explanation: "Close in both the task manager and the email inbox.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "What do PRINT final files usually need?",
-        options: ["Bleed and/or crop-marks", "A transparent background", "Embedded video", "Nothing special"],
-        correct: [0],
-        explanation: "Print material usually needs bleed and/or crop-marks.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -1478,24 +1080,6 @@ export const modules: Module[] = [
           { label: "Teams chat", value: "Follow up on tasks/projects" },
           { label: "Verbal / meetings", value: "Clarify/define · in-depth review" },
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You have a datasheet question. Who do you write to?",
-        options: ["Daniela", "Kat", "Torunn", "Ewan"],
-        correct: [1],
-        explanation: "Datasheets → Kat (katmi@biomar.com).",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "A LARVIVA (hatchery) question should go to…",
-        options: ["Elisabeth", "Kat", "Daniela", "Bruno"],
-        correct: [2],
-        explanation: "LARVIVA questions go to Daniela (vdv@biomar.com).",
       },
     ],
     exercises: [
@@ -1564,25 +1148,6 @@ export const modules: Module[] = [
         note: "The Primary Logo without the box element is ONLY for promotional-material applications where the primary logo can't work. It can never be used against any colour other than dark blue, navy or black — and it can NEVER be used in print or digital media applications.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "As a general rule, where should the BioMar logo be placed?",
-        options: ["Dead center", "Top or bottom right corner", "Bottom left only", "Anywhere, no rule"],
-        correct: [1],
-        explanation: "As a general rule, the logo must be placed in the top or bottom right hand corner.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "The promotional-only logo (without the box) can be used in print or digital media.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — it can NEVER be used in print or digital media, only for specific promotional-material applications.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -1634,24 +1199,6 @@ export const modules: Module[] = [
           { label: "Weight", value: "3pt recommended for most applications" },
           { label: "Colours", value: "Crisp Blue · Sky Blue · Ocean Blue · BioMar Blue" },
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What is BioMar's primary corporate typeface?",
-        options: ["Arial", "Avenir Next", "Times New Roman", "Helvetica"],
-        correct: [1],
-        explanation: "Avenir Next is the primary corporate typeface, used whenever possible.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "When Avenir Next can't be used in digital media, what do you use?",
-        options: ["Any font available", "The secondary typeface (Arial)", "A hand-drawn font", "No text at all"],
-        correct: [1],
-        explanation: "Digital media falls back to the secondary typeface (Arial) when Avenir Next isn't available.",
       },
     ],
     exercises: [
@@ -1707,25 +1254,6 @@ export const modules: Module[] = [
           { label: "Ocean / Sky Blue", value: "Used as page breaks or similar" },
           { label: "BioMar Blue", value: "In place of a plain dark blue background" },
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Before doing BioMar design work in Adobe apps, what colour setting must you use?",
-        options: ["sRGB Web", "Europe General Purpose 3", "US Web Coated", "Default"],
-        correct: [1],
-        explanation: "Set colour settings to 'Europe General Purpose 3' so colours display consistently.",
-      },
-      {
-        id: "q2",
-        type: "multi",
-        prompt: "Which are BioMar Shapes (raw materials)? Select all that apply.",
-        options: ["Fish", "Shrimp / Krill", "Salmon feed pellet", "Wheat"],
-        correct: [0, 1, 3],
-        explanation:
-          "The 7 shapes are Fish, Shrimp/Krill, Macro Algae, Wheat, Corn, Leafy Greens and Palm — 'Salmon feed pellet' isn't one of them.",
       },
     ],
     exercises: [
@@ -1784,24 +1312,6 @@ export const modules: Module[] = [
           "Avoid over-exposure — you should still see tone in the sky",
           "Desaturation can improve harmony (skin tone, materials) versus an overly vibrant image",
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "What are the 4 values that form BioMar's 'Brand House'?",
-        options: ["Collaboration", "Innovation", "Sustainability", "Discounting"],
-        correct: [0, 1, 2],
-        explanation: "Collaboration, Innovation, Sustainability and Performance form the Brand House.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "Crashing waves and stormy seas are the preferred style for water imagery.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation: "False — water imagery should be calm, clear and location-neutral.",
       },
     ],
     exercises: [
@@ -1942,77 +1452,6 @@ export const modules: Module[] = [
         note: "Tip — ask yourself: “Could this post work without showing the bag?” If yes, lead with the concept and use the bag only when it adds value.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "boolean",
-        prompt: "Gradients are the preferred way to add depth to BioMar design concepts.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — avoid gradients (they hurt brand consistency and print reproduction). Use solid colours, colour blocks or overlays instead.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What colour is generally avoided on BioMar packaging, except for medical feed?",
-        options: ["Blue", "Green", "Red", "White"],
-        correct: [2],
-        explanation:
-          "Red is a prohibited colour — it's strongly associated with a main competitor. Medical feed is the only exception, where local regulations may require it.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "A custom bag needs a colour that isn't in the approved palette. What do you do?",
-        options: [
-          "Pick the closest shade yourself",
-          "Get it approved by Global Marketing and the Product Manager before implementing",
-          "Copy the colour from a competitor's bag",
-          "Use a gradient to blend two approved colours",
-        ],
-        correct: [1],
-        explanation:
-          "Any new colour must be approved by Global Marketing and the Product Manager before implementation. Competitor colours and gradients are both to be avoided.",
-      },
-      {
-        id: "q4",
-        type: "single",
-        prompt: "What are the two main elements of a website bag?",
-        options: [
-          "Wave and icon set",
-          "Colour coding and life stage wheel",
-          "Blue top and white logo",
-          "Gradient and mockup",
-        ],
-        correct: [1],
-        explanation:
-          "Website bags are digital-only: colour coding shows the product category, the life stage wheel shows the target species stage. They're not a direct copy of the physical bag.",
-      },
-      {
-        id: "q5",
-        type: "single",
-        prompt: "How should the top area of a recent BioMar bag look?",
-        options: [
-          "BioMar Blue with the secondary white BioMar logo",
-          "White with a gradient",
-          "Red for medical feed, blue for everything else",
-          "Whatever the market prefers, no reference needed",
-        ],
-        correct: [0],
-        explanation:
-          "Recent bags keep the top in BioMar Blue with the secondary white logo so the brand is recognised first. Exceptions exist, but always review existing bags first.",
-      },
-      {
-        id: "q6",
-        type: "single",
-        prompt: "Which casing do you use for chart titles and short headings?",
-        options: ["Title Case", "Sentence case", "ALL CAPS", "lowercase"],
-        correct: [0],
-        explanation:
-          "Title Case for titles, headings and short elements; sentence case for longer copy, body text and captions.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -2050,26 +1489,6 @@ export const modules: Module[] = [
         note: "Logins and passwords are never stored here — request access through Loop Link and the tool owner. This map is only about what each tool is and when to reach for it.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You need an AI voice-over for a video. Which tool?",
-        options: ["Grammarly", "ElevenLabs", "Lasertryk", "Miro"],
-        correct: [1],
-        explanation:
-          "ElevenLabs generates AI voice-overs. Higgsfield.ai is for AI video/image; Grammarly is copy; Lasertryk is print.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Where do the actual logins / passwords for these tools live?",
-        options: ["In this Tools Map", "In Loop Link (request access from the owner)", "In the task manager", "In Grammarly"],
-        correct: [1],
-        explanation:
-          "Access and credentials are managed via Loop Link and the tool owner — never stored in the onboarding material.",
-      },
-    ],
     exercises: [
       {
         id: "e1",
@@ -2090,31 +1509,6 @@ export const modules: Module[] = [
     sections: [
       {
         note: "This is a live map of the real structure — not a simplified example. Use the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You need to save a roll-up banner for a specific LARVIVA sub-product campaign. What's the first question to ask yourself?",
-        options: [
-          "Is it an asset?",
-          "Is it a product?",
-          "Is it for a specific market?",
-          "Does that category have a folder?",
-        ],
-        correct: [1],
-        explanation:
-          "The wizard always starts by asking whether the file is for a product — that's what routes you into the Product folders (LARVIVA, INICIO, SmartCare, etc.) in the first place.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "A brand logo or template isn't tied to any one product or market. Where does it belong?",
-        options: ["Design Assets", "Global", "Corporate", "Create a new top-level folder"],
-        correct: [0],
-        explanation:
-          "Anything that isn't a product and isn't market/org-specific but is an asset (logo, template, guideline) goes into Design Assets.",
       },
     ],
     exercises: [
@@ -2172,7 +1566,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [],
     exercises: [],
   },
 ];

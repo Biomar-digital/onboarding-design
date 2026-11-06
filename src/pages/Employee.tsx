@@ -106,7 +106,6 @@ function ModuleRow({
 }) {
   const m = modulesById[moduleId];
   const status = moduleStatus(person, moduleId);
-  const score = person.progress[moduleId]?.quizScore;
   return (
     <Link
       to={`${base}/module/${moduleId}`}
@@ -121,9 +120,6 @@ function ModuleRow({
       </span>
       <span className="text-right text-xs text-slate-400">
         <span className="block">{m.estMinutes} min</span>
-        {status === "done" && score != null && (
-          <span className="font-semibold text-biomar-green">quiz {score}%</span>
-        )}
       </span>
     </Link>
   );
@@ -272,13 +268,9 @@ function Header({
           </p>
         )}
       </div>
-      <div className="grid grid-cols-3 divide-x divide-slate-100">
+      <div className="grid grid-cols-2 divide-x divide-slate-100">
         <Stat label="Modules" value={`${stats.done}/${stats.total}`} />
         <Stat label="Complete" value={`${pct}%`} />
-        <Stat
-          label="Avg quiz"
-          value={stats.avgScore == null ? "—" : `${stats.avgScore}%`}
-        />
       </div>
       <div className="h-2 w-full bg-slate-100">
         <div

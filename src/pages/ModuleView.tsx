@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { modulesById } from "../content/modules";
 import { chaptersById } from "../content/chapters";
@@ -9,7 +8,7 @@ import { DeckViewer } from "../components/DeckViewer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ToolsMap } from "../components/ToolsMap";
 import { FolderStructureExplorer } from "../components/FolderStructureExplorer";
-import type { LessonSection, QuizQuestion } from "../content/types";
+import type { LessonSection } from "../content/types";
 
 export function ModuleView() {
   const { moduleId, personId } = useParams();
@@ -119,37 +118,31 @@ export function ModuleView() {
         {viewingAs ? (
           <section className="card p-6 text-sm text-slate-500">
             {alreadyDone
-              ? `${viewingAs.name} completed this module${
-                  subject.progress[module.id]?.quizScore != null
-                    ? ` (quiz ${subject.progress[module.id]?.quizScore}%)`
-                    : ""
-                }.`
+              ? `${viewingAs.name} completed this module.`
               : `${viewingAs.name} hasn't completed this module yet.`}
           </section>
-        ) : module.quiz.length > 0 ? (
-          <Quiz
-            questions={module.quiz}
-            alreadyDone={!!alreadyDone}
-            onPass={(score) => {
-              markModuleComplete(subject.id, module.id, score);
-              navigate("/");
-            }}
-          />
+        ) : alreadyDone ? (
+          <section className="card flex items-center justify-between p-6">
+            <p className="text-sm text-biomar-green">✓ You completed this module.</p>
+            <button className="btn-ghost" onClick={() => navigate("/")}>
+              Back to my onboarding
+            </button>
+          </section>
         ) : (
-          !alreadyDone && (
-            <section className="card flex items-center justify-between p-6">
-              <p className="text-sm text-slate-500">No quiz for this module.</p>
-              <button
-                className="btn-accent"
-                onClick={() => {
-                  markModuleComplete(subject.id, module.id, 100);
-                  navigate("/");
-                }}
-              >
-                Mark complete & continue
-              </button>
-            </section>
-          )
+          <section className="card flex items-center justify-between p-6">
+            <p className="text-sm text-slate-500">
+              Done with this module? Mark it complete to continue.
+            </p>
+            <button
+              className="btn-accent"
+              onClick={() => {
+                markModuleComplete(subject.id, module.id);
+                navigate("/");
+              }}
+            >
+              Mark complete & continue
+            </button>
+          </section>
         )}
       </article>
 
@@ -200,167 +193,5 @@ function Section({ section }: { section: LessonSection }) {
         </p>
       )}
     </div>
-  );
-}
-
-function Quiz({
-  questions,
-  alreadyDone,
-  onPass,
-}: {
-  questions: QuizQuestion[];
-  alreadyDone: boolean;
-  onPass: (score: number) => void;
-}) {
-  const [answers, setAnswers] = useState<Record<string, number[]>>({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const score = useMemo(() => {
-    let correct = 0;
-    for (const q of questions) {
-      const a = (answers[q.id] ?? []).slice().sort();
-      const c = q.correct.slice().sort();
-      if (a.length === c.length && a.every((v, i) => v === c[i])) correct++;
-    }
-    return Math.round((correct / questions.length) * 100);
-  }, [answers, questions]);
-
-  const allAnswered = questions.every((q) => (answers[q.id]?.length ?? 0) > 0);
-
-  const toggle = (q: QuizQuestion, idx: number) => {
-    if (submitted) return;
-    setAnswers((prev) => {
-      const cur = prev[q.id] ?? [];
-      if (q.type === "multi") {
-        return {
-          ...prev,
-          [q.id]: cur.includes(idx)
-            ? cur.filter((i) => i !== idx)
-            : [...cur, idx],
-        };
-      }
-      return { ...prev, [q.id]: [idx] };
-    });
-  };
-
-  return (
-    <section className="card p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-          Knowledge check
-        </h2>
-        {alreadyDone && !submitted && (
-          <span className="chip bg-biomar-green/10 text-biomar-green">
-            Already completed — retake anytime
-          </span>
-        )}
-      </div>
-
-      <div className="mt-4 space-y-6">
-        {questions.map((q, qi) => {
-          const chosen = answers[q.id] ?? [];
-          return (
-            <div key={q.id}>
-              <p className="font-semibold text-biomar-navy">
-                {qi + 1}. {q.prompt}
-                {q.type === "multi" && (
-                  <span className="ml-2 text-xs font-normal text-slate-400">
-                    (select all that apply)
-                  </span>
-                )}
-              </p>
-              <div className="mt-2 space-y-1.5">
-                {q.options.map((opt, oi) => {
-                  const isChosen = chosen.includes(oi);
-                  const isCorrect = q.correct.includes(oi);
-                  let cls =
-                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition ";
-                  if (submitted) {
-                    if (isCorrect)
-                      cls += "border-biomar-green bg-biomar-green/10 text-biomar-navy";
-                    else if (isChosen)
-                      cls += "border-red-300 bg-red-50 text-red-700";
-                    else cls += "border-slate-100 text-slate-500";
-                  } else {
-                    cls += isChosen
-                      ? "border-biomar-swoosh bg-biomar-ice text-biomar-navy"
-                      : "border-slate-200 hover:border-biomar-swoosh/60";
-                  }
-                  return (
-                    <label key={oi} className={cls}>
-                      <input
-                        type={q.type === "multi" ? "checkbox" : "radio"}
-                        name={q.id}
-                        checked={isChosen}
-                        onChange={() => toggle(q, oi)}
-                        className="accent-biomar-swoosh"
-                      />
-                      {opt}
-                      {submitted && isCorrect && (
-                        <span className="ml-auto text-xs font-semibold text-biomar-green">
-                          correct
-                        </span>
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-              {submitted && (
-                <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  {q.explanation}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-        {!submitted ? (
-          <>
-            <p className="text-sm text-slate-400">
-              {allAnswered
-                ? "All answered — submit to check."
-                : "Answer every question to submit."}
-            </p>
-            <button
-              className="btn-primary"
-              disabled={!allAnswered}
-              onClick={() => setSubmitted(true)}
-            >
-              Submit answers
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm">
-              You scored{" "}
-              <span
-                className={`font-bold ${
-                  score >= 70 ? "text-biomar-green" : "text-amber-600"
-                }`}
-              >
-                {score}%
-              </span>
-              {score < 70 && " — review and retake to reinforce the concepts."}
-            </p>
-            <div className="flex gap-2">
-              <button
-                className="btn-ghost"
-                onClick={() => {
-                  setSubmitted(false);
-                  setAnswers({});
-                }}
-              >
-                Retake
-              </button>
-              <button className="btn-accent" onClick={() => onPass(score)}>
-                Mark complete & continue
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </section>
   );
 }

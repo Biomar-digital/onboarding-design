@@ -31,18 +31,6 @@ export interface Chapter {
   description: string;
 }
 
-export interface QuizQuestion {
-  id: string;
-  /** "single" = one correct option, "multi" = several, "boolean" = true/false. */
-  type: "single" | "multi" | "boolean";
-  prompt: string;
-  options: string[];
-  /** Indexes into `options` that are correct. */
-  correct: number[];
-  /** Shown after answering, right or wrong, to reinforce the concept. */
-  explanation: string;
-}
-
 export interface Exercise {
   id: string;
   title: string;
@@ -93,7 +81,6 @@ export interface Module {
   /** Supplementary files (e.g. a template) referenced alongside the material. */
   resources?: ModuleResource[];
   sections: LessonSection[];
-  quiz: QuizQuestion[];
   exercises: Exercise[];
 }
 
@@ -161,6 +148,6 @@ export interface Person {
   /** Per-module progress the employee accrues. */
   progress: Record<
     string,
-    { completed: boolean; quizScore: number | null }
+    { completed: boolean; quizScore?: number | null }
   >;
 }

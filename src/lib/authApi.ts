@@ -164,11 +164,11 @@ export async function savePeople(people: Person[]): Promise<Person[]> {
   return data.people;
 }
 
-export async function saveProgress(moduleId: string, quizScore: number | null): Promise<void> {
+export async function saveProgress(moduleId: string): Promise<void> {
   const res = await call("/api/progress", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ moduleId, quizScore }),
+    body: JSON.stringify({ moduleId }),
   });
   if (!res.ok) throw new Error(`Could not save progress (${res.status}).`);
 }

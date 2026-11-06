@@ -77,11 +77,7 @@ interface StoreValue {
   removePerson: (id: string) => void;
   setAssignments: (personId: string, moduleIds: string[]) => void;
   setSchedule: (personId: string, schedule: Record<string, string>) => void;
-  markModuleComplete: (
-    personId: string,
-    moduleId: string,
-    quizScore: number,
-  ) => void;
+  markModuleComplete: (personId: string, moduleId: string) => void;
   publish: () => Promise<{ ok: boolean; message: string }>;
   resetDemo: () => void;
 }
@@ -276,9 +272,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setPeople((people) =>
           people.map((p) => (p.id === personId ? { ...p, schedule } : p)),
         ),
-      markModuleComplete: (personId, moduleId, quizScore) => {
+      markModuleComplete: (personId, moduleId) => {
         if (roleRef.current === "employee") {
-          authApi.saveProgress(moduleId, quizScore).catch(() => {});
+          authApi.saveProgress(moduleId).catch(() => {});
         }
         setPeople((people) =>
           people.map((p) =>
@@ -287,7 +283,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                   ...p,
                   progress: {
                     ...p.progress,
-                    [moduleId]: { completed: true, quizScore },
+                    [moduleId]: { completed: true },
                   },
                 }
               : p,
