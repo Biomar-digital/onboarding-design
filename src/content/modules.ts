@@ -51,7 +51,7 @@ export const modules: Module[] = [
       "The cover, what the Design Hub is, and the team behind it.",
     estMinutes: 15,
     material: {
-      file: `${SLICE}/strategic--01-who-we-are.pptx`,
+      file: `${SLICE}/strategic--01-who-we-are-v2.pptx`,
       type: "pptx",
       range: "Slides 1–3",
     },
@@ -73,8 +73,8 @@ export const modules: Module[] = [
       {
         heading: "Who we are",
         bullets: [
-          "Isidora Silva Ch. — Graphic Designer. 3 years at BioMar. Graphic & print design (external and internal). Supporting brand consistency across markets. Works with campaigns & corporate communication.",
           "Andres Bernadou — Multimedia Designer. 2 years at BioMar. Video & digital design (external and internal). Supporting storytelling and concept creation across markets. Works with campaigns & corporate communication.",
+          "New designer — joining the Design Hub.",
         ],
       },
     ],
@@ -258,7 +258,7 @@ export const modules: Module[] = [
       "What Global Marketing is, its three working areas, the Global Marketing team and the regional marketing organisation.",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/global--01-team-organisation.pptx`,
+      file: `${SLICE}/global--01-team-organisation-v2.pptx`,
       type: "pptx",
       range: "Slides 1–6",
     },
@@ -295,7 +295,6 @@ export const modules: Module[] = [
         facts: [
           { label: "Global Marketing Director", value: "Helle Vansgaard" },
           { label: "Design Hub — Multimedia Designer", value: "Andres Bernadou" },
-          { label: "Design Hub — Graphic Designer", value: "Isidora Silva Chiros" },
           { label: "Digital Marketing Platforms Specialist", value: "Matt Evans" },
           { label: "Content Creator", value: "Nerea Palacios" },
         ],
