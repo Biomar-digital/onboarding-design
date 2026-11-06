@@ -47,7 +47,7 @@ export const toolGroups: ToolGroup[] = [
       },
       { name: "Umbraco Content Library", purpose: "Website content management", icon: "🧱" },
       { name: "Internal Design Library", purpose: "Internal templates (Global Marketing only)", icon: "🗃️" },
-      { name: "QR Code Generator", purpose: "Generate QR codes for campaigns", icon: "🔳" },
+      { name: "QR Code Generator", purpose: "Generate QR codes for campaigns", icon: "🔳", url: "https://www.qr-code-generator.com" },
     ],
   },
   {
@@ -55,9 +55,9 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-swoosh",
     icon: "🎨",
     tools: [
-      { name: "Figma", purpose: "UI/UX, prototyping & design systems", icon: "🖌️" },
-      { name: "Canva", purpose: "Quick, templated & self-serve design", icon: "✨" },
-      { name: "Miro", purpose: "Whiteboard: brainstorm, map, workshop", icon: "🧩" },
+      { name: "Figma", purpose: "UI/UX, prototyping & design systems", icon: "🖌️", url: "https://www.figma.com" },
+      { name: "Canva", purpose: "Quick, templated & self-serve design", icon: "✨", url: "https://www.canva.com" },
+      { name: "Miro", purpose: "Whiteboard: brainstorm, map, workshop", icon: "🧩", url: "https://miro.com" },
     ],
   },
   {
@@ -65,8 +65,14 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-blue",
     icon: "🖼️",
     tools: [
-      { name: "Shutterstock", purpose: "Stock photos, illustrations & video", icon: "📷" },
-      { name: "Adobe Stock · Flaticon", purpose: "More stock imagery & icons", icon: "🔎" },
+      { name: "Shutterstock", purpose: "Stock photos, illustrations & video", icon: "📷", url: "https://www.shutterstock.com" },
+      {
+        name: "Adobe Stock · Flaticon",
+        purpose: "More stock imagery & icons",
+        icon: "🔎",
+        url: "https://stock.adobe.com",
+        links: [{ label: "Flaticon", url: "https://www.flaticon.com" }],
+      },
     ],
   },
   {
@@ -74,8 +80,8 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-orange",
     icon: "🤖",
     tools: [
-      { name: "ElevenLabs", purpose: "AI voice-over for videos", icon: "🎙️" },
-      { name: "Higgsfield.ai", purpose: "AI video / image generation", icon: "🎞️" },
+      { name: "ElevenLabs", purpose: "AI voice-over for videos", icon: "🎙️", url: "https://elevenlabs.io" },
+      { name: "Higgsfield.ai", purpose: "AI video / image generation", icon: "🎞️", url: "https://higgsfield.ai" },
     ],
   },
   {
@@ -83,7 +89,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-green",
     icon: "✍️",
     tools: [
-      { name: "Grammarly", purpose: "Grammar, spelling & tone for copy", icon: "📝" },
+      { name: "Grammarly", purpose: "Grammar, spelling & tone for copy", icon: "📝", url: "https://www.grammarly.com" },
     ],
   },
   {
@@ -91,7 +97,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-navy",
     icon: "🖨️",
     tools: [
-      { name: "Lasertryk", purpose: "Online print supplier for printed material", icon: "📄" },
+      { name: "Lasertryk", purpose: "Online print supplier for printed material", icon: "📄", url: "https://lasertryk.dk" },
     ],
   },
   {
@@ -117,7 +123,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-gray",
     icon: "🛡️",
     tools: [
-      { name: "Cookie Information", purpose: "Cookie consent & GDPR for the sites", icon: "🍪" },
+      { name: "Cookie Information", purpose: "Cookie consent & GDPR for the sites", icon: "🍪", url: "https://cookieinformation.com" },
     ],
   },
   {
@@ -126,7 +132,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "🏛️",
     tools: [
       { name: "Global Policies Library", purpose: "Repository of BioMar global policies", icon: "📚" },
-      { name: "GitHub", purpose: "Version control & hosting (this platform)", icon: "🐙" },
+      { name: "GitHub", purpose: "Version control & hosting (this platform)", icon: "🐙", url: "https://github.com/Biomar-digital/onboarding-design" },
     ],
   },
 ];

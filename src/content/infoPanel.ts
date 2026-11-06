@@ -40,7 +40,9 @@ export const infoPanel: InfoPanelGroup[] = [
       { label: "Brand assets (DAM)", value: "The Pond (Kontainer)", url: POND_URL },
       { label: "The Pond tutorials", value: "Step-by-step how-tos", url: POND_TUTORIALS_URL },
       { label: "Website content", value: "Umbraco" },
-      { label: "Stock", value: "Adobe Stock · Shutterstock · Flaticon" },
+      { label: "Stock", value: "Adobe Stock", url: "https://stock.adobe.com" },
+      { label: "Stock", value: "Shutterstock", url: "https://www.shutterstock.com" },
+      { label: "Icons", value: "Flaticon", url: "https://www.flaticon.com" },
     ],
   },
 ];
