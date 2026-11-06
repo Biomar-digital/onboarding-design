@@ -38,7 +38,6 @@ export const modules: Module[] = [
         note: "Powered by Partnership. Driven by Innovation.",
       },
     ],
-    exercises: [],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -76,18 +75,6 @@ export const modules: Module[] = [
         bullets: [
           "Isidora Silva Ch. — Graphic Designer. 3 years at BioMar. Graphic & print design (external and internal). Supporting brand consistency across markets. Works with campaigns & corporate communication.",
           "Andres Bernadou — Multimedia Designer. 2 years at BioMar. Video & digital design (external and internal). Supporting storytelling and concept creation across markets. Works with campaigns & corporate communication.",
-        ],
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Team & function recap",
-        prompt:
-          "In one or two sentences, write what the Design Hub is and who's currently on it.",
-        successCriteria: [
-          "Mentions the centralized creative & brand support function",
-          "Names the current team",
         ],
       },
     ],
@@ -163,18 +150,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Pillars in practice",
-        prompt:
-          "Pick one recent Design Hub deliverable and explain which of the five pillars it served and how.",
-        successCriteria: [
-          "A real deliverable chosen",
-          "At least two pillars connected to concrete decisions",
-        ],
-      },
-    ],
   },
   {
     id: "strategic-03",
@@ -228,15 +203,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Timeline recap",
-        prompt:
-          "Pick two milestones from the Design Hub timeline and explain why each mattered for how the Hub works today.",
-        successCriteria: ["Two milestones chosen", "Each connected to a concrete change"],
-      },
-    ],
   },
   {
     id: "strategic-04",
@@ -279,15 +245,6 @@ export const modules: Module[] = [
         note: "Looking ahead: product ownership.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Channel choice drill",
-        prompt:
-          "For five scenarios (new task, quick status check, unclear brief, feedback, deep review), decide whether it belongs in a weekly, daily or always-on rhythm — and why.",
-        successCriteria: ["Rhythm assigned for each scenario", "One-line justification each"],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -298,12 +255,12 @@ export const modules: Module[] = [
     chapterId: "global",
     title: "Team & Organisation",
     summary:
-      "What Global Marketing is, how Global / Divisional / Local marketing split responsibilities, the org chart, and how the team collaborates.",
+      "What Global Marketing is, its three working areas, the Global Marketing team and the regional marketing organisation.",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/global--01-team-organisation-2025.pdf`,
-      type: "pdf",
-      range: "One BioMar Marketing, org chart & collaboration (5 pages)",
+      file: `${SLICE}/global--01-team-organisation.pptx`,
+      type: "pptx",
+      range: "Slides 1–6",
     },
     sections: [
       {
@@ -314,54 +271,68 @@ export const modules: Module[] = [
       },
       {
         heading: "Our three working areas",
-        bullets: [
-          "Global Marketing (brand, positioning, shared services — this is the Design Hub's home)",
-          "Divisional Marketing (develops the product range for its product portfolio and manages its businesses)",
-          "Local Marketing (launches the product range and runs local initiatives)",
+        facts: [
+          {
+            label: "Global Marketing",
+            value:
+              "Brand & strategy ownership. Owns the global brand identity and architecture, marketing strategy and frameworks, global campaigns and concept launches, and tone of voice and messaging standards.",
+          },
+          {
+            label: "Group Marketing",
+            value:
+              "BioMar Group as a market. Owns the BioMar Group LinkedIn page, Instagram @biomargroup, YouTube channel, the Group website and content for Sustainability, R&D and Sourcing.",
+          },
+          {
+            label: "Marketing Agency",
+            value:
+              "Support services — an internal agency serving markets and divisions. Creative production and design & visual assets (DesignHUB); digital marketing and content marketing support (DigitalHUB).",
+          },
         ],
-      },
-      {
-        heading: "One BioMar Marketing",
-        body: [
-          "Global Marketing sits above four global product/service lines (Global Product Concepts, Trademarks, Marketing Agency, Digital Marketing), which in turn cover five product segments (Salmon, FW, MS, Hatchery, Shrimp) delivered locally by 12 business units — Chile, Norway, Greece, Turkey, Costa Rica, Ecuador, UK, Australia, Baltics, West MED, China, Vietnam.",
-        ],
+        note: "The Design Hub is part of the Marketing Agency.",
       },
       {
         heading: "The Global Marketing team",
-        bullets: [
-          "Katherine Bryar — Global Marketing Director",
-          "Olivia Andrews — Graphic Designer",
-          "Elizabeth Jørgensen — Graphic Designer",
-          "Steffan Kyhe — Digital Marketing Lead",
-          "Nerea Palacios — Student Assistant",
-        ],
-        note: "Creative Direction is provided externally by Bitsch & Bitsch. Videographers, photographers and additional creative designers are brought in as needed.",
-      },
-      {
-        heading: "Marketing Forum & collaboration cadence",
-        body: [
-          "Global Marketing is guided by the Marketing Forum (Salmon · FW & MS · Shrimp & Hatchery · Product Strategist), which sets positioning for product concepts and services and runs the shared Design and Digital agency.",
-          "Below the Forum, a regular Global Marketing Meeting brings together the local marketing managers across every business unit to stay aligned.",
-        ],
-      },
-      {
-        heading: "Marketing organisation & divisions",
         facts: [
-          { label: "EMEA", value: "Baltics & WestMed" },
-          { label: "Asia", value: "Vietnam & China" },
-          { label: "LATAM", value: "Costa Rica & Ecuador" },
-          { label: "Salmon", value: "Australia, UK, Norway, Chile" },
-          { label: "Hatchery", value: "LARVIVA" },
+          { label: "Global Marketing Director", value: "Helle Vansgaard" },
+          { label: "Design Hub — Multimedia Designer", value: "Andres Bernadou" },
+          { label: "Design Hub — Graphic Designer", value: "Isidora Silva Chiros" },
+          { label: "Digital Marketing Platforms Specialist", value: "Matt Evans" },
+          { label: "Content Creator", value: "Nerea Palacios" },
         ],
       },
-    ],
-    exercises: [
       {
-        id: "e1",
-        title: "Who's who",
-        prompt:
-          "List the current Global Marketing team and note one thing each person is responsible for.",
-        successCriteria: ["All team members listed", "One responsibility captured per person"],
+        heading: "Marketing organisation — three levels",
+        bullets: [
+          "Global Marketing manages the BioMar brand, creates the positioning for all product concepts and services and runs the centralised Design and Digital Shared Services agency",
+          "Product Marketing Management manages its segment and develops the product range in its product portfolio",
+          "Local Marketing launches its product range and runs marketing initiatives to support its businesses",
+        ],
+      },
+      {
+        heading: "Regional marketing teams",
+        facts: [
+          {
+            label: "EMEA",
+            value:
+              "Kseniya Akkaya (Manager, Turkey) · Cathrine Weirbach (Manager, Denmark) · Iris Hernandez (Manager, Spain) · Christina Kravariti (Assistant, Greece)",
+          },
+          {
+            label: "LATAM",
+            value:
+              "Daniela Vera · Valeria Triviño Alvarez (Marketing Manager, Ecuador) · Steven Leon Ulloa (Marketing Responsible, Costa Rica)",
+          },
+          {
+            label: "Asia",
+            value:
+              "Xinru Wang · Thu Minh Dang (Marketing Assistant, Vietnam) · Ma Teng (Marketing Manager, China)",
+          },
+          {
+            label: "Salmon",
+            value:
+              "Joana Silva · Thomas Hansen (Manager, Norway) · Andrew Richardson (Responsible, UK) · Claudio Muñoz (Manager, Chile) · Victoria Valdenegro (Manager, Australia)",
+          },
+        ],
+        note: "On the org chart, Daniela Vera, Xinru Wang and Joana Silva sit on the inner ring with their segment; the others are the local marketing contacts per country.",
       },
     ],
   },
@@ -403,15 +374,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Intro notes template",
-        prompt:
-          "Prepare a short intro-meeting template (focus, typical requests, local specifics) and fill it in after your first marketing manager meeting.",
-        successCriteria: ["Reusable template created", "First meeting captured against it"],
-      },
-    ],
   },
   {
     id: "global-03",
@@ -443,15 +405,6 @@ export const modules: Module[] = [
       {
         heading: "Budgets",
         note: "Budget processes and figures are managed by Marketing leadership. As a designer, the practical impact is on prioritisation and turnaround — see the Design Hub 2026 chapter for how priority and turnaround work day to day.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Plan awareness",
-        prompt:
-          "Take one past project and note whether it was a Group-level or Global-level initiative, and why.",
-        successCriteria: ["Project classified", "Reasoning given"],
       },
     ],
   },
@@ -513,15 +466,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Match the brand",
-        prompt:
-          "Pick three product folders from the Folder Structure explorer you don't recognise and, using this glossary, write one line on what each brand actually is.",
-        successCriteria: ["Three folders picked", "Correct brand explained for each"],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -535,9 +479,9 @@ export const modules: Module[] = [
       "The problems this new way of working solves, and the first decision every requester makes: Task or Project?",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/dh2026--01-challenges-how-to-reach-out.pptx`,
+      file: `${SLICE}/dh2026--01-challenges-how-to-reach-out-v2.pptx`,
       type: "pptx",
-      range: "Slides 1–6",
+      range: "Slides 1–3 and 5–6",
     },
     sections: [
       {
@@ -565,14 +509,6 @@ export const modules: Module[] = [
           { label: "Task", value: "Small, short — not many reviews or much info needed. E.g. ads, handouts, brochures." },
           { label: "Project", value: "A group of tasks toward a bigger goal. E.g. logos, new product branding, global campaigns." },
         ],
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Task or Project?",
-        prompt: "Take five recent requests and label each Task or Project, with a one-line reason.",
-        successCriteria: ["All five labelled", "Reasoning references reviews / scope / info needed"],
       },
     ],
   },
@@ -624,38 +560,20 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Real dates + InCopy flow",
-        prompt:
-          "Turn an 'ASAP' request into a First Draft Date + Final Due Date. Then open a sample InDesign layout with an InCopy story, make a tracked text edit, and export.",
-        successCriteria: [
-          "Both dates defined, review rounds accounted for",
-          "Edited via InCopy with track changes, exported correctly",
-        ],
-      },
-    ],
   },
   {
     id: "dh2026-03",
     chapterId: "dh2026",
-    title: "Start to Finish Process & Feedback",
+    title: "Start to Finish Process",
     summary:
-      "The end-to-end process from Marketing's side and the Hub's side, and how feedback is submitted per media type.",
-    estMinutes: 25,
+      "Who does what from the first brief to closing the task — Marketing's side and the Design Hub's side.",
+    estMinutes: 10,
     material: {
-      file: `${SLICE}/dh2026--03-start-to-finish-feedback.pptx`,
+      file: `${SLICE}/dh2026--03-start-to-finish-v2.pptx`,
       type: "pptx",
-      range: "Slides 15–19",
+      range: "Slides 15 and 17",
     },
     sections: [
-      {
-        heading: "Design Hub Process",
-        body: [
-          "Collaborative rather than transactional: continuous communication with local stakeholders, support for local adaptation while maintaining brand consistency, and prioritization based on timelines and business impact.",
-        ],
-      },
       {
         heading: "What Marketing does",
         bullets: [
@@ -665,49 +583,35 @@ export const modules: Module[] = [
         ],
       },
       {
-        heading: "Submitting feedback — different methods for different media",
-        facts: [
-          { label: "PDF", value: "Sent as a link to the folder" },
-          { label: "JPG / PNG", value: "Sent as a link to the folder" },
-          { label: "Video", value: "Sent as a link to SharePoint" },
+        heading: "What the Design Hub does",
+        bullets: [
+          "Review the brief, enter it in the Design Hub task manager, tag the contact person and inform them via email — request any missing information",
+          "Submit drafts via email, following the same thread: paths for files, links for videos",
+          "Adjust based on feedback and submit the final files",
+          "Close the task and move the card to the Completed tab",
         ],
-        note: "For video feedback, comments must reference a timestamp written as HH:MM:SS.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Run a review round",
-        prompt:
-          "Export a PROOF, send it as a folder link (not an attachment), and collect mock feedback in the correct format for a PDF, an image and a video.",
-        successCriteria: ["Sent as folder link", "Feedback format matches the media type (incl. timestamp for video)"],
+        note: "How feedback is sent per media type (PDF, image, video) is covered in the Playbook — Versioning, Review & Closing.",
       },
     ],
   },
   {
     id: "dh2026-04",
     chapterId: "dh2026",
-    title: "File Storage, Turnaround & Calendar",
+    title: "Turnaround & Calendar",
     summary:
-      "The three files you'll always find, how turnaround times work, and the yearly recurring calendar.",
-    estMinutes: 20,
+      "How long requests take, how review rounds fit in, and the yearly recurring calendar.",
+    estMinutes: 15,
     material: {
-      file: `${SLICE}/dh2026--04-file-storage-turnaround-calendar.pptx`,
+      file: `${SLICE}/dh2026--04-turnaround-calendar-v2.pptx`,
       type: "pptx",
-      range: "Slides 20–23",
+      range: "Slides 21–23",
     },
     sections: [
       {
-        heading: "You'll always find",
-        bullets: [
-          "Editable file (for the Design Hub)",
-          "File for review (for the Draft Date — ends in PROOF)",
-          "Final file (for the Final Date — ends in PRINT or DIGITAL)",
-        ],
-      },
-      {
         heading: "Turnaround times",
         bullets: [
+          "Day-to-day reference (Strategic presentation, the most recent): a task takes about 2–6 days with 1–3 review rounds; a project 2–24 weeks with several review rounds.",
+          "The table in the slides gives indicative times by type of piece — use it for the bigger items (logo creation, new product, new concept). Where it differs for small tasks, the figures above apply.",
           "The sooner you submit, the sooner it goes on the calendar and gets an accurate timeframe.",
           "First come, first served — although prioritisation by business value still applies.",
           "Build the rounds of review into the timeline.",
@@ -719,38 +623,21 @@ export const modules: Module[] = [
         note: "Plan around the yearly calendar so recurring work is booked ahead.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Plan around the calendar",
-        prompt:
-          "Pick a recurring yearly item (e.g. Christmas artwork) and, using the turnaround guidance, note when it should be kicked off.",
-        successCriteria: ["Recurring item chosen", "Kickoff date reasoned from turnaround + review rounds"],
-      },
-    ],
   },
   {
     id: "dh2026-05",
     chapterId: "dh2026",
-    title: "Communication, Personal Responsibility & the Brief Template",
+    title: "Personal Responsibility & the Brief Template",
     summary:
-      "When to use email, Teams or a meeting; what stays each person's responsibility; and the Brief Template itself.",
-    estMinutes: 20,
+      "What stays each person's responsibility, and the Brief Template itself.",
+    estMinutes: 15,
     material: {
-      file: `${SLICE}/dh2026--05-communication-responsibility-brief.pptx`,
+      file: `${SLICE}/dh2026--05-responsibility-brief-v2.pptx`,
       type: "pptx",
-      range: "Slides 24–29",
+      range: "Slides 25–29",
     },
     resources: [BRIEF_TEMPLATE],
     sections: [
-      {
-        heading: "Ways of communicating",
-        facts: [
-          { label: "Email", value: "Submitting new task/project · submitting feedback" },
-          { label: "Teams chat", value: "Follow up on tasks/projects" },
-          { label: "Verbal / meetings", value: "Clarify/define projects · in-depth artwork review" },
-        ],
-      },
       {
         heading: "Personal responsibility",
         bullets: [
@@ -764,14 +651,6 @@ export const modules: Module[] = [
       {
         heading: "Brief Template",
         note: "Download the Brief Template below and use it to submit new requests with all the required information.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Use the template",
-        prompt: "Fill out the attached Brief Template for a mock request.",
-        successCriteria: ["Template downloaded and filled out", "All required fields completed"],
       },
     ],
   },
@@ -808,18 +687,6 @@ export const modules: Module[] = [
           "Wall dimensions approx. 1.2m × 2.5m",
         ],
         note: "Compare this against the four minimum-info items from earlier: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Spot the good brief habits",
-        prompt:
-          "Go back to this example and mark which of the four minimum-info items (purpose, timeline, specifications, copy/assets) it covers well — and which, if any, are missing.",
-        successCriteria: [
-          "All four minimum-info items checked against the example",
-          "Any gap identified",
-        ],
       },
     ],
   },
@@ -870,15 +737,6 @@ export const modules: Module[] = [
         note: "If the minimum information is missing, move the request to Waiting and ask for what's missing before starting.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Brief triage",
-        prompt:
-          "Take three recent request emails and score each against the four minimum-info items. Draft the follow-up question for any gaps.",
-        successCriteria: ["Each brief scored on all four items", "A clear follow-up drafted for every gap"],
-      },
-    ],
   },
   {
     id: "playbook-02",
@@ -920,19 +778,6 @@ export const modules: Module[] = [
           "Notes — always include: draft deadline, final deadline, email subject",
         ],
         note: "Adding the email subject to Notes is especially important — it's how you jump back to the original thread.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Build a card",
-        prompt:
-          "Create a practice task card with a market tag, the requester added as a member, a two-item to-do list, and complete Notes.",
-        successCriteria: [
-          "Market tag applied",
-          "Requester added as member",
-          "Notes include both deadlines + email subject",
-        ],
       },
     ],
   },
@@ -982,19 +827,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Name it right",
-        prompt:
-          "Rename five sample files (three designs, two images) to follow the conventions. Set up the three per-project folders for one.",
-        successCriteria: [
-          "Design files follow Year-Month Language_Market pattern",
-          "Image names describe content + license",
-          "Files Provided / Assets / Previous Versions folders created",
-        ],
-      },
-    ],
   },
   {
     id: "playbook-04",
@@ -1036,19 +868,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Full cycle: PROOF to closed",
-        prompt:
-          "Take a practice task through DRAFT → PROOF (sent as a folder link) → feedback → FINAL export (correct spec) → closing in both the task manager and the inbox.",
-        successCriteria: [
-          "PROOF sent as folder link, feedback captured correctly",
-          "FINAL exported to the right spec",
-          "Card in Completed + market category, email filed",
-        ],
-      },
-    ],
   },
   {
     id: "playbook-05",
@@ -1080,15 +899,6 @@ export const modules: Module[] = [
           { label: "Teams chat", value: "Follow up on tasks/projects" },
           { label: "Verbal / meetings", value: "Clarify/define · in-depth review" },
         ],
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Route it",
-        prompt:
-          "Given five incoming questions (a datasheet spec, an R&D claim, a hatchery product, a salmon SmartCare asset, a technical detail), name the right contact for each.",
-        successCriteria: ["Correct contact for all five"],
       },
     ],
   },
@@ -1148,15 +958,6 @@ export const modules: Module[] = [
         note: "The Primary Logo without the box element is ONLY for promotional-material applications where the primary logo can't work. It can never be used against any colour other than dark blue, navy or black — and it can NEVER be used in print or digital media applications.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Logo audit",
-        prompt:
-          "Review three recent layouts and check: correct logo placement, correct tagline version (one of the 4 allowed), and that the promotional-only logo wasn't used in print/digital.",
-        successCriteria: ["All three layouts checked", "Any violation flagged with the correct fix"],
-      },
-    ],
   },
   {
     id: "brand-guidelines-02",
@@ -1199,15 +1000,6 @@ export const modules: Module[] = [
           { label: "Weight", value: "3pt recommended for most applications" },
           { label: "Colours", value: "Crisp Blue · Sky Blue · Ocean Blue · BioMar Blue" },
         ],
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Type check",
-        prompt:
-          "Review a document: confirm headlines are Arial Bold, body text is Avenir Next, and any line details use the Straight Hash stroke at 3pt.",
-        successCriteria: ["Headline typeface checked", "Body typeface checked", "Line detail style checked"],
       },
     ],
   },
@@ -1256,15 +1048,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Palette & watermark check",
-        prompt:
-          "Confirm a layout uses the correct Pantone colours, and if a watermark is used, that it's one of the 5 approved colour variations.",
-        successCriteria: ["Colours checked against the palette", "Watermark variation confirmed as approved"],
-      },
-    ],
   },
   {
     id: "brand-guidelines-04",
@@ -1274,9 +1057,9 @@ export const modules: Module[] = [
       "Our values as a Brand House, the focus for water/sustainability/people/product photography, and dos & don'ts.",
     estMinutes: 25,
     material: {
-      file: `${SLICE}/brand-guidelines--04-photo-style-guide.pdf`,
+      file: `${SLICE}/brand-guidelines--04-photo-style-guide-v2.pdf`,
       type: "pdf",
-      range: "Pages 20–30",
+      range: "Pages 20–29",
     },
     sections: [
       {
@@ -1312,15 +1095,6 @@ export const modules: Module[] = [
           "Avoid over-exposure — you should still see tone in the sky",
           "Desaturation can improve harmony (skin tone, materials) versus an overly vibrant image",
         ],
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Photo pick",
-        prompt:
-          "Choose 3 candidate stock photos for a campaign and evaluate each against the Photo Style Guide (values, water style if relevant, contrast/exposure).",
-        successCriteria: ["3 photos evaluated", "Each judged against at least two guide criteria"],
       },
     ],
   },
@@ -1452,26 +1226,6 @@ export const modules: Module[] = [
         note: "Tip — ask yourself: “Could this post work without showing the bag?” If yes, lead with the concept and use the bag only when it adds value.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Spot the fix",
-        prompt:
-          "Find an existing piece of BioMar marketing material (real or a mockup) that breaks one of these guidelines and note what you'd change.",
-        successCriteria: ["A concrete example found", "The specific guideline it breaks identified"],
-      },
-      {
-        id: "e2",
-        title: "Packaging review",
-        prompt:
-          "Open three existing BioMar bags from different ranges. For each, note whether it follows the BioMar Blue top, whether it avoids red, and any approved exception that applies.",
-        successCriteria: [
-          "Three bags reviewed",
-          "Blue top / red check done for each",
-          "Any exception identified and explained",
-        ],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1489,15 +1243,6 @@ export const modules: Module[] = [
         note: "Logins and passwords are never stored here — request access through Loop Link and the tool owner. This map is only about what each tool is and when to reach for it.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Get your access",
-        prompt:
-          "Open the Platforms & Accesses page in Loop Link (linked at the top of this map and in the Always-on info panel), then request access to the tools your role needs. Note the owner for any that require approval.",
-        successCriteria: ["Access requested for the tools your role uses", "Owner noted for anything pending"],
-      },
-    ],
   },
   {
     id: "folder-structure",
@@ -1511,62 +1256,6 @@ export const modules: Module[] = [
         note: "This is a live map of the real structure — not a simplified example. Use the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
       },
     ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Find it yourself",
-        prompt:
-          "Using the search, find where BioMar's brand guidelines live, and separately, where you'd save a new roll-up banner for a SmartCare campaign. Write down both paths.",
-        successCriteria: [
-          "Correct path found for the brand guidelines",
-          "Correct path found (or created, per the wizard) for the SmartCare roll-up banner",
-        ],
-      },
-    ],
-  },
-  {
-    id: "global-strategy-2025",
-    chapterId: null,
-    title: "Global Marketing Strategy — Q2 2025 Update",
-    summary:
-      "How Global Marketing segments products and customers, and where that thinking is heading. Optional deep-dive, not required day-to-day.",
-    estMinutes: 25,
-    material: {
-      file: "/materials/global-marketing-strategy-house-q2-2025.pdf",
-      type: "pdf",
-      range: "Full deck (32 pages)",
-    },
-    sections: [
-      {
-        heading: "Why this is here",
-        note: "This is internal Global Marketing strategy work, not something you need to do your day-to-day design tasks. It's here for context, for anyone who wants to understand how Marketing thinks about products and customers.",
-      },
-      {
-        heading: "Product segmentation",
-        body: [
-          "Products are segmented by life stage (Hatchery → Starter/Fresh Water → Grower/Sea Water) and by performance tier (Standard, High, Top), with optional attributes like Medicated or Premium. This segmentation now feeds a gross profit report, reconciled monthly with finance data.",
-        ],
-      },
-      {
-        heading: "Needs-based customer segmentation",
-        body: [
-          "Based on 23 in-depth interviews, four customer clusters were identified along two axes — Innovation & Risk Appetite (Conservative ↔ Progressive) and Business Mindset (Market Differentiation ↔ Operational Efficiency): Future Shapers, Scalable Performers, Solid Executors and Cautious Builders.",
-        ],
-        facts: [
-          { label: "Future Shapers", value: "Ambitious innovators — differentiation as their edge" },
-          { label: "Scalable Performers", value: "Operational minds — push for volume & efficiency" },
-          { label: "Solid Executors", value: "Reliable — stability, consistency, doing what works" },
-          { label: "Cautious Builders", value: "Risk-averse — differentiation through safe, proven steps" },
-        ],
-      },
-      {
-        heading: "Where this is heading",
-        body: [
-          "Next steps layer a BCG-style matrix (market growth vs. market share) onto the customer clusters, using 2022–2024 data on products/services used or needed, to define clear value propositions, a change-management matrix and KPIs per cluster.",
-        ],
-      },
-    ],
-    exercises: [],
   },
 ];
 

@@ -84,37 +84,6 @@ export function ModuleView() {
           </section>
         )}
 
-        {module.exercises.length > 0 && (
-          <section className="card p-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Practice
-            </h2>
-            <div className="mt-3 space-y-4">
-              {module.exercises.map((ex) => (
-                <div
-                  key={ex.id}
-                  className="rounded-xl border border-dashed border-biomar-swoosh/40 bg-biomar-ice/40 p-4"
-                >
-                  <h3 className="font-semibold text-biomar-navy">
-                    🛠️ {ex.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600">{ex.prompt}</p>
-                  <ul className="mt-2 space-y-1">
-                    {ex.successCriteria.map((c, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2 text-xs text-slate-500"
-                      >
-                        <span className="text-biomar-green">✓</span> {c}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {viewingAs ? (
           <section className="card p-6 text-sm text-slate-500">
             {alreadyDone

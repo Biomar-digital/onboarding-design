@@ -31,15 +31,6 @@ export interface Chapter {
   description: string;
 }
 
-export interface Exercise {
-  id: string;
-  title: string;
-  /** A hands-on task the designer does in the real tools to cement the module. */
-  prompt: string;
-  /** What "done" looks like, so they can self-check. */
-  successCriteria: string[];
-}
-
 export interface LessonSection {
   heading?: string;
   /** Paragraphs of body copy. */
@@ -81,7 +72,6 @@ export interface Module {
   /** Supplementary files (e.g. a template) referenced alongside the material. */
   resources?: ModuleResource[];
   sections: LessonSection[];
-  exercises: Exercise[];
 }
 
 export interface Profile {
