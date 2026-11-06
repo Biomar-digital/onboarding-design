@@ -49,16 +49,10 @@ export function ToolsMap() {
               </header>
               <div className="flex-1 divide-y divide-slate-100">
                 {group.tools.map((tool) => {
-                  const Row = tool.url ? "a" : "div";
                   return (
-                  <Row
+                  <div
                     key={tool.name}
-                    {...(tool.url
-                      ? { href: tool.url, target: "_blank", rel: "noreferrer" }
-                      : {})}
-                    className={`flex items-start gap-3 px-4 py-2.5 ${
-                      tool.url ? "hover:bg-biomar-ice/40" : ""
-                    }`}
+                    className="flex items-start gap-3 px-4 py-2.5"
                   >
                     <span
                       aria-hidden
@@ -69,14 +63,35 @@ export function ToolsMap() {
                     </span>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-biomar-navy">
-                        {tool.name}
-                        {tool.url && <span className="ml-1 text-biomar-swoosh">↗</span>}
+                        {tool.url ? (
+                          <a
+                            href={tool.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-biomar-swoosh hover:underline"
+                          >
+                            {tool.name} <span className="text-biomar-swoosh">↗</span>
+                          </a>
+                        ) : (
+                          tool.name
+                        )}
                       </div>
                       <div className="text-xs leading-snug text-slate-500">
                         {tool.purpose}
                       </div>
+                      {tool.links?.map((l) => (
+                        <a
+                          key={l.url}
+                          href={l.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-0.5 block text-xs font-semibold text-biomar-swoosh hover:underline"
+                        >
+                          {l.label} ↗
+                        </a>
+                      ))}
                     </div>
-                  </Row>
+                  </div>
                   );
                 })}
               </div>

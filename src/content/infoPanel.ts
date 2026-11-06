@@ -1,5 +1,5 @@
 import type { InfoPanelGroup } from "./types";
-import { PLATFORMS_ACCESSES_URL, POND_TUTORIALS_URL } from "./tools";
+import { PLATFORMS_ACCESSES_URL, POND_URL, POND_TUTORIALS_URL } from "./tools";
 
 // The persistent reference panel — always available on the employee side so a
 // new designer never has to dig for the essentials mid-task.
@@ -54,7 +54,7 @@ export const infoPanel: InfoPanelGroup[] = [
       { label: "BB opacity", value: "Never — looks purple. Use black opacity" },
       { label: "Gradients", value: "Avoid — print poorly" },
       { label: "Packaging top", value: "Always BioMar Blue" },
-      { label: "Guidelines live on", value: "The Pond", hint: "tutorials", url: POND_TUTORIALS_URL },
+      { label: "Guidelines live on", value: "The Pond", url: POND_URL },
     ],
   },
   {
@@ -63,7 +63,8 @@ export const infoPanel: InfoPanelGroup[] = [
     icon: "🧰",
     rows: [
       { label: "Accesses & lists", value: "Loop Link", url: PLATFORMS_ACCESSES_URL },
-      { label: "Brand assets (DAM)", value: "The Pond (Kontainer)", hint: "tutorials", url: POND_TUTORIALS_URL },
+      { label: "Brand assets (DAM)", value: "The Pond (Kontainer)", url: POND_URL },
+      { label: "The Pond tutorials", value: "Step-by-step how-tos", url: POND_TUTORIALS_URL },
       { label: "Website content", value: "Umbraco" },
       { label: "Stock", value: "Adobe Stock · Shutterstock · Flaticon" },
     ],
