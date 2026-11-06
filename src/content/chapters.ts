@@ -24,10 +24,10 @@ export const chapters: Chapter[] = [
   {
     id: "brand-guidelines",
     title: "BioMar Brand Guidelines",
-    source: "BioMar Brand Guidelines 2020",
+    source: "BioMar Brand Guidelines 2026 (v5)",
     icon: "🎨",
     description:
-      "The official visual identity: logo, typography, colour, shapes and photography.",
+      "The official visual identity: logo, typography, colour, shapes, photography and layout design.",
   },
   {
     id: "global",

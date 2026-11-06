@@ -823,21 +823,31 @@ export const modules: Module[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CHAPTER: BioMar Brand Guidelines 2020 (30 pages)
+  // CHAPTER: BioMar Brand Guidelines 2026, v5 (48 pages)
   // ═══════════════════════════════════════════════════════════════════════════
   {
     id: "brand-guidelines-01",
     chapterId: "brand-guidelines",
     title: "Corporate Logo",
     summary:
-      "Our most valuable brand asset: elements, file formats, placement, incorrect uses and the promotional-only version.",
-    estMinutes: 25,
+      "Our purpose and tagline, and our most valuable brand asset: elements, file formats, placement, incorrect uses, the promotional-only version and the element logo.",
+    estMinutes: 30,
     material: {
-      file: `${SLICE}/brand-guidelines--01-corporate-logo.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--01-corporate-logo.pdf`,
       type: "pdf",
       range: "Pages 1–8",
     },
     sections: [
+      {
+        heading: "Our purpose and tagline",
+        facts: [
+          { label: "Purpose", value: "We are innovators dedicated to an efficient and sustainable global aquaculture." },
+          { label: "Purpose statement", value: "We are dedicated to innovating aquaculture." },
+          { label: "Shortened purpose statement", value: "Powered by Partnership. Driven by Innovation. We are innovators in high performance aqua feeds dedicated to doing our part in sustainable global aquaculture." },
+          { label: "Tagline", value: "Powered by Partnership. Driven by Innovation." },
+        ],
+        note: "Founded in 1962 by fish farmers, BioMar is in it for the long haul: open, long-term partnerships and a true dedication to innovation across the globe.",
+      },
       {
         heading: "The corporate logo",
         body: [
@@ -858,6 +868,22 @@ export const modules: Module[] = [
         ],
       },
       {
+        heading: "Logo over BioMar Blue",
+        body: [
+          "It is permitted to use the BioMar primary logo over a BioMar Blue background. It is also permitted to use a dark outer glow to define the edges of the box element.",
+        ],
+      },
+      {
+        heading: "Incorrect uses",
+        bullets: [
+          "The dimensions of the logo are fixed and must not be altered",
+          "Don't use the logo out of the box with black text",
+          "Don't use the logo in a square box",
+          "Don't alter the dimensions",
+          "Don't change the colours",
+        ],
+      },
+      {
         heading: "Displaying the logo",
         bullets: [
           "The logo should appear on all BioMar material",
@@ -865,6 +891,15 @@ export const modules: Module[] = [
           "Place in one of the four corners; the distance from both edges must be equal",
           "As a general rule, the BioMar logo must be placed in the top or bottom right hand corner",
         ],
+      },
+      {
+        heading: "Size & clear space",
+        facts: [
+          { label: "Recommended size", value: "1/7th of the page width — on a standard A4 that is 30 mm wide" },
+          { label: "Minimum size", value: "15 mm wide (a recommendation — it must stay legible and appropriate for each application)" },
+          { label: "Clear space", value: "Nothing should intrude into the minimum clear space, calculated using the top 'wave' of the logo" },
+        ],
+        note: "The box icon is not a perfect square — keep the ratio accurate when scaling.",
       },
       {
         heading: "Logo & tagline",
@@ -876,6 +911,16 @@ export const modules: Module[] = [
         heading: "Logo for promotional materials",
         note: "The Primary Logo without the box element is ONLY for promotional-material applications where the primary logo can't work. It can never be used against any colour other than dark blue, navy or black — and it can NEVER be used in print or digital media applications.",
       },
+      {
+        heading: "Element logo (without wordmark)",
+        body: [
+          "Made up of the elements of the BioMar Blue logo, excluding the wordmark. Use it when a symbol format is more appropriate, and when the law prohibits using the BioMar wordmark.",
+        ],
+        facts: [
+          { label: "Colour versions", value: "2 — White and BioMar Blue" },
+          { label: "Pattern", value: "A pattern format of the element logo exists for cases where a pattern is required" },
+        ],
+      },
     ],
   },
   {
@@ -886,7 +931,7 @@ export const modules: Module[] = [
       "Avenir Next as primary typeface, Arial Bold headlines as secondary, and the line detail style.",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/brand-guidelines--02-typography.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--02-typography.pdf`,
       type: "pdf",
       range: "Pages 9–14",
     },
@@ -927,43 +972,88 @@ export const modules: Module[] = [
     chapterId: "brand-guidelines",
     title: "Colour & Brand Shapes",
     summary:
-      "Correct colour settings, the BioMar colour palette, and the brand shapes & watermarks drawn from our raw materials.",
-    estMinutes: 25,
+      "Colour settings, the full BioMar palette and greys, logo colours, the BioMar shapes and the watermark sets.",
+    estMinutes: 30,
     material: {
-      file: `${SLICE}/brand-guidelines--03-colour-brand-shapes.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--03-colour-brand-shapes.pdf`,
       type: "pdf",
-      range: "Pages 15–19",
+      range: "Pages 15–20",
     },
     sections: [
       {
         heading: "Colour settings",
-        note: "Before any BioMar design work in Adobe apps (InDesign, Photoshop, Illustrator), set the colour settings to 'Europe General Purpose 3' via Edit → Colour Settings — otherwise colours will display differently.",
+        body: [
+          "Before any BioMar design work in Adobe apps (InDesign, Photoshop, Illustrator), set Edit → Colour Settings → Settings → Europe General Purpose 3 — otherwise colours display differently.",
+        ],
+        facts: [
+          { label: "RGB working space", value: "sRGB IEC61966-2.1" },
+          { label: "CMYK working space", value: "Coated FOGRA39 (ISO 12647-2:2004)" },
+        ],
+        note: "Web uses RGB, print uses CMYK. Choose the right format for your output when you start the document — converting between them gives inaccurate colours. Always consult your printing supplier for the most accurate reproduction.",
       },
       {
         heading: "BioMar colour palette",
         facts: [
-          { label: "BioMar Blue", value: "CMYK 100/84/26/12 · Pantone 654C" },
-          { label: "White", value: "RGB 255/255/255" },
-          { label: "Sky Blue", value: "Pantone 297C" },
-          { label: "Leafy Green", value: "Pantone 368C" },
+          { label: "BioMar Blue", value: "RGB 31/62/119 · CMYK 100/84/26/12 · Pantone 654 C · #1f3e77" },
+          { label: "Sky Blue", value: "RGB 146/206/232 · CMYK 50/0/6/0 · Pantone 297 C · #92cee8" },
+          { label: "Leafy Green", value: "RGB 151/209/48 · CMYK 56/0/92/0 · Pantone 368 C · #97d130" },
+          { label: "Shrimp Orange", value: "RGB 221/105/40 · CMYK 8/68/91/1 · Pantone 166 C · #dd6928" },
+          { label: "Ocean Blue", value: "RGB 4/113/173 · CMYK 87/50/8/0 · Pantone 285 C · #0471ad" },
+          { label: "Crisp Blue", value: "RGB 195/228/239 · CMYK 25/0/3/0 · Pantone 277 C · #c3e4ef" },
+          { label: "Wheat Yellow", value: "RGB 234/179/24 · CMYK 10/28/91/1 · Pantone 115 U · #eab318" },
         ],
       },
       {
-        heading: "BioMar shapes & origins",
+        heading: "Greys and the use of black",
         body: [
-          "The BioMar shapes are a friendly, abstract representation of the raw materials in our feed: Fish, Shrimp/Krill, Macro Algae, Wheat, Corn, Leafy Greens, Palm.",
+          "All BioMar greys are made from percentages of black, for a neutral-toned palette. Always proof grey tones so they aren't too cool or too warm.",
+          "BioMar is blue: dark text should be BioMar Blue. Where BioMar Blue can't be used, use Black 80% (RGB 87/87/86 · #575756) or Black.",
         ],
-        note: "The BioMar shapes should NEVER be used on their own without explicit purpose.",
       },
       {
-        heading: "Organic watermark set",
+        heading: "Logo colours",
         body: [
-          "The shapes have been developed into a set of watermarks that add texture and movement across applications — 12 shape variants, in 5 predefined colour variations that should never be altered.",
+          "The primary logo comes in 1-colour versions: BioMar Blue, White, Sky Blue and Leafy Green.",
+        ],
+      },
+      {
+        heading: "BioMar shapes & origins — graphic elements",
+        body: [
+          "Two complementary categories make up the BioMar graphic elements: the BioMar Swoosh and the Aquaculture Graphics.",
         ],
         facts: [
-          { label: "Grey tones", value: "Behind body text, or where more interest is needed than plain white" },
-          { label: "Ocean / Sky Blue", value: "Used as page breaks or similar" },
-          { label: "BioMar Blue", value: "In place of a plain dark blue background" },
+          { label: "The BioMar Swoosh", value: "Derived directly from the logo — our primary graphic element. Symbolises movement, progress and continuity." },
+          { label: "Aquaculture Graphics", value: "Abstract graphics inspired by aquaculture — fish, shrimp/krill and feed/pellets — adding texture, depth and visual interest." },
+        ],
+        note: "The graphic elements should never be modified, distorted or used in a way that compromises the integrity of the BioMar brand.",
+      },
+      {
+        heading: "Watermark sets",
+        bullets: [
+          "Swoosh watermarks — a set of 6 (01–06) in the 5 colour variations",
+          "Organic watermarks — 12 different layouts drawn from the raw materials, for textured backgrounds",
+          "Icon watermarks — fish, shrimp/krill and feed pellets, 2 layouts each; as a general rule landscape layouts only",
+          "They can be used in any orientation, are meant to bleed off the page and sit behind all other elements and type",
+          "Files fit A3 (297 × 420 mm) and scale proportionally to other formats",
+        ],
+        note: "Never try to re-create or edit the watermarks. If none of the variations fits your project's needs, contact Global Marketing.",
+      },
+      {
+        heading: "Watermark colours",
+        facts: [
+          { label: "01 Light Grey / 02 Dark Grey", value: "Behind body text, or where more interest is needed than a plain white background" },
+          { label: "03 Sky Blue / 04 Ocean Blue", value: "Page breaks and section breaks — Ocean Blue for a section break, Sky Blue for a sub-section" },
+          { label: "05 BioMar Blue", value: "In place of a plain dark blue background, back pages and the corporate sign off" },
+        ],
+        note: "These 5 colour variations are predefined and must never be altered. Files are named by series, shape number, colour setting and colour number so you can find the right one.",
+      },
+      {
+        heading: "Watermark usage",
+        bullets: [
+          "Light grey watermarks work best behind large bodies of text; coloured watermarks must never sit behind large bodies of text",
+          "Corporate sign off: use a BioMar Blue watermark behind the logo, tagline and footer — pick one that cuts through where the logo sits so it stands out",
+          "Business card: a dark organic watermark plus the icon layouts",
+          "Cover pages: a BioMar Blue watermark or an approved water photograph",
         ],
       },
     ],
@@ -976,9 +1066,9 @@ export const modules: Module[] = [
       "Our values as a Brand House, the focus for water/sustainability/people/product photography, and dos & don'ts.",
     estMinutes: 25,
     material: {
-      file: `${SLICE}/brand-guidelines--04-photo-style-guide-v2.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--04-photo-style-guide.pdf`,
       type: "pdf",
-      range: "Pages 20–29",
+      range: "Pages 21–30",
     },
     sections: [
       {
@@ -1013,6 +1103,171 @@ export const modules: Module[] = [
           "Good contrast and balance of light and dark reads better than a flat, low-contrast image",
           "Avoid over-exposure — you should still see tone in the sky",
           "Desaturation can improve harmony (skin tone, materials) versus an overly vibrant image",
+        ],
+      },
+      {
+        heading: "Photographers and file management",
+        bullets: [
+          "Give any photographer the photo style guide before the shoot, to keep a uniform look across BioMar",
+          "Plan a detailed shot list and a mood board with a wide range of shot positions and angles — it avoids re-shoots and saves cost",
+          "Share all 'hero' shots from every shoot globally, in the Global Marketing Photo Library",
+          "Put the photo information in the file name: location, species, production type, personnel and date. All submitted photos must be GDPR compliant",
+          "Send a link instead of very large photo files by email — the aim is to eliminate external transfer tools like Dropbox and WeTransfer",
+        ],
+      },
+    ],
+  },
+  {
+    id: "brand-guidelines-06",
+    chapterId: "brand-guidelines",
+    title: "Layout Design",
+    summary:
+      "Bringing it all together: templates, grid, social media, email, stationery, promotional items, uniforms, signage, packaging, vehicles, special cases and print.",
+    estMinutes: 45,
+    material: {
+      file: `${SLICE}/brand-guidelines-2026--05-layout-design.pdf`,
+      type: "pdf",
+      range: "Pages 31–47",
+    },
+    sections: [
+      {
+        heading: "Templates — ease of use",
+        body: [
+          "Templates have been created to bring the guidelines together. Adobe templates have instructions inside the file and are ready to go; instructions in each template give a consistent look across all media.",
+        ],
+        bullets: [
+          "Adobe InDesign: business card, presentation folder, envelopes, certificate, greeting card, 'with compliments' card",
+          "Microsoft Word: letterhead, press release, corporate memo",
+          "Adobe Illustrator: feed bags, roll up banners, flags (each supplier has different templates — contact Global Marketing)",
+        ],
+        note: "Some templates are exceptions to the general rules — each template overrides them for its application. If the rules don't apply or don't display well, contact Global Marketing.",
+      },
+      {
+        heading: "Grid system",
+        facts: [
+          { label: "Margins (example)", value: "Top 12 mm · Bottom 12 mm · Inside 25 mm · Outside 12 mm" },
+          { label: "Grid", value: "Two grids: 3 columns × 5 rows, and 15 columns × 25 rows — each large square holds 25 smaller squares" },
+          { label: "Square (200×200)", value: "Margins 12 mm · small grid 7×7 · large grid 21×21" },
+          { label: "A4 (210×297)", value: "Margins 12 mm · small grid 9×6 · large grid 27×18" },
+        ],
+        note: "All grids sit within the margins and have no gutter.",
+      },
+      {
+        heading: "Social media — tone and emojis",
+        bullets: [
+          "Create a cohesive look and feel across all platforms; use the BioMar introduction statement (with or without hashtags)",
+          "Take a professional tone: say what we support/like, share simple facts and accurate figures, always be respectful",
+          "Avoid being overly friendly or familiar, debate-style or negative messaging, and 'don't support/like' wording; no opinions on discussions unless approved by Global Marketing or Corporate Communications",
+          "No emojis with facial expressions, and no more than 3 per post. Allowed: shrimp, fish, planet (sustainability), light bulb (innovation), two hands up, thumbs up",
+        ],
+      },
+      {
+        heading: "Social media — banners, icons and profile pictures",
+        bullets: [
+          "Use the same logo and cover image on every platform; to highlight a launch or campaign, pin a post instead of changing the cover. A cover video is provided",
+          "Use the BioMar social media icon set (rounded square like the logo): BioMar Blue for light backgrounds, Grey or White for dark ones — don't use other colours or shapes",
+          "Profile pictures: show the primary logo in a square with rounded corners wherever possible; only use a circle when the channel gives no square option, with clear space so the elements aren't touching or cropped",
+        ],
+      },
+      {
+        heading: "Email",
+        facts: [
+          { label: "Body text", value: "Arial, 10 pt, BioMar Blue" },
+          { label: "Signature — name", value: "Arial Bold, 11 pt, BioMar Blue" },
+          { label: "Signature — job title", value: "Arial, 9 pt, Ocean Blue" },
+          { label: "Signature — contact details & address", value: "Arial, 9 pt, BioMar Blue" },
+          { label: "Signature — BioMar title & website", value: "Arial Bold, 9 pt, BioMar Blue" },
+          { label: "Signature — legal info", value: "Arial, 9 pt, Light Grey" },
+          { label: "Logo", value: "125 px wide (file provided)" },
+        ],
+        note: "All BioMar employees worldwide use the same signature, which reinforces brand recognition. Social icons (20% black) are optional — only the ones relevant to your market. Advertising and tagline banners are optional templates; local languages are allowed, but text and image display must stay the same.",
+      },
+      {
+        heading: "Business cards",
+        bullets: [
+          "Front: choose from 3 options, each with the BioMar logo and tagline",
+          "Back: 3 watermarks — Pellets, Shrimp or Fish",
+          "Use the InDesign template so everyone has the same card",
+          "Optional personalised dynamic QR code with your contact details (a vCard) — it can be edited later without changing the code",
+          "Finish: satin paper with a matte finish recommended; spot gloss on the front is an optional extra",
+        ],
+      },
+      {
+        heading: "Envelopes, cards, folders and certificates",
+        facts: [
+          { label: "Envelopes", value: "3 variations (logo + office info; logo + tagline; logo only). Sizes C4, C5, M5, M65. For bulk buying across markets, print without the address and add it with a sticker or stamp" },
+          { label: "Greeting card", value: "A6 tent fold (flat 148×210 mm, folded 148×105 mm), blank inside; 260 gsm card, matte or silk finish; optional silver foil" },
+          { label: "'With Compliments' card", value: "A7 (105 × 74 mm), double-sided, no fold, for gifts; print-ready PDF in the template" },
+          { label: "Presentation folder", value: "Dark blue watermark or a neutral water image; full colour BioMar Blue inside recommended (blank interior permitted); matte finish; consider slits for business cards. Use your printer's own template" },
+          { label: "Certificate", value: "Watermark on the reverse; recipient's name by hand or in the typeface Signpainter; 160 gsm or higher silk coated paper" },
+        ],
+      },
+      {
+        heading: "Letterhead, press release, invoice and presentations",
+        bullets: [
+          "Letterhead, press release and corporate memo are Microsoft Word templates; the invoice follows the BioMar invoice layout",
+          "The PowerPoint template is installed on all BioMar computers — use the Widescreen format for all new presentations (apply the theme to a blank document if you need 4:3)",
+        ],
+      },
+      {
+        heading: "Promotional material and clothing",
+        bullets: [
+          "Promotional product colours should be blue; black only when blue isn't available; white only in certain countries for environmental and weather reasons",
+          "Dark blue, navy or black items: corporate logo without box, or solid white logo. Light items: solid blue logo. Clear items: corporate logo with box, solid blue or solid white. High-vis items: the silver logo, only on high-vis coloured items",
+          "The logo without the box is only for promotional items — never on light backgrounds, never with a black 'BioMar' text, never in print or digital media",
+          "T-shirt: logo over the heart and on the opposite sleeve (both recommended), 55 mm wide and the same size; the tagline only on the back, centred across the shoulder blades (140 mm down from the neckline, 70 mm in from the sleeve seams)",
+          "Never re-create the tagline; use the 'rt' ligature version so the r and t meet smoothly. Two versions: BioMar Blue for light fabric, White for medium to dark",
+        ],
+      },
+      {
+        heading: "Uniforms, corporate clothing and headwear",
+        bullets: [
+          "Navy or black items: logo without box. White/light items: solid BioMar Blue logo",
+          "Standard logo 55 mm wide (65 mm on thicker embroidered fabrics like puffa jackets and fleece); front left chest, upper arm or pants side pocket 55–65 mm; large back logo 180 mm wide, centred on the upper back; high-vis logo front left chest, silver when possible",
+          "Corporate clothing that isn't a uniform: logo embroidered in the same colour as the shirt — centred near the collar at the back (35–45 mm) or front left chest (35–55 mm)",
+          "Beanies and caps in high-quality navy blue (beanie logo 35–45 mm, cap 55–65 mm); hard hats get die-cut stickers with the full corporate logo, 45–55 mm wide",
+        ],
+      },
+      {
+        heading: "Signage",
+        facts: [
+          { label: "Background", value: "BioMar Blue" },
+          { label: "Text", value: "White, in the corporate typeface Avenir Next" },
+        ],
+        note: "All exterior signage follows this to carry BioMar's visual identity through our workspaces.",
+      },
+      {
+        heading: "Packaging — feed bags",
+        bullets: [
+          "Standard 20–25 kg bags are printed in BioMar Blue and show the BioMar logo, except in regions where the law restricts the use of the BioMar word mark on product packaging — there the logo element is used",
+          "Big bags: use the logo element when the solid blue BioMar logo can't be used for legal reasons",
+          "Black & white sticker labels for feed bags: use the Corporate Logo variation",
+          "Patterns (with logo, or element only) are provided. Each supplier has different templates — send them to Global Marketing to be updated with the new branding",
+        ],
+      },
+      {
+        heading: "Vehicles, containers and boats",
+        bullets: [
+          "Logo always centred vertically and horizontally; on trucks and trailers use the logo or the logo with tagline (tagline only once on the side and once on the back). Trucks fully painted BioMar Blue",
+          "Cars: aim for BioMar Blue (white is next best) — primary logo without the box on blue vehicles, solid blue logo on white. 3 logos in total: one on each front door and one on the rear, on the driver's side unless car branding gets in the way",
+          "Shipping containers: BioMar Blue (full colour corporate logo) or white (solid blue logo)",
+          "Boats: BioMar Blue with the logo (the word mark is also permitted); where surfaces can't be painted blue, always use the logo with the box",
+        ],
+      },
+      {
+        heading: "Special cases — engraving and QR codes",
+        bullets: [
+          "Metal: silver products; Wood: light-coloured wood. In both, use the corporate logo variation and engrave text in Avenir Next where possible",
+          "QR codes for business cards are generated on qr-code-generator.com (login from your Marketing Manager): vCard Plus → BioMar QR Template → customise with the BioMar preset → download as JPG with high error correction. The codes are dynamic, so contact details can be changed later",
+        ],
+        note: "These are general rules; special cases that need a different solution should go to Global Marketing.",
+      },
+      {
+        heading: "Paper and printing",
+        bullets: [
+          "Digital printing is best for small runs; offset is only cost-effective for large runs. Neither is best — it depends on cost, quantity and colour output, and the two can give slightly different colours",
+          "Whenever possible choose environmentally friendly/eco paper and printing suppliers, and look for eco-labels in your country (for example the Nordic Swan)",
+          "Settings listed in the guidelines (ring binder, divider tabs, internal pages) are just what was used locally — consult your own printer for your finish",
         ],
       },
     ],
