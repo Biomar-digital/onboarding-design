@@ -6,6 +6,14 @@ import type { Chapter } from "./types";
 // follows the document's own slide/page order end to end.
 export const chapters: Chapter[] = [
   {
+    id: "dh2026",
+    title: "Design Hub 2026",
+    source: "Design Hub 2026",
+    icon: "🧭",
+    description:
+      "How the Hub works day to day: reaching out, deadlines, tools and the end-to-end process.",
+  },
+  {
     id: "strategic",
     title: "Design Hub — Strategic Presentation",
     source: "Design Hub 2026 Strategic Presentation",
@@ -20,14 +28,6 @@ export const chapters: Chapter[] = [
     icon: "🎨",
     description:
       "The official visual identity: logo, typography, colour, shapes and photography.",
-  },
-  {
-    id: "dh2026",
-    title: "Design Hub 2026",
-    source: "Design Hub 2026",
-    icon: "🧭",
-    description:
-      "How the Hub works day to day: reaching out, deadlines, tools and the end-to-end process.",
   },
   {
     id: "playbook",
