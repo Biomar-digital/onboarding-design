@@ -830,20 +830,13 @@ export const modules: Module[] = [
     chapterId: "brand-guidelines",
     title: "Corporate Logo",
     summary:
-      "Our most valuable brand asset: elements, the recent logo rebranding, file formats, placement, incorrect uses and the promotional-only version.",
+      "Our most valuable brand asset: elements, file formats, placement, incorrect uses and the promotional-only version.",
     estMinutes: 25,
     material: {
       file: `${SLICE}/brand-guidelines--01-corporate-logo.pdf`,
       type: "pdf",
       range: "Pages 1–8",
     },
-    extraMaterial: [
-      {
-        file: `${SLICE}/brand-guidelines--01b-recent-logo-rebranding.pptx`,
-        type: "pptx",
-        range: "Recent logo rebranding (1 slide)",
-      },
-    ],
     sections: [
       {
         heading: "The corporate logo",
@@ -855,13 +848,6 @@ export const modules: Module[] = [
         heading: "Logo elements",
         body: [
           "The BioMar Logo elements create a sense of movement and connectivity. The box icon has rounded corners to speak to the friendly aspects of our brand personality. The colours reflect our planet's water, sky and land.",
-        ],
-      },
-      {
-        heading: "Recent logo rebranding",
-        facts: [
-          { label: "Before", value: "All brands treated independently, no alignment — seemed to be from different parents." },
-          { label: "Now", value: "All brands follow the same framework and carry the swoosh — seem to be from the same parent." },
         ],
       },
       {
@@ -1187,6 +1173,31 @@ export const modules: Module[] = [
     sections: [
       {
         note: "This is a live map of the real structure — not a simplified example. Use the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
+      },
+    ],
+  },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXTRA INFO — additional material, always last.
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: "extra-info",
+    chapterId: null,
+    title: "Extra info",
+    summary:
+      "Additional material worth knowing: the recent logo rebranding.",
+    estMinutes: 5,
+    material: {
+      file: `${SLICE}/extra-info--recent-logo-rebranding.pptx`,
+      type: "pptx",
+      range: "Recent logo rebranding (1 slide)",
+    },
+    sections: [
+      {
+        heading: "Recent logo rebranding",
+        facts: [
+          { label: "Before", value: "All brands treated independently, no alignment — seemed to be from different parents." },
+          { label: "Now", value: "All brands follow the same framework and carry the swoosh — seem to be from the same parent." },
+        ],
       },
     ],
   },

@@ -6,7 +6,7 @@ import { modules } from "./modules";
 //
 //   Welcome → Strategic (why the Hub exists) → Design Hub 2026 (how it works)
 //   → Brand Guidelines → Global & Group Marketing → set-up (tools & drive)
-//   → Playbook → reference.
+//   → Playbook → Extra info.
 export interface JourneySection {
   key: string;
   icon: string;
@@ -55,10 +55,10 @@ export const journey: JourneySection[] = [
   },
   chapterSection("playbook"),
   {
-    key: "reference",
+    key: "extra",
     icon: "📎",
-    title: "Reference material",
-    description: "Not tied to a single document — always here to check back on.",
+    title: "Extra info",
+    description: "Additional material worth knowing — always here to check back on.",
     moduleIds: modules
       .filter(
         (m) =>
