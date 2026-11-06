@@ -464,17 +464,18 @@ export const modules: Module[] = [
   // CHAPTER: Design Hub 2026 (33 slides)
   // ═══════════════════════════════════════════════════════════════════════════
   {
-    id: "dh2026-01",
+    id: "dh2026",
     chapterId: "dh2026",
-    title: "Challenges & How to Reach Out",
+    title: "Design Hub 2026",
     summary:
-      "The problems this new way of working solves, and the first decision every requester makes: Task or Project?",
-    estMinutes: 20,
+      "The full Design Hub 2026 presentation: the challenges, how and when to reach out, deadlines and priority, the start-to-finish process, feedback, files, turnaround times, communication, responsibility and the Brief Template with a worked example.",
+    estMinutes: 90,
     material: {
-      file: `${SLICE}/dh2026--01-challenges-how-to-reach-out-v2.pptx`,
+      file: `${SLICE}/dh2026--design-hub-2026.pptx`,
       type: "pptx",
-      range: "Slides 1–3 and 5–6",
+      range: "Full presentation (28 slides)",
     },
+    resources: [BRIEF_TEMPLATE],
     sections: [
       {
         heading: "Challenges this way of working addresses",
@@ -502,21 +503,6 @@ export const modules: Module[] = [
           { label: "Project", value: "A group of tasks toward a bigger goal. E.g. logos, new product branding, global campaigns." },
         ],
       },
-    ],
-  },
-  {
-    id: "dh2026-02",
-    chapterId: "dh2026",
-    title: "Deadlines & Priority",
-    summary:
-      "Real dates instead of 'ASAP', and how priority is set by business value.",
-    estMinutes: 10,
-    material: {
-      file: `${SLICE}/dh2026--02-deadlines-priority-v2.pptx`,
-      type: "pptx",
-      range: "Slides 7–9",
-    },
-    sections: [
       {
         heading: "ASAP is not a deadline",
         facts: [
@@ -528,21 +514,12 @@ export const modules: Module[] = [
         heading: "How we set priority — business value",
         bullets: ["Low priority → lower business value", "High priority → higher business value / impact"],
       },
-    ],
-  },
-  {
-    id: "dh2026-03",
-    chapterId: "dh2026",
-    title: "Start to Finish Process",
-    summary:
-      "Who does what from the first brief to closing the task — Marketing's side and the Design Hub's side.",
-    estMinutes: 10,
-    material: {
-      file: `${SLICE}/dh2026--03-start-to-finish-v2.pptx`,
-      type: "pptx",
-      range: "Slides 15 and 17",
-    },
-    sections: [
+      {
+        heading: "Start to finish — the Design Hub process",
+        body: [
+          "Collaborative rather than transactional: continuous communication with local stakeholders, support for local adaptation while maintaining brand consistency, and prioritization based on timelines and business impact.",
+        ],
+      },
       {
         heading: "What Marketing does",
         bullets: [
@@ -559,23 +536,24 @@ export const modules: Module[] = [
           "Adjust based on feedback and submit the final files",
           "Close the task and move the card to the Completed tab",
         ],
-        note: "How feedback is sent per media type (PDF, image, video) is covered in the Playbook — Versioning, Review & Closing.",
       },
-    ],
-  },
-  {
-    id: "dh2026-04",
-    chapterId: "dh2026",
-    title: "Turnaround & Calendar",
-    summary:
-      "How long requests take, how review rounds fit in, and the yearly recurring calendar.",
-    estMinutes: 15,
-    material: {
-      file: `${SLICE}/dh2026--04-turnaround-calendar-v2.pptx`,
-      type: "pptx",
-      range: "Slides 21–23",
-    },
-    sections: [
+      {
+        heading: "Submitting feedback — different methods for different media",
+        facts: [
+          { label: "PDF", value: "Sent as a link to the folder" },
+          { label: "JPG / PNG", value: "Sent as a link to the folder" },
+          { label: "Video", value: "Sent as a link to SharePoint" },
+        ],
+        note: "For video feedback, comments must reference a timestamp written as HH:MM:SS.",
+      },
+      {
+        heading: "File storage — you'll always find",
+        bullets: [
+          "Editable file (for the Design Hub)",
+          "File for review (for the Draft Date — ends in PROOF)",
+          "Final file (for the Final Date — ends in PRINT or DIGITAL)",
+        ],
+      },
       {
         heading: "Turnaround times",
         bullets: [
@@ -591,22 +569,14 @@ export const modules: Module[] = [
         bullets: ["Sustainability Booklet", "Christmas Artwork", "Easter", "Summer"],
         note: "Plan around the yearly calendar so recurring work is booked ahead.",
       },
-    ],
-  },
-  {
-    id: "dh2026-05",
-    chapterId: "dh2026",
-    title: "Personal Responsibility & the Brief Template",
-    summary:
-      "What stays each person's responsibility, and the Brief Template itself.",
-    estMinutes: 15,
-    material: {
-      file: `${SLICE}/dh2026--05-responsibility-brief-v2.pptx`,
-      type: "pptx",
-      range: "Slides 25–29",
-    },
-    resources: [BRIEF_TEMPLATE],
-    sections: [
+      {
+        heading: "Ways of communicating",
+        facts: [
+          { label: "Email", value: "Submitting new task/project · submitting feedback" },
+          { label: "Teams chat", value: "Follow up on tasks/projects" },
+          { label: "Verbal / meetings", value: "Clarify/define projects · in-depth artwork review" },
+        ],
+      },
       {
         heading: "Personal responsibility",
         bullets: [
@@ -621,30 +591,10 @@ export const modules: Module[] = [
         heading: "Brief Template",
         note: "Download the Brief Template below and use it to submit new requests with all the required information.",
       },
-    ],
-  },
-  {
-    id: "dh2026-06",
-    chapterId: "dh2026",
-    title: "Brief Template — A Worked Example",
-    summary:
-      "A real, filled-out brief the Hub received right after the template — see what good specificity looks like.",
-    estMinutes: 15,
-    material: {
-      file: `${SLICE}/dh2026--06-larval-research-facilities.pptx`,
-      type: "pptx",
-      range: "Slides 30–33",
-    },
-    sections: [
       {
-        heading: "Reading a real example",
+        heading: "A worked example — reading a real brief",
         body: [
           "Right after the Brief Template comes a real brief the Design Hub received: a request for signage at BioMar's larval research facility at ATC Hirtshals. It's included here as a worked example — notice how concrete it is compared to a vague request.",
-        ],
-      },
-      {
-        heading: "What the requester wrote",
-        body: [
           "\"BioMar has invested in advanced larval research facilities at ATC Hirtshals, capable of performing trials in semi-industrial conditions. The trial facilities serve as a hub for research and development, product consolidation and validation.\" — this is the purpose/context, stated clearly.",
         ],
       },
@@ -655,7 +605,7 @@ export const modules: Module[] = [
           "Wall space for design/canvas at the end of the hallway",
           "Wall dimensions approx. 1.2m × 2.5m",
         ],
-        note: "Compare this against the four minimum-info items from earlier: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
+        note: "Compare this against the four minimum-info items: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
       },
     ],
   },

@@ -24,7 +24,6 @@ export const profiles: Profile[] = [
       "strategic-01",
       "strategic-04",
       "global-01",
-      "dh2026-06",
     ),
   },
   {
@@ -32,7 +31,7 @@ export const profiles: Profile[] = [
     label: "Multimedia / Motion Designer",
     description:
       "Video & motion focus. Emphasizes process, feedback formats (incl. video), brand and people; still needs the full strategic/organisational picture.",
-    recommendedModuleIds: without("dh2026-06"),
+    recommendedModuleIds: allIds,
   },
   {
     id: "intern",
@@ -43,8 +42,7 @@ export const profiles: Profile[] = [
       "welcome",
       "strategic-01",
       "strategic-02",
-      "dh2026-01",
-      "dh2026-03",
+      "dh2026",
       "playbook-01",
       "playbook-02",
       "playbook-05",
