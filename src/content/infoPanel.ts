@@ -9,9 +9,26 @@ export const infoPanel: InfoPanelGroup[] = [
     title: "File naming",
     icon: "🗂️",
     rows: [
-      { label: "Design files", value: "Year-Month Language_Market Brand/Product-FileType" },
-      { label: "Example", value: "2022-03 ES_Orbit_Brochure" },
-      { label: "Images", value: "What it is + license/number", hint: "Trout_Smolt_Denmark" },
+      {
+        label: "Design files",
+        value: "Year-Month Language_Market Brand/Product-FileType",
+        hint: "File type: Brochure, Ad, Datasheet, Video, etc.",
+      },
+      {
+        label: "Example",
+        value: "2022-03 ES_Orbit_Brochure",
+        hint: "or DRAFT_2021-03 EN_EMEA SmartCare FOCUS (Marine) DM",
+      },
+      {
+        label: "Images",
+        value: "What it is (species, lifestage, location, action…) + license / Shutterstock number / picture default name",
+        hint: "Trout_Smolt_Denmark_shutterstock_98966114",
+      },
+      {
+        label: "Videos",
+        value: "What it is (species, lifestage, location, action…) + license / Shutterstock number / picture default name",
+        hint: "Fish_Tilapia_Grower_shutterstock_25969904",
+      },
     ],
   },
   {
