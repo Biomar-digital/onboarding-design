@@ -14,14 +14,6 @@ export const chapters: Chapter[] = [
       "Who the Design Hub is, its strategic role and pillars, and how it has evolved.",
   },
   {
-    id: "brand-guidelines",
-    title: "BioMar Brand Guidelines",
-    source: "BioMar Brand Guidelines 2020",
-    icon: "🎨",
-    description:
-      "The official visual identity: logo, typography, colour, shapes and photography.",
-  },
-  {
     id: "dh2026",
     title: "Design Hub 2026",
     source: "Design Hub 2026",
@@ -30,12 +22,12 @@ export const chapters: Chapter[] = [
       "How the Hub works day to day: reaching out, deadlines, tools and the end-to-end process.",
   },
   {
-    id: "playbook",
-    title: "Design Hub Playbook",
-    source: "Design Hub Playbook",
-    icon: "📘",
+    id: "brand-guidelines",
+    title: "BioMar Brand Guidelines",
+    source: "BioMar Brand Guidelines 2026 (v5)",
+    icon: "🎨",
     description:
-      "The extended reference: the brief, the task manager, files, versioning and closing tasks.",
+      "The official visual identity: logo, typography, colour, shapes, photography and layout design.",
   },
   {
     id: "global",
@@ -44,6 +36,14 @@ export const chapters: Chapter[] = [
     icon: "🌍",
     description:
       "The wider marketing organisation: team, stakeholders, meetings and the 2026 plan.",
+  },
+  {
+    id: "playbook",
+    title: "Design Hub Playbook",
+    source: "Design Hub Playbook",
+    icon: "📘",
+    description:
+      "The extended reference: the brief, the task manager, files, versioning and closing tasks.",
   },
 ];
 

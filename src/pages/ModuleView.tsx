@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { modulesById } from "../content/modules";
 import { chaptersById } from "../content/chapters";
+import { journey } from "../content/journey";
+import { orderedAssigned } from "../lib/schedule";
+import { GlossaryText } from "../components/GlossaryText";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
 import { ViewingBanner } from "./Employee";
@@ -9,7 +12,7 @@ import { DeckViewer } from "../components/DeckViewer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ToolsMap } from "../components/ToolsMap";
 import { FolderStructureExplorer } from "../components/FolderStructureExplorer";
-import type { LessonSection, QuizQuestion } from "../content/types";
+import type { LessonSection } from "../content/types";
 
 export function ModuleView() {
   const { moduleId, personId } = useParams();
@@ -23,6 +26,20 @@ export function ModuleView() {
       : null;
   const subject = personId ? viewingAs : currentUser;
   const base = viewingAs ? `/admin/view/${viewingAs.id}` : "";
+  const { hash } = useLocation();
+
+  // Jump to a section when arriving with #section-N (from the index or search).
+  useEffect(() => {
+    if (!hash) {
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    const t = setTimeout(
+      () => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50,
+    );
+    return () => clearTimeout(t);
+  }, [hash, moduleId]);
 
   if (!module || !subject) {
     return (
@@ -37,6 +54,17 @@ export function ModuleView() {
 
   const alreadyDone = subject.progress[module.id]?.completed;
   const chapter = module.chapterId ? chaptersById[module.chapterId] : null;
+  const section = journey.find((j) => j.moduleIds.includes(module.id));
+  const order = orderedAssigned(subject.assignedModuleIds);
+  const at = order.indexOf(module.id);
+  const prev = at > 0 ? modulesById[order[at - 1]] : null;
+  const next = at >= 0 && at < order.length - 1 ? modulesById[order[at + 1]] : null;
+  // Each glossary term is underlined only the first time it appears on the page.
+  const seen = new Set<string>();
+  const hasIndex =
+    module.id !== "tools-map" &&
+    module.id !== "folder-structure" &&
+    module.sections.some((x) => x.heading);
 
   return (
     <div>
@@ -44,12 +72,21 @@ export function ModuleView() {
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <article className="space-y-6">
         <div>
-          <Link
-            to={base || "/"}
-            className="text-sm text-slate-400 hover:text-biomar-swoosh"
-          >
-            ← {viewingAs ? `Back to ${viewingAs.name}'s onboarding` : "Back to my onboarding"}
-          </Link>
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-slate-400">
+            <Link to={base || "/"} className="hover:text-biomar-swoosh">
+              {viewingAs ? `${viewingAs.name}'s onboarding` : "My onboarding"}
+            </Link>
+            {section && section.key !== "welcome" && (
+              <>
+                <span aria-hidden>›</span>
+                <span>
+                  {section.icon} {section.title}
+                </span>
+              </>
+            )}
+            <span aria-hidden>›</span>
+            <span className="text-slate-500">{module.title}</span>
+          </nav>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="chip bg-biomar-ice text-biomar-blue uppercase">
               {chapter ? chapter.icon + " " + chapter.title : "Reference"}
@@ -66,6 +103,9 @@ export function ModuleView() {
         </div>
 
         <DeckViewer material={module.material} resources={module.resources} />
+        {module.extraMaterial?.map((m) => (
+          <DeckViewer key={m.file} material={m} />
+        ))}
         <VideoPlayer moduleId={module.id} />
 
         {module.id === "tools-map" ? (
@@ -80,88 +120,114 @@ export function ModuleView() {
               </h2>
             )}
             {module.sections.map((s, i) => (
-              <Section key={i} section={s} />
+              <Section key={i} id={`section-${i}`} section={s} seen={seen} />
             ))}
-          </section>
-        )}
-
-        {module.exercises.length > 0 && (
-          <section className="card p-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-              Practice
-            </h2>
-            <div className="mt-3 space-y-4">
-              {module.exercises.map((ex) => (
-                <div
-                  key={ex.id}
-                  className="rounded-xl border border-dashed border-biomar-swoosh/40 bg-biomar-ice/40 p-4"
-                >
-                  <h3 className="font-semibold text-biomar-navy">
-                    🛠️ {ex.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600">{ex.prompt}</p>
-                  <ul className="mt-2 space-y-1">
-                    {ex.successCriteria.map((c, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2 text-xs text-slate-500"
-                      >
-                        <span className="text-biomar-green">✓</span> {c}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
           </section>
         )}
 
         {viewingAs ? (
           <section className="card p-6 text-sm text-slate-500">
             {alreadyDone
-              ? `${viewingAs.name} completed this module${
-                  subject.progress[module.id]?.quizScore != null
-                    ? ` (quiz ${subject.progress[module.id]?.quizScore}%)`
-                    : ""
-                }.`
+              ? `${viewingAs.name} completed this module.`
               : `${viewingAs.name} hasn't completed this module yet.`}
           </section>
-        ) : module.quiz.length > 0 ? (
-          <Quiz
-            questions={module.quiz}
-            alreadyDone={!!alreadyDone}
-            onPass={(score) => {
-              markModuleComplete(subject.id, module.id, score);
-              navigate("/");
-            }}
-          />
+        ) : alreadyDone ? (
+          <section className="card flex items-center justify-between p-6">
+            <p className="text-sm text-biomar-green">✓ You completed this module.</p>
+            <button className="btn-ghost" onClick={() => navigate("/")}>
+              Back to my onboarding
+            </button>
+          </section>
         ) : (
-          !alreadyDone && (
-            <section className="card flex items-center justify-between p-6">
-              <p className="text-sm text-slate-500">No quiz for this module.</p>
-              <button
-                className="btn-accent"
-                onClick={() => {
-                  markModuleComplete(subject.id, module.id, 100);
-                  navigate("/");
-                }}
+          <section className="card flex items-center justify-between p-6">
+            <p className="text-sm text-slate-500">
+              Done with this module? Mark it complete to continue.
+            </p>
+            <button
+              className="btn-accent"
+              onClick={() => {
+                markModuleComplete(subject.id, module.id);
+                navigate("/");
+              }}
+            >
+              Mark complete & continue
+            </button>
+          </section>
+        )}
+
+        {(prev || next) && (
+          <nav aria-label="Module navigation" className="grid gap-3 sm:grid-cols-2">
+            {prev ? (
+              <Link
+                to={`${base}/module/${prev.id}`}
+                className="card block p-4 transition hover:border-biomar-swoosh hover:bg-biomar-ice/40"
               >
-                Mark complete & continue
-              </button>
-            </section>
-          )
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">← Previous</span>
+                <span className="mt-1 block text-sm font-semibold text-biomar-navy">{prev.title}</span>
+              </Link>
+            ) : (
+              <span />
+            )}
+            {next && (
+              <Link
+                to={`${base}/module/${next.id}`}
+                className="card block p-4 text-right transition hover:border-biomar-swoosh hover:bg-biomar-ice/40"
+              >
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Next →</span>
+                <span className="mt-1 block text-sm font-semibold text-biomar-navy">{next.title}</span>
+              </Link>
+            )}
+          </nav>
         )}
       </article>
 
-      <InfoPanel />
+      <div className="space-y-4 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+        {hasIndex && (
+          <aside className="card p-4">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+              On this page
+            </h2>
+            <ul className="space-y-1">
+              {module.sections.map((x, i) =>
+                x.heading ? (
+                  <li key={i}>
+                    <a
+                      href={`#section-${i}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document
+                          .getElementById(`section-${i}`)
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      className="block rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-biomar-ice/60 hover:text-biomar-navy"
+                    >
+                      {x.heading}
+                    </a>
+                  </li>
+                ) : null,
+              )}
+            </ul>
+          </aside>
+        )}
+        <InfoPanel />
+      </div>
     </div>
     </div>
   );
 }
 
-function Section({ section }: { section: LessonSection }) {
+function Section({
+  section,
+  id,
+  seen,
+}: {
+  section: LessonSection;
+  id: string;
+  seen: Set<string>;
+}) {
+  const g = (t: string) => <GlossaryText text={t} seen={seen} />;
   return (
-    <div>
+    <div id={id} className="scroll-mt-24">
       {section.heading && (
         <h2 className="mb-2 text-base font-bold text-biomar-navy">
           {section.heading}
@@ -169,7 +235,7 @@ function Section({ section }: { section: LessonSection }) {
       )}
       {section.body?.map((p, i) => (
         <p key={i} className="mb-2 text-[15px] leading-relaxed text-slate-700">
-          {p}
+          {g(p)}
         </p>
       ))}
       {section.bullets && (
@@ -177,7 +243,7 @@ function Section({ section }: { section: LessonSection }) {
           {section.bullets.map((b, i) => (
             <li key={i} className="flex items-start gap-2 text-[15px] text-slate-700">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-biomar-swoosh" />
-              {b}
+              <span>{g(b)}</span>
             </li>
           ))}
         </ul>
@@ -189,178 +255,16 @@ function Section({ section }: { section: LessonSection }) {
               <dt className="text-sm font-semibold text-biomar-navy">
                 {f.label}
               </dt>
-              <dd className="text-sm text-slate-600">{f.value}</dd>
+              <dd className="text-sm text-slate-600">{g(f.value)}</dd>
             </div>
           ))}
         </dl>
       )}
       {section.note && (
         <p className="rounded-lg border-l-4 border-biomar-swoosh bg-biomar-ice/50 px-3 py-2 text-sm text-biomar-navy">
-          💡 {section.note}
+          💡 {g(section.note)}
         </p>
       )}
     </div>
-  );
-}
-
-function Quiz({
-  questions,
-  alreadyDone,
-  onPass,
-}: {
-  questions: QuizQuestion[];
-  alreadyDone: boolean;
-  onPass: (score: number) => void;
-}) {
-  const [answers, setAnswers] = useState<Record<string, number[]>>({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const score = useMemo(() => {
-    let correct = 0;
-    for (const q of questions) {
-      const a = (answers[q.id] ?? []).slice().sort();
-      const c = q.correct.slice().sort();
-      if (a.length === c.length && a.every((v, i) => v === c[i])) correct++;
-    }
-    return Math.round((correct / questions.length) * 100);
-  }, [answers, questions]);
-
-  const allAnswered = questions.every((q) => (answers[q.id]?.length ?? 0) > 0);
-
-  const toggle = (q: QuizQuestion, idx: number) => {
-    if (submitted) return;
-    setAnswers((prev) => {
-      const cur = prev[q.id] ?? [];
-      if (q.type === "multi") {
-        return {
-          ...prev,
-          [q.id]: cur.includes(idx)
-            ? cur.filter((i) => i !== idx)
-            : [...cur, idx],
-        };
-      }
-      return { ...prev, [q.id]: [idx] };
-    });
-  };
-
-  return (
-    <section className="card p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-          Knowledge check
-        </h2>
-        {alreadyDone && !submitted && (
-          <span className="chip bg-biomar-green/10 text-biomar-green">
-            Already completed — retake anytime
-          </span>
-        )}
-      </div>
-
-      <div className="mt-4 space-y-6">
-        {questions.map((q, qi) => {
-          const chosen = answers[q.id] ?? [];
-          return (
-            <div key={q.id}>
-              <p className="font-semibold text-biomar-navy">
-                {qi + 1}. {q.prompt}
-                {q.type === "multi" && (
-                  <span className="ml-2 text-xs font-normal text-slate-400">
-                    (select all that apply)
-                  </span>
-                )}
-              </p>
-              <div className="mt-2 space-y-1.5">
-                {q.options.map((opt, oi) => {
-                  const isChosen = chosen.includes(oi);
-                  const isCorrect = q.correct.includes(oi);
-                  let cls =
-                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition ";
-                  if (submitted) {
-                    if (isCorrect)
-                      cls += "border-biomar-green bg-biomar-green/10 text-biomar-navy";
-                    else if (isChosen)
-                      cls += "border-red-300 bg-red-50 text-red-700";
-                    else cls += "border-slate-100 text-slate-500";
-                  } else {
-                    cls += isChosen
-                      ? "border-biomar-swoosh bg-biomar-ice text-biomar-navy"
-                      : "border-slate-200 hover:border-biomar-swoosh/60";
-                  }
-                  return (
-                    <label key={oi} className={cls}>
-                      <input
-                        type={q.type === "multi" ? "checkbox" : "radio"}
-                        name={q.id}
-                        checked={isChosen}
-                        onChange={() => toggle(q, oi)}
-                        className="accent-biomar-swoosh"
-                      />
-                      {opt}
-                      {submitted && isCorrect && (
-                        <span className="ml-auto text-xs font-semibold text-biomar-green">
-                          correct
-                        </span>
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-              {submitted && (
-                <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  {q.explanation}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-        {!submitted ? (
-          <>
-            <p className="text-sm text-slate-400">
-              {allAnswered
-                ? "All answered — submit to check."
-                : "Answer every question to submit."}
-            </p>
-            <button
-              className="btn-primary"
-              disabled={!allAnswered}
-              onClick={() => setSubmitted(true)}
-            >
-              Submit answers
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm">
-              You scored{" "}
-              <span
-                className={`font-bold ${
-                  score >= 70 ? "text-biomar-green" : "text-amber-600"
-                }`}
-              >
-                {score}%
-              </span>
-              {score < 70 && " — review and retake to reinforce the concepts."}
-            </p>
-            <div className="flex gap-2">
-              <button
-                className="btn-ghost"
-                onClick={() => {
-                  setSubmitted(false);
-                  setAnswers({});
-                }}
-              >
-                Retake
-              </button>
-              <button className="btn-accent" onClick={() => onPass(score)}>
-                Mark complete & continue
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </section>
   );
 }

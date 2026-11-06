@@ -6,12 +6,21 @@
 export const PLATFORMS_ACCESSES_URL =
   "https://biomar.sharepoint.com/:fl:/r/contentstorage/CSP_efbc6581-c67a-4cf1-8d4b-d3e20c8ca86d/Dokumentbibliotek/LoopAppData/Platforms%20%26%20Accesses.loop?d=w7e1166452ade4b6380045136758cbc50&csf=1&web=1&e=NZ6uKB&nav=cz0lMkZjb250ZW50c3RvcmFnZSUyRkNTUF9lZmJjNjU4MS1jNjdhLTRjZjEtOGQ0Yi1kM2UyMGM4Y2E4NmQmZD1iJTIxZ1dXODczckc4VXlOUzlQaURJeW9iUVNyZVZhNEZZRkp1Y3JFSlJaam9OOThMRUltcTlqYVRvaDFKanF3ZVpFMiZmPTAxSjZPRFVNMkZNWUlYNVhSS01ORllBQkNSR1oyWVpQQ1EmYz0lMkYmYT1Mb29wQXBwJnA9JTQwZmx1aWR4JTJGbG9vcC1wYWdlLWNvbnRhaW5lcg%3D%3D";
 
+// The Pond (Kontainer) — BioMar's brand asset DAM.
+export const POND_URL = "https://biomar.kontainer.com/";
+
+// The Pond tutorials (Scribe): step-by-step how-tos for finding and downloading brand assets.
+export const POND_TUTORIALS_URL =
+  "https://scribehow.com/o/d2wjaK-dRXGW-rdKwWs7Uw/page/The_Pond_tutorials__N-2jQjBySMq4m1hYr1jxcQ";
+
 export interface Tool {
   name: string;
   purpose: string;
   icon: string;
   /** Optional link, opened in a new tab. */
   url?: string;
+  /** Extra links shown under the purpose (e.g. tutorials). */
+  links?: { label: string; url: string }[];
 }
 
 export interface ToolGroup {
@@ -29,10 +38,16 @@ export const toolGroups: ToolGroup[] = [
     icon: "🔑",
     tools: [
       { name: "Loop Link", purpose: "Start here: request access & find owners", icon: "🔗", url: PLATFORMS_ACCESSES_URL },
-      { name: "The Pond (Kontainer)", purpose: "Brand asset DAM: guidelines, logos, photos", icon: "🌊" },
+      {
+        name: "The Pond (Kontainer)",
+        purpose: "Brand asset DAM: guidelines, logos, photos",
+        icon: "🌊",
+        url: POND_URL,
+        links: [{ label: "The Pond tutorials", url: POND_TUTORIALS_URL }],
+      },
       { name: "Umbraco Content Library", purpose: "Website content management", icon: "🧱" },
       { name: "Internal Design Library", purpose: "Internal templates (Global Marketing only)", icon: "🗃️" },
-      { name: "QR Code Generator", purpose: "Generate QR codes for campaigns", icon: "🔳" },
+      { name: "QR Code Generator", purpose: "Generate QR codes for campaigns", icon: "🔳", url: "https://www.qr-code-generator.com" },
     ],
   },
   {
@@ -40,9 +55,9 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-swoosh",
     icon: "🎨",
     tools: [
-      { name: "Figma", purpose: "UI/UX, prototyping & design systems", icon: "🖌️" },
-      { name: "Canva", purpose: "Quick, templated & self-serve design", icon: "✨" },
-      { name: "Miro", purpose: "Whiteboard: brainstorm, map, workshop", icon: "🧩" },
+      { name: "Figma", purpose: "UI/UX, prototyping & design systems", icon: "🖌️", url: "https://www.figma.com" },
+      { name: "Canva", purpose: "Quick, templated & self-serve design", icon: "✨", url: "https://www.canva.com" },
+      { name: "Miro", purpose: "Whiteboard: brainstorm, map, workshop", icon: "🧩", url: "https://miro.com" },
     ],
   },
   {
@@ -50,8 +65,14 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-blue",
     icon: "🖼️",
     tools: [
-      { name: "Shutterstock", purpose: "Stock photos, illustrations & video", icon: "📷" },
-      { name: "Adobe Stock · Flaticon", purpose: "More stock imagery & icons", icon: "🔎" },
+      { name: "Shutterstock", purpose: "Stock photos, illustrations & video", icon: "📷", url: "https://www.shutterstock.com" },
+      {
+        name: "Adobe Stock · Flaticon",
+        purpose: "More stock imagery & icons",
+        icon: "🔎",
+        url: "https://stock.adobe.com",
+        links: [{ label: "Flaticon", url: "https://www.flaticon.com" }],
+      },
     ],
   },
   {
@@ -59,8 +80,8 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-orange",
     icon: "🤖",
     tools: [
-      { name: "ElevenLabs", purpose: "AI voice-over for videos", icon: "🎙️" },
-      { name: "Higgsfield.ai", purpose: "AI video / image generation", icon: "🎞️" },
+      { name: "ElevenLabs", purpose: "AI voice-over for videos", icon: "🎙️", url: "https://elevenlabs.io" },
+      { name: "Higgsfield.ai", purpose: "AI video / image generation", icon: "🎞️", url: "https://higgsfield.ai" },
     ],
   },
   {
@@ -68,7 +89,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-green",
     icon: "✍️",
     tools: [
-      { name: "Grammarly", purpose: "Grammar, spelling & tone for copy", icon: "📝" },
+      { name: "Grammarly", purpose: "Grammar, spelling & tone for copy", icon: "📝", url: "https://www.grammarly.com" },
     ],
   },
   {
@@ -76,7 +97,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-navy",
     icon: "🖨️",
     tools: [
-      { name: "Lasertryk", purpose: "Online print supplier for printed material", icon: "📄" },
+      { name: "Lasertryk", purpose: "Online print supplier for printed material", icon: "📄", url: "https://lasertryk.dk" },
     ],
   },
   {
@@ -84,8 +105,8 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-blue",
     icon: "📇",
     tools: [
-      { name: "Add to Wallet", purpose: "Digital business cards (wallet passes)", icon: "📲" },
-      { name: "Cards admin panel", purpose: "Create & manage the digital cards", icon: "🗂️" },
+      { name: "Add to Wallet", purpose: "Digital business cards (wallet passes)", icon: "📲", url: "https://app.addtowallet.co/" },
+      { name: "Cards admin panel", purpose: "Create & manage the digital cards", icon: "🗂️", url: "https://igitalbusinesscards.marketing-70b.workers.dev/" },
     ],
   },
   {
@@ -102,7 +123,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-gray",
     icon: "🛡️",
     tools: [
-      { name: "Cookie Information", purpose: "Cookie consent & GDPR for the sites", icon: "🍪" },
+      { name: "Cookie Information", purpose: "Cookie consent & GDPR for the sites", icon: "🍪", url: "https://cookieinformation.com" },
     ],
   },
   {
@@ -110,8 +131,8 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-navy",
     icon: "🏛️",
     tools: [
-      { name: "Global Policies Library", purpose: "Repository of BioMar global policies", icon: "📚" },
-      { name: "GitHub", purpose: "Version control & hosting (this platform)", icon: "🐙" },
+      { name: "Global Policies Library", purpose: "Repository of BioMar global policies", icon: "📚", url: "https://globa-policies.marketing-70b.workers.dev/" },
+      { name: "GitHub", purpose: "Version control & hosting (this platform)", icon: "🐙", url: "https://github.com/Biomar-digital/onboarding-design" },
     ],
   },
 ];

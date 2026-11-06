@@ -38,8 +38,6 @@ export const modules: Module[] = [
         note: "Powered by Partnership. Driven by Innovation.",
       },
     ],
-    quiz: [],
-    exercises: [],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -53,7 +51,7 @@ export const modules: Module[] = [
       "The cover, what the Design Hub is, and the team behind it.",
     estMinutes: 15,
     material: {
-      file: `${SLICE}/strategic--01-who-we-are.pptx`,
+      file: `${SLICE}/strategic--01-who-we-are-v2.pptx`,
       type: "pptx",
       range: "Slides 1–3",
     },
@@ -75,45 +73,8 @@ export const modules: Module[] = [
       {
         heading: "Who we are",
         bullets: [
-          "Isidora Silva Ch. — Graphic Designer. 3 years at BioMar. Graphic & print design (external and internal). Supporting brand consistency across markets. Works with campaigns & corporate communication.",
           "Andres Bernadou — Multimedia Designer. 2 years at BioMar. Video & digital design (external and internal). Supporting storytelling and concept creation across markets. Works with campaigns & corporate communication.",
-        ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "What does the Design Hub combine? (select all)",
-        options: [
-          "Creative execution",
-          "Brand governance",
-          "Technical, technology-based knowledge",
-          "Sales forecasting",
-        ],
-        correct: [0, 1, 2],
-        explanation:
-          "The Design Hub combines creative execution, brand governance and technical/technology-based knowledge — not sales forecasting.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "The Design Hub completes more than 1000 tasks annually.",
-        options: ["True", "False"],
-        correct: [0],
-        explanation:
-          "True — the Hub does more than 1000 tasks a year, ranging from a few hours to several months of work.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Team & function recap",
-        prompt:
-          "In one or two sentences, write what the Design Hub is and who's currently on it.",
-        successCriteria: [
-          "Mentions the centralized creative & brand support function",
-          "Names the current team",
+          "New designer — joining the Design Hub.",
         ],
       },
     ],
@@ -189,38 +150,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "Which are pillars of the Design Hub? (select all)",
-        options: ["Consistency", "Efficiency", "Discounting", "Brand & Product Protection"],
-        correct: [0, 1, 3],
-        explanation:
-          "The five pillars are Consistency, Efficiency, Quality, Scalability and Brand & Product Protection.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Which ownership area covers art direction and strategic guidance?",
-        options: ["Graphic Design", "Motion & Video", "Brand & Creative Direction", "Production & Coordination"],
-        correct: [2],
-        explanation:
-          "Brand & Creative Direction owns visual consistency, art direction and strategic guidance.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Pillars in practice",
-        prompt:
-          "Pick one recent Design Hub deliverable and explain which of the five pillars it served and how.",
-        successCriteria: [
-          "A real deliverable chosen",
-          "At least two pillars connected to concrete decisions",
-        ],
-      },
-    ],
   },
   {
     id: "strategic-03",
@@ -230,9 +159,9 @@ export const modules: Module[] = [
       "How the Hub approaches work, its timeline through the years, and a first look at brand governance.",
     estMinutes: 25,
     material: {
-      file: `${SLICE}/strategic--03-process-history-governance.pptx`,
+      file: `${SLICE}/strategic--03-process-history-governance-v2.pptx`,
       type: "pptx",
-      range: "Slides 9–14",
+      range: "Slides 9–13",
     },
     sections: [
       {
@@ -265,41 +194,6 @@ export const modules: Module[] = [
           "Imagery style · Tone and consistency · Digital vs print applications",
         ],
         note: "Guidelines support consistency while allowing flexibility. The full guidelines are their own chapter — see BioMar Brand Guidelines.",
-      },
-      {
-        heading: "Recent logo rebranding",
-        facts: [
-          { label: "Before", value: "All brands treated independently, no alignment — seemed to be from different parents." },
-          { label: "Now", value: "All brands follow the same framework and carry the swoosh — seem to be from the same parent." },
-        ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "boolean",
-        prompt: "The Design Hub describes its approach as transactional rather than collaborative.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — it is explicitly collaborative rather than transactional.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What visual element unifies the brand family after the rebrand?",
-        options: ["A drop shadow", "The swoosh", "A gradient", "A serif wordmark"],
-        correct: [1],
-        explanation: "The swoosh unifies the family so the brands read as sharing one parent.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Timeline recap",
-        prompt:
-          "Pick two milestones from the Design Hub timeline and explain why each mattered for how the Hub works today.",
-        successCriteria: ["Two milestones chosen", "Each connected to a concrete change"],
       },
     ],
   },
@@ -344,38 +238,6 @@ export const modules: Module[] = [
         note: "Looking ahead: product ownership.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "File & asset management and version control fall under which rhythm?",
-        options: ["Weekly", "Daily", "Always-on", "Monthly"],
-        correct: [2],
-        explanation: "Always-on — shared systems, version control and accessibility run continuously.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What is one current (Hub 2.0) challenge mentioned?",
-        options: [
-          "Too few requests",
-          "Global consistency vs local flexibility",
-          "No markets to serve",
-          "Excess designers",
-        ],
-        correct: [1],
-        explanation: "Balancing global consistency with local flexibility is a named current challenge.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Channel choice drill",
-        prompt:
-          "For five scenarios (new task, quick status check, unclear brief, feedback, deep review), decide whether it belongs in a weekly, daily or always-on rhythm — and why.",
-        successCriteria: ["Rhythm assigned for each scenario", "One-line justification each"],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -386,12 +248,12 @@ export const modules: Module[] = [
     chapterId: "global",
     title: "Team & Organisation",
     summary:
-      "What Global Marketing is, how Global / Divisional / Local marketing split responsibilities, the org chart, and how the team collaborates.",
+      "What Global Marketing is, its three working areas, the Global Marketing team and the regional marketing organisation.",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/global--01-team-organisation-2025.pdf`,
-      type: "pdf",
-      range: "One BioMar Marketing, org chart & collaboration (5 pages)",
+      file: `${SLICE}/global--01-team-organisation-v2.pptx`,
+      type: "pptx",
+      range: "Slides 1–6",
     },
     sections: [
       {
@@ -402,74 +264,67 @@ export const modules: Module[] = [
       },
       {
         heading: "Our three working areas",
-        bullets: [
-          "Global Marketing (brand, positioning, shared services — this is the Design Hub's home)",
-          "Divisional Marketing (develops the product range for its product portfolio and manages its businesses)",
-          "Local Marketing (launches the product range and runs local initiatives)",
+        facts: [
+          {
+            label: "Global Marketing",
+            value:
+              "Brand & strategy ownership. Owns the global brand identity and architecture, marketing strategy and frameworks, global campaigns and concept launches, and tone of voice and messaging standards.",
+          },
+          {
+            label: "Group Marketing",
+            value:
+              "BioMar Group as a market. Owns the BioMar Group LinkedIn page, Instagram @biomargroup, YouTube channel, the Group website and content for Sustainability, R&D and Sourcing.",
+          },
+          {
+            label: "Marketing Agency",
+            value:
+              "Support services — an internal agency serving markets and divisions. Creative production and design & visual assets (DesignHUB); digital marketing and content marketing support (DigitalHUB).",
+          },
         ],
-      },
-      {
-        heading: "One BioMar Marketing",
-        body: [
-          "Global Marketing sits above four global product/service lines (Global Product Concepts, Trademarks, Marketing Agency, Digital Marketing), which in turn cover five product segments (Salmon, FW, MS, Hatchery, Shrimp) delivered locally by 12 business units — Chile, Norway, Greece, Turkey, Costa Rica, Ecuador, UK, Australia, Baltics, West MED, China, Vietnam.",
-        ],
+        note: "The Design Hub is part of the Marketing Agency.",
       },
       {
         heading: "The Global Marketing team",
-        bullets: [
-          "Katherine Bryar — Global Marketing Director",
-          "Olivia Andrews — Graphic Designer",
-          "Elizabeth Jørgensen — Graphic Designer",
-          "Steffan Kyhe — Digital Marketing Lead",
-          "Nerea Palacios — Student Assistant",
-        ],
-        note: "Creative Direction is provided externally by Bitsch & Bitsch. Videographers, photographers and additional creative designers are brought in as needed.",
-      },
-      {
-        heading: "Marketing Forum & collaboration cadence",
-        body: [
-          "Global Marketing is guided by the Marketing Forum (Salmon · FW & MS · Shrimp & Hatchery · Product Strategist), which sets positioning for product concepts and services and runs the shared Design and Digital agency.",
-          "Below the Forum, a regular Global Marketing Meeting brings together the local marketing managers across every business unit to stay aligned.",
-        ],
-      },
-      {
-        heading: "Marketing organisation & divisions",
         facts: [
-          { label: "EMEA", value: "Baltics & WestMed" },
-          { label: "Asia", value: "Vietnam & China" },
-          { label: "LATAM", value: "Costa Rica & Ecuador" },
-          { label: "Salmon", value: "Australia, UK, Norway, Chile" },
-          { label: "Hatchery", value: "LARVIVA" },
+          { label: "Global Marketing Director", value: "Helle Vansgaard" },
+          { label: "Design Hub — Multimedia Designer", value: "Andres Bernadou" },
+          { label: "Digital Marketing Platforms Specialist", value: "Matt Evans" },
+          { label: "Content Creator", value: "Nerea Palacios" },
         ],
       },
-    ],
-    quiz: [
       {
-        id: "q1",
-        type: "multi",
-        prompt: "Which are the three working areas of Marketing? (select all)",
-        options: ["Global Marketing", "Divisional Marketing", "Local Marketing", "Fleet Operations"],
-        correct: [0, 1, 2],
-        explanation:
-          "The three areas are Global Marketing, Divisional Marketing and Local Marketing.",
+        heading: "Marketing organisation — three levels",
+        bullets: [
+          "Global Marketing manages the BioMar brand, creates the positioning for all product concepts and services and runs the centralised Design and Digital Shared Services agency",
+          "Product Marketing Management manages its segment and develops the product range in its product portfolio",
+          "Local Marketing launches its product range and runs marketing initiatives to support its businesses",
+        ],
       },
       {
-        id: "q2",
-        type: "single",
-        prompt: "Who leads Global Marketing, the Design Hub's home team?",
-        options: ["Carlos Díaz", "Katherine Bryar", "Bitsch & Bitsch", "Marcel Huijsmans"],
-        correct: [1],
-        explanation:
-          "Katherine Bryar is the Global Marketing Director. Bitsch & Bitsch provides external Creative Direction; Marcel Huijsmans directs Salmon Marketing.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Who's who",
-        prompt:
-          "List the current Global Marketing team and note one thing each person is responsible for.",
-        successCriteria: ["All team members listed", "One responsibility captured per person"],
+        heading: "Regional marketing teams",
+        facts: [
+          {
+            label: "EMEA",
+            value:
+              "Kseniya Akkaya (Manager, Turkey) · Cathrine Weirbach (Manager, Denmark) · Iris Hernandez (Manager, Spain) · Christina Kravariti (Assistant, Greece)",
+          },
+          {
+            label: "LATAM",
+            value:
+              "Daniela Vera · Valeria Triviño Alvarez (Marketing Manager, Ecuador) · Steven Leon Ulloa (Marketing Responsible, Costa Rica)",
+          },
+          {
+            label: "Asia",
+            value:
+              "Xinru Wang · Thu Minh Dang (Marketing Assistant, Vietnam) · Ma Teng (Marketing Manager, China)",
+          },
+          {
+            label: "Salmon",
+            value:
+              "Joana Silva · Thomas Hansen (Manager, Norway) · Andrew Richardson (Responsible, UK) · Claudio Muñoz (Manager, Chile) · Victoria Valdenegro (Manager, Australia)",
+          },
+        ],
+        note: "On the org chart, Daniela Vera, Xinru Wang and Joana Silva sit on the inner ring with their segment; the others are the local marketing contacts per country.",
       },
     ],
   },
@@ -511,45 +366,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What principle orders the marketing manager introductions?",
-        options: [
-          "Alphabetical by country",
-          "How much the Design Hub works with each market",
-          "By time zone only",
-          "Randomly",
-        ],
-        correct: [1],
-        explanation:
-          "Meet them based on how much the Hub works with each market — the closest collaborators first.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What is the difference between regular and special meetings?",
-        options: [
-          "Regular meetings never happen",
-          "Regular = recurring cadence; Special = ad hoc sessions",
-          "Special meetings are for social events only",
-          "There is no difference",
-        ],
-        correct: [1],
-        explanation:
-          "Regular meetings are a recurring alignment cadence; special meetings are ad hoc (planning, reviews, initiatives).",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Intro notes template",
-        prompt:
-          "Prepare a short intro-meeting template (focus, typical requests, local specifics) and fill it in after your first marketing manager meeting.",
-        successCriteria: ["Reusable template created", "First meeting captured against it"],
-      },
-    ],
   },
   {
     id: "global-03",
@@ -581,34 +397,6 @@ export const modules: Module[] = [
       {
         heading: "Budgets",
         note: "Budget processes and figures are managed by Marketing leadership. As a designer, the practical impact is on prioritisation and turnaround — see the Design Hub 2026 chapter for how priority and turnaround work day to day.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You need to submit a brand-new task. Which channel?",
-        options: ["Teams chat", "Email", "A hallway chat", "SMS"],
-        correct: [1],
-        explanation:
-          "New tasks/projects and formal feedback go by email; Teams is for follow-ups; meetings are for defining/reviewing.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "The 2026 Global Marketing Plan is organized at which two levels?",
-        options: ["Group and Global", "Weekly and Monthly", "Print and Digital", "EMEA and Asia"],
-        correct: [0],
-        explanation: "Group and Global — organisation-wide vs Global Marketing-specific.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Plan awareness",
-        prompt:
-          "Take one past project and note whether it was a Group-level or Global-level initiative, and why.",
-        successCriteria: ["Project classified", "Reasoning given"],
       },
     ],
   },
@@ -670,60 +458,24 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "A brief mentions a RAS (recirculating aquaculture system) hatchery project. Which brand is it most likely for?",
-        options: ["SmartCare", "ORBIT / LARVIVA ORBIT", "VetCare", "Blue Impact"],
-        correct: [1],
-        explanation:
-          "ORBIT is BioMar's feed range for advanced farming tech like RAS; LARVIVA ORBIT applies that specifically to marine nurseries.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What is BioMar's brand archetype?",
-        options: ["The Ruler", "The Innocent", "The Enabler", "The Jester"],
-        correct: [2],
-        explanation:
-          "BioMar is positioned as the Enabler — a catalyst for change through collaboration with industry partners.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "Which brand is BioMar's preventative health feed programme?",
-        options: ["SmartCare", "LARVIVA", "EXIA", "P 3.0"],
-        correct: [0],
-        explanation: "SmartCare — \"You care. We care.\" — is the preventative health feed range.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Match the brand",
-        prompt:
-          "Pick three product folders from the Folder Structure explorer you don't recognise and, using this glossary, write one line on what each brand actually is.",
-        successCriteria: ["Three folders picked", "Correct brand explained for each"],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CHAPTER: Design Hub 2026 (33 slides)
   // ═══════════════════════════════════════════════════════════════════════════
   {
-    id: "dh2026-01",
+    id: "dh2026",
     chapterId: "dh2026",
-    title: "Challenges & How to Reach Out",
+    title: "Design Hub 2026",
     summary:
-      "The problems this new way of working solves, and the first decision every requester makes: Task or Project?",
-    estMinutes: 20,
+      "The full Design Hub 2026 presentation: the challenges, how and when to reach out, deadlines and priority, the start-to-finish process, feedback, files, turnaround times, communication, responsibility and the Brief Template with a worked example.",
+    estMinutes: 90,
     material: {
-      file: `${SLICE}/dh2026--01-challenges-how-to-reach-out.pptx`,
+      file: `${SLICE}/dh2026--design-hub-2026.pptx`,
       type: "pptx",
-      range: "Slides 1–6",
+      range: "Full presentation (28 slides)",
     },
+    resources: [BRIEF_TEMPLATE],
     sections: [
       {
         heading: "Challenges this way of working addresses",
@@ -751,47 +503,6 @@ export const modules: Module[] = [
           { label: "Project", value: "A group of tasks toward a bigger goal. E.g. logos, new product branding, global campaigns." },
         ],
       },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "A single event flyer with one round of review is a…",
-        options: ["Project", "Task", "Campaign", "Program"],
-        correct: [1],
-        explanation: "A small, short, self-contained deliverable is a Task.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Launching a new product brand (logo, guidelines, campaign) is a…",
-        options: ["Task", "Project"],
-        correct: [1],
-        explanation: "Multiple interdependent deliverables toward one bigger goal = a Project.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Task or Project?",
-        prompt: "Take five recent requests and label each Task or Project, with a one-line reason.",
-        successCriteria: ["All five labelled", "Reasoning references reviews / scope / info needed"],
-      },
-    ],
-  },
-  {
-    id: "dh2026-02",
-    chapterId: "dh2026",
-    title: "Deadlines, Priority & the InCopy Course",
-    summary:
-      "Real dates instead of 'ASAP', how priority is set by business value, and the InCopy/InDesign training.",
-    estMinutes: 30,
-    material: {
-      file: `${SLICE}/dh2026--02-deadlines-priority-incopy.pptx`,
-      type: "pptx",
-      range: "Slides 7–14",
-    },
-    sections: [
       {
         heading: "ASAP is not a deadline",
         facts: [
@@ -804,88 +515,7 @@ export const modules: Module[] = [
         bullets: ["Low priority → lower business value", "High priority → higher business value / impact"],
       },
       {
-        heading: "What is Adobe InCopy?",
-        body: [
-          "InCopy lets people create, edit and format content and helps teams work collaboratively. It integrates with InDesign so designers and writers work on the same layout without clashing — avoiding unnecessary back-and-forth.",
-        ],
-      },
-      {
-        heading: "The course — 4 modules",
-        bullets: [
-          "Module 1: Introduction to InCopy",
-          "Module 2: Editing Text",
-          "Module 3: Reviewing Copy",
-          "Module 4: Saving and Export",
-        ],
-      },
-      {
-        heading: "Available courses",
-        facts: [
-          { label: "EN — 5 hours", value: "Beginner–Intermediate" },
-          { label: "EN — 3 hours", value: "Infrequent users" },
-          { label: "ES — 5 hours", value: "Beginner–Intermediate" },
-        ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What are the two dates every request must have?",
-        options: ["Start date and end date", "First Draft Date and Final Due Date", "ASAP and EOD", "Draft and review"],
-        correct: [1],
-        explanation: "First Draft Date and Final Due Date — 'ASAP' is not a deadline.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "Priority is set by whoever asks the loudest.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation: "False — priority is set by business value and impact.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "What problem does the InCopy + InDesign workflow solve?",
-        options: [
-          "Rendering 3D",
-          "Letting writers and designers work on the same layout without clashing",
-          "Video editing",
-          "Color management",
-        ],
-        correct: [1],
-        explanation: "InCopy integrates with InDesign so writers and designers work in unison, avoiding back-and-forth.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Real dates + InCopy flow",
-        prompt:
-          "Turn an 'ASAP' request into a First Draft Date + Final Due Date. Then open a sample InDesign layout with an InCopy story, make a tracked text edit, and export.",
-        successCriteria: [
-          "Both dates defined, review rounds accounted for",
-          "Edited via InCopy with track changes, exported correctly",
-        ],
-      },
-    ],
-  },
-  {
-    id: "dh2026-03",
-    chapterId: "dh2026",
-    title: "Start to Finish Process & Feedback",
-    summary:
-      "The end-to-end process from Marketing's side and the Hub's side, and how feedback is submitted per media type.",
-    estMinutes: 25,
-    material: {
-      file: `${SLICE}/dh2026--03-start-to-finish-feedback.pptx`,
-      type: "pptx",
-      range: "Slides 15–19",
-    },
-    sections: [
-      {
-        heading: "Design Hub Process",
+        heading: "Start to finish — the Design Hub process",
         body: [
           "Collaborative rather than transactional: continuous communication with local stakeholders, support for local adaptation while maintaining brand consistency, and prioritization based on timelines and business impact.",
         ],
@@ -899,6 +529,15 @@ export const modules: Module[] = [
         ],
       },
       {
+        heading: "What the Design Hub does",
+        bullets: [
+          "Review the brief, enter it in the Design Hub task manager, tag the contact person and inform them via email — request any missing information",
+          "Submit drafts via email, following the same thread: paths for files, links for videos",
+          "Adjust based on feedback and submit the final files",
+          "Close the task and move the card to the Completed tab",
+        ],
+      },
+      {
         heading: "Submitting feedback — different methods for different media",
         facts: [
           { label: "PDF", value: "Sent as a link to the folder" },
@@ -907,50 +546,8 @@ export const modules: Module[] = [
         ],
         note: "For video feedback, comments must reference a timestamp written as HH:MM:SS.",
       },
-    ],
-    quiz: [
       {
-        id: "q1",
-        type: "single",
-        prompt: "Where does Marketing send the Brief form?",
-        options: ["design@biomar.com", "Any team member's personal email", "Slack", "It's submitted verbally only"],
-        correct: [0],
-        explanation: "The Brief form is filled out and sent via email to design@biomar.com.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "How must video feedback be referenced?",
-        options: ["By frame number", "By a timestamp written as HH:MM:SS", "By color", "It can't be — video isn't reviewed"],
-        correct: [1],
-        explanation: "Video feedback must include a timestamp in HH:MM:SS.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Run a review round",
-        prompt:
-          "Export a PROOF, send it as a folder link (not an attachment), and collect mock feedback in the correct format for a PDF, an image and a video.",
-        successCriteria: ["Sent as folder link", "Feedback format matches the media type (incl. timestamp for video)"],
-      },
-    ],
-  },
-  {
-    id: "dh2026-04",
-    chapterId: "dh2026",
-    title: "File Storage, Turnaround & Calendar",
-    summary:
-      "The three files you'll always find, how turnaround times work, and the yearly recurring calendar.",
-    estMinutes: 20,
-    material: {
-      file: `${SLICE}/dh2026--04-file-storage-turnaround-calendar.pptx`,
-      type: "pptx",
-      range: "Slides 20–23",
-    },
-    sections: [
-      {
-        heading: "You'll always find",
+        heading: "File storage — you'll always find",
         bullets: [
           "Editable file (for the Design Hub)",
           "File for review (for the Draft Date — ends in PROOF)",
@@ -960,6 +557,8 @@ export const modules: Module[] = [
       {
         heading: "Turnaround times",
         bullets: [
+          "Day-to-day reference (Strategic presentation, the most recent): a task takes about 2–6 days with 1–3 review rounds; a project 2–24 weeks with several review rounds.",
+          "The table in the slides gives indicative times by type of piece — use it for the bigger items (logo creation, new product, new concept). Where it differs for small tasks, the figures above apply.",
           "The sooner you submit, the sooner it goes on the calendar and gets an accurate timeframe.",
           "First come, first served — although prioritisation by business value still applies.",
           "Build the rounds of review into the timeline.",
@@ -970,49 +569,6 @@ export const modules: Module[] = [
         bullets: ["Sustainability Booklet", "Christmas Artwork", "Easter", "Summer"],
         note: "Plan around the yearly calendar so recurring work is booked ahead.",
       },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What ending marks a file for the Draft Date?",
-        options: ["FINAL", "PROOF", "PRINT", "DIGITAL"],
-        correct: [1],
-        explanation: "The file for review, tied to the Draft Date, ends in PROOF.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "Submitting earlier gets you a more accurate timeframe on the calendar.",
-        options: ["True", "False"],
-        correct: [0],
-        explanation: "True — the sooner you submit, the sooner it's on the calendar with an accurate timeframe.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Plan around the calendar",
-        prompt:
-          "Pick a recurring yearly item (e.g. Christmas artwork) and, using the turnaround guidance, note when it should be kicked off.",
-        successCriteria: ["Recurring item chosen", "Kickoff date reasoned from turnaround + review rounds"],
-      },
-    ],
-  },
-  {
-    id: "dh2026-05",
-    chapterId: "dh2026",
-    title: "Communication, Personal Responsibility & the Brief Template",
-    summary:
-      "When to use email, Teams or a meeting; what stays each person's responsibility; and the Brief Template itself.",
-    estMinutes: 20,
-    material: {
-      file: `${SLICE}/dh2026--05-communication-responsibility-brief.pptx`,
-      type: "pptx",
-      range: "Slides 24–29",
-    },
-    resources: [BRIEF_TEMPLATE],
-    sections: [
       {
         heading: "Ways of communicating",
         facts: [
@@ -1035,56 +591,10 @@ export const modules: Module[] = [
         heading: "Brief Template",
         note: "Download the Brief Template below and use it to submit new requests with all the required information.",
       },
-    ],
-    quiz: [
       {
-        id: "q1",
-        type: "single",
-        prompt: "An in-depth review of the artwork is best done…",
-        options: ["By email only", "In a verbal meeting", "Via Flaticon", "Never"],
-        correct: [1],
-        explanation: "In-depth artwork review and clarifying/defining projects are handled verbally.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Who must inform the relevant Forum member about current tasks/projects?",
-        options: ["The Design Hub", "Marketing Managers", "IT", "External partners"],
-        correct: [1],
-        explanation: "Marketing Managers must inform their relevant Forum member of current tasks/projects.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Use the template",
-        prompt: "Fill out the attached Brief Template for a mock request.",
-        successCriteria: ["Template downloaded and filled out", "All required fields completed"],
-      },
-    ],
-  },
-  {
-    id: "dh2026-06",
-    chapterId: "dh2026",
-    title: "Brief Template — A Worked Example",
-    summary:
-      "A real, filled-out brief the Hub received right after the template — see what good specificity looks like.",
-    estMinutes: 15,
-    material: {
-      file: `${SLICE}/dh2026--06-larval-research-facilities.pptx`,
-      type: "pptx",
-      range: "Slides 30–33",
-    },
-    sections: [
-      {
-        heading: "Reading a real example",
+        heading: "A worked example — reading a real brief",
         body: [
           "Right after the Brief Template comes a real brief the Design Hub received: a request for signage at BioMar's larval research facility at ATC Hirtshals. It's included here as a worked example — notice how concrete it is compared to a vague request.",
-        ],
-      },
-      {
-        heading: "What the requester wrote",
-        body: [
           "\"BioMar has invested in advanced larval research facilities at ATC Hirtshals, capable of performing trials in semi-industrial conditions. The trial facilities serve as a hub for research and development, product consolidation and validation.\" — this is the purpose/context, stated clearly.",
         ],
       },
@@ -1095,44 +605,7 @@ export const modules: Module[] = [
           "Wall space for design/canvas at the end of the hallway",
           "Wall dimensions approx. 1.2m × 2.5m",
         ],
-        note: "Compare this against the four minimum-info items from earlier: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What makes this example brief strong?",
-        options: [
-          "It's very short",
-          "It gives exact, concrete specifications (sizes, location)",
-          "It has no deadline",
-          "It was submitted verbally",
-        ],
-        correct: [1],
-        explanation:
-          "Exact specs (60×40cm signage, ~1.2×2.5m wall) are exactly the kind of concrete detail a good brief includes.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "This example is meant to be memorised as general BioMar facility information, not as a brief-writing example.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — it's a worked example attached to the Brief Template, illustrating good specificity, not standalone facility trivia.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Spot the good brief habits",
-        prompt:
-          "Go back to this example and mark which of the four minimum-info items (purpose, timeline, specifications, copy/assets) it covers well — and which, if any, are missing.",
-        successCriteria: [
-          "All four minimum-info items checked against the example",
-          "Any gap identified",
-        ],
+        note: "Compare this against the four minimum-info items: purpose, timeline, specifications, copy/assets. This example nails the specifications — exact sizes, not \"medium-ish\" or \"the usual size\".",
       },
     ],
   },
@@ -1183,33 +656,6 @@ export const modules: Module[] = [
         note: "If the minimum information is missing, move the request to Waiting and ask for what's missing before starting.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "multi",
-        prompt: "Which of these are part of the minimum information a brief must include?",
-        options: ["Purpose (what it's for)", "Draft and final dates", "Format & specifications", "The designer's mood"],
-        correct: [0, 1, 2],
-        explanation: "Purpose, timeline and specifications are required, along with copy/assets.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "A brief is missing the final delivery date and specs. What do you do?",
-        options: ["Start anyway and guess", "Move it to Waiting and request the missing info", "Close the task", "Escalate to the CEO"],
-        correct: [1],
-        explanation: "Move it to Waiting and ask for the missing information before starting.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Brief triage",
-        prompt:
-          "Take three recent request emails and score each against the four minimum-info items. Draft the follow-up question for any gaps.",
-        successCriteria: ["Each brief scored on all four items", "A clear follow-up drafted for every gap"],
-      },
-    ],
   },
   {
     id: "playbook-02",
@@ -1219,7 +665,7 @@ export const modules: Module[] = [
       "How the inbox stays tagged, and the task manager board — columns, cards, tags, to-dos and notes.",
     estMinutes: 35,
     material: {
-      file: `${SLICE}/playbook--02-email-tags-task-manager.pptx`,
+      file: `${SLICE}/playbook--02-email-tags-task-manager-v2.pptx`,
       type: "pptx",
       range: "Slides 6–12",
     },
@@ -1251,42 +697,6 @@ export const modules: Module[] = [
           "Notes — always include: draft deadline, final deadline, email subject",
         ],
         note: "Adding the email subject to Notes is especially important — it's how you jump back to the original thread.",
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "An email has no 'Teams' tag. What should you assume?",
-        options: [
-          "It's already in the task manager",
-          "It has not been added to the task manager yet",
-          "It's spam",
-          "It's already completed",
-        ],
-        correct: [1],
-        explanation: "No tag means assume it has not yet been added and needs to be reviewed.",
-      },
-      {
-        id: "q2",
-        type: "multi",
-        prompt: "What must the Notes section of a card always include?",
-        options: ["Draft deadline", "Final deadline", "Email subject", "The client's phone number"],
-        correct: [0, 1, 2],
-        explanation: "Always include the draft deadline, final deadline and email subject.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Build a card",
-        prompt:
-          "Create a practice task card with a market tag, the requester added as a member, a two-item to-do list, and complete Notes.",
-        successCriteria: [
-          "Market tag applied",
-          "Requester added as member",
-          "Notes include both deadlines + email subject",
-        ],
       },
     ],
   },
@@ -1336,37 +746,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Which follows the design-file naming pattern?",
-        options: ["brochure_final_v2.pdf", "2022-03 ES_Orbit_Brochure", "orbit thing.ai", "FINAL FINAL real.pdf"],
-        correct: [1],
-        explanation: "The pattern is Year-Month Language_Market Brand/Product-FileType.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Where do superseded PROOF versions go once feedback arrives?",
-        options: ["Trash", "Files Provided", "Previous Versions", "The requester's inbox"],
-        correct: [2],
-        explanation: "Move them into the Previous Versions folder.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Name it right",
-        prompt:
-          "Rename five sample files (three designs, two images) to follow the conventions. Set up the three per-project folders for one.",
-        successCriteria: [
-          "Design files follow Year-Month Language_Market pattern",
-          "Image names describe content + license",
-          "Files Provided / Assets / Previous Versions folders created",
-        ],
-      },
-    ],
   },
   {
     id: "playbook-04",
@@ -1408,45 +787,6 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Which version stage is ready to be shown to the counterpart for review?",
-        options: ["DRAFT", "PROOF", "FINAL", "None — never show them anything"],
-        correct: [1],
-        explanation: "PROOF is the review stage sent to the counterpart.",
-      },
-      {
-        id: "q2",
-        type: "multi",
-        prompt: "Closing a task happens in which two places?",
-        options: ["The task manager", "The email inbox", "LinkedIn", "The printer's portal"],
-        correct: [0, 1],
-        explanation: "Close in both the task manager and the email inbox.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "What do PRINT final files usually need?",
-        options: ["Bleed and/or crop-marks", "A transparent background", "Embedded video", "Nothing special"],
-        correct: [0],
-        explanation: "Print material usually needs bleed and/or crop-marks.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Full cycle: PROOF to closed",
-        prompt:
-          "Take a practice task through DRAFT → PROOF (sent as a folder link) → feedback → FINAL export (correct spec) → closing in both the task manager and the inbox.",
-        successCriteria: [
-          "PROOF sent as folder link, feedback captured correctly",
-          "FINAL exported to the right spec",
-          "Card in Completed + market category, email filed",
-        ],
-      },
-    ],
   },
   {
     id: "playbook-05",
@@ -1480,51 +820,34 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You have a datasheet question. Who do you write to?",
-        options: ["Daniela", "Kat", "Torunn", "Ewan"],
-        correct: [1],
-        explanation: "Datasheets → Kat (katmi@biomar.com).",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "A LARVIVA (hatchery) question should go to…",
-        options: ["Elisabeth", "Kat", "Daniela", "Bruno"],
-        correct: [2],
-        explanation: "LARVIVA questions go to Daniela (vdv@biomar.com).",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Route it",
-        prompt:
-          "Given five incoming questions (a datasheet spec, an R&D claim, a hatchery product, a salmon SmartCare asset, a technical detail), name the right contact for each.",
-        successCriteria: ["Correct contact for all five"],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CHAPTER: BioMar Brand Guidelines 2020 (30 pages)
+  // CHAPTER: BioMar Brand Guidelines 2026, v5 (48 pages)
   // ═══════════════════════════════════════════════════════════════════════════
   {
     id: "brand-guidelines-01",
     chapterId: "brand-guidelines",
     title: "Corporate Logo",
     summary:
-      "Our most valuable brand asset: elements, file formats, placement, incorrect uses and the promotional-only version.",
-    estMinutes: 25,
+      "Our purpose and tagline, and our most valuable brand asset: elements, file formats, placement, incorrect uses, the promotional-only version and the element logo.",
+    estMinutes: 30,
     material: {
-      file: `${SLICE}/brand-guidelines--01-corporate-logo.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--01-corporate-logo.pdf`,
       type: "pdf",
       range: "Pages 1–8",
     },
     sections: [
+      {
+        heading: "Our purpose and tagline",
+        facts: [
+          { label: "Purpose", value: "We are innovators dedicated to an efficient and sustainable global aquaculture." },
+          { label: "Purpose statement", value: "We are dedicated to innovating aquaculture." },
+          { label: "Shortened purpose statement", value: "Powered by Partnership. Driven by Innovation. We are innovators in high performance aqua feeds dedicated to doing our part in sustainable global aquaculture." },
+          { label: "Tagline", value: "Powered by Partnership. Driven by Innovation." },
+        ],
+        note: "Founded in 1962 by fish farmers, BioMar is in it for the long haul: open, long-term partnerships and a true dedication to innovation across the globe.",
+      },
       {
         heading: "The corporate logo",
         body: [
@@ -1545,6 +868,22 @@ export const modules: Module[] = [
         ],
       },
       {
+        heading: "Logo over BioMar Blue",
+        body: [
+          "It is permitted to use the BioMar primary logo over a BioMar Blue background. It is also permitted to use a dark outer glow to define the edges of the box element.",
+        ],
+      },
+      {
+        heading: "Incorrect uses",
+        bullets: [
+          "The dimensions of the logo are fixed and must not be altered",
+          "Don't use the logo out of the box with black text",
+          "Don't use the logo in a square box",
+          "Don't alter the dimensions",
+          "Don't change the colours",
+        ],
+      },
+      {
         heading: "Displaying the logo",
         bullets: [
           "The logo should appear on all BioMar material",
@@ -1552,6 +891,15 @@ export const modules: Module[] = [
           "Place in one of the four corners; the distance from both edges must be equal",
           "As a general rule, the BioMar logo must be placed in the top or bottom right hand corner",
         ],
+      },
+      {
+        heading: "Size & clear space",
+        facts: [
+          { label: "Recommended size", value: "1/7th of the page width — on a standard A4 that is 30 mm wide" },
+          { label: "Minimum size", value: "15 mm wide (a recommendation — it must stay legible and appropriate for each application)" },
+          { label: "Clear space", value: "Nothing should intrude into the minimum clear space, calculated using the top 'wave' of the logo" },
+        ],
+        note: "The box icon is not a perfect square — keep the ratio accurate when scaling.",
       },
       {
         heading: "Logo & tagline",
@@ -1563,33 +911,15 @@ export const modules: Module[] = [
         heading: "Logo for promotional materials",
         note: "The Primary Logo without the box element is ONLY for promotional-material applications where the primary logo can't work. It can never be used against any colour other than dark blue, navy or black — and it can NEVER be used in print or digital media applications.",
       },
-    ],
-    quiz: [
       {
-        id: "q1",
-        type: "single",
-        prompt: "As a general rule, where should the BioMar logo be placed?",
-        options: ["Dead center", "Top or bottom right corner", "Bottom left only", "Anywhere, no rule"],
-        correct: [1],
-        explanation: "As a general rule, the logo must be placed in the top or bottom right hand corner.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "The promotional-only logo (without the box) can be used in print or digital media.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — it can NEVER be used in print or digital media, only for specific promotional-material applications.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Logo audit",
-        prompt:
-          "Review three recent layouts and check: correct logo placement, correct tagline version (one of the 4 allowed), and that the promotional-only logo wasn't used in print/digital.",
-        successCriteria: ["All three layouts checked", "Any violation flagged with the correct fix"],
+        heading: "Element logo (without wordmark)",
+        body: [
+          "Made up of the elements of the BioMar Blue logo, excluding the wordmark. Use it when a symbol format is more appropriate, and when the law prohibits using the BioMar wordmark.",
+        ],
+        facts: [
+          { label: "Colour versions", value: "2 — White and BioMar Blue" },
+          { label: "Pattern", value: "A pattern format of the element logo exists for cases where a pattern is required" },
+        ],
       },
     ],
   },
@@ -1601,7 +931,7 @@ export const modules: Module[] = [
       "Avenir Next as primary typeface, Arial Bold headlines as secondary, and the line detail style.",
     estMinutes: 20,
     material: {
-      file: `${SLICE}/brand-guidelines--02-typography.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--02-typography.pdf`,
       type: "pdf",
       range: "Pages 9–14",
     },
@@ -1636,105 +966,95 @@ export const modules: Module[] = [
         ],
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "What is BioMar's primary corporate typeface?",
-        options: ["Arial", "Avenir Next", "Times New Roman", "Helvetica"],
-        correct: [1],
-        explanation: "Avenir Next is the primary corporate typeface, used whenever possible.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "When Avenir Next can't be used in digital media, what do you use?",
-        options: ["Any font available", "The secondary typeface (Arial)", "A hand-drawn font", "No text at all"],
-        correct: [1],
-        explanation: "Digital media falls back to the secondary typeface (Arial) when Avenir Next isn't available.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Type check",
-        prompt:
-          "Review a document: confirm headlines are Arial Bold, body text is Avenir Next, and any line details use the Straight Hash stroke at 3pt.",
-        successCriteria: ["Headline typeface checked", "Body typeface checked", "Line detail style checked"],
-      },
-    ],
   },
   {
     id: "brand-guidelines-03",
     chapterId: "brand-guidelines",
     title: "Colour & Brand Shapes",
     summary:
-      "Correct colour settings, the BioMar colour palette, and the brand shapes & watermarks drawn from our raw materials.",
-    estMinutes: 25,
+      "Colour settings, the full BioMar palette and greys, logo colours, the BioMar shapes and the watermark sets.",
+    estMinutes: 30,
     material: {
-      file: `${SLICE}/brand-guidelines--03-colour-brand-shapes.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--03-colour-brand-shapes.pdf`,
       type: "pdf",
-      range: "Pages 15–19",
+      range: "Pages 15–20",
     },
     sections: [
       {
         heading: "Colour settings",
-        note: "Before any BioMar design work in Adobe apps (InDesign, Photoshop, Illustrator), set the colour settings to 'Europe General Purpose 3' via Edit → Colour Settings — otherwise colours will display differently.",
+        body: [
+          "Before any BioMar design work in Adobe apps (InDesign, Photoshop, Illustrator), set Edit → Colour Settings → Settings → Europe General Purpose 3 — otherwise colours display differently.",
+        ],
+        facts: [
+          { label: "RGB working space", value: "sRGB IEC61966-2.1" },
+          { label: "CMYK working space", value: "Coated FOGRA39 (ISO 12647-2:2004)" },
+        ],
+        note: "Web uses RGB, print uses CMYK. Choose the right format for your output when you start the document — converting between them gives inaccurate colours. Always consult your printing supplier for the most accurate reproduction.",
       },
       {
         heading: "BioMar colour palette",
         facts: [
-          { label: "BioMar Blue", value: "CMYK 100/84/26/12 · Pantone 654C" },
-          { label: "White", value: "RGB 255/255/255" },
-          { label: "Sky Blue", value: "Pantone 297C" },
-          { label: "Leafy Green", value: "Pantone 368C" },
+          { label: "BioMar Blue", value: "RGB 31/62/119 · CMYK 100/84/26/12 · Pantone 654 C · #1f3e77" },
+          { label: "Sky Blue", value: "RGB 146/206/232 · CMYK 50/0/6/0 · Pantone 297 C · #92cee8" },
+          { label: "Leafy Green", value: "RGB 151/209/48 · CMYK 56/0/92/0 · Pantone 368 C · #97d130" },
+          { label: "Shrimp Orange", value: "RGB 221/105/40 · CMYK 8/68/91/1 · Pantone 166 C · #dd6928" },
+          { label: "Ocean Blue", value: "RGB 4/113/173 · CMYK 87/50/8/0 · Pantone 285 C · #0471ad" },
+          { label: "Crisp Blue", value: "RGB 195/228/239 · CMYK 25/0/3/0 · Pantone 277 C · #c3e4ef" },
+          { label: "Wheat Yellow", value: "RGB 234/179/24 · CMYK 10/28/91/1 · Pantone 115 U · #eab318" },
         ],
       },
       {
-        heading: "BioMar shapes & origins",
+        heading: "Greys and the use of black",
         body: [
-          "The BioMar shapes are a friendly, abstract representation of the raw materials in our feed: Fish, Shrimp/Krill, Macro Algae, Wheat, Corn, Leafy Greens, Palm.",
+          "All BioMar greys are made from percentages of black, for a neutral-toned palette. Always proof grey tones so they aren't too cool or too warm.",
+          "BioMar is blue: dark text should be BioMar Blue. Where BioMar Blue can't be used, use Black 80% (RGB 87/87/86 · #575756) or Black.",
         ],
-        note: "The BioMar shapes should NEVER be used on their own without explicit purpose.",
       },
       {
-        heading: "Organic watermark set",
+        heading: "Logo colours",
         body: [
-          "The shapes have been developed into a set of watermarks that add texture and movement across applications — 12 shape variants, in 5 predefined colour variations that should never be altered.",
+          "The primary logo comes in 1-colour versions: BioMar Blue, White, Sky Blue and Leafy Green.",
+        ],
+      },
+      {
+        heading: "BioMar shapes & origins — graphic elements",
+        body: [
+          "Two complementary categories make up the BioMar graphic elements: the BioMar Swoosh and the Aquaculture Graphics.",
         ],
         facts: [
-          { label: "Grey tones", value: "Behind body text, or where more interest is needed than plain white" },
-          { label: "Ocean / Sky Blue", value: "Used as page breaks or similar" },
-          { label: "BioMar Blue", value: "In place of a plain dark blue background" },
+          { label: "The BioMar Swoosh", value: "Derived directly from the logo — our primary graphic element. Symbolises movement, progress and continuity." },
+          { label: "Aquaculture Graphics", value: "Abstract graphics inspired by aquaculture — fish, shrimp/krill and feed/pellets — adding texture, depth and visual interest." },
         ],
-      },
-    ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "Before doing BioMar design work in Adobe apps, what colour setting must you use?",
-        options: ["sRGB Web", "Europe General Purpose 3", "US Web Coated", "Default"],
-        correct: [1],
-        explanation: "Set colour settings to 'Europe General Purpose 3' so colours display consistently.",
+        note: "The graphic elements should never be modified, distorted or used in a way that compromises the integrity of the BioMar brand.",
       },
       {
-        id: "q2",
-        type: "multi",
-        prompt: "Which are BioMar Shapes (raw materials)? Select all that apply.",
-        options: ["Fish", "Shrimp / Krill", "Salmon feed pellet", "Wheat"],
-        correct: [0, 1, 3],
-        explanation:
-          "The 7 shapes are Fish, Shrimp/Krill, Macro Algae, Wheat, Corn, Leafy Greens and Palm — 'Salmon feed pellet' isn't one of them.",
+        heading: "Watermark sets",
+        bullets: [
+          "Swoosh watermarks — a set of 6 (01–06) in the 5 colour variations",
+          "Organic watermarks — 12 different layouts drawn from the raw materials, for textured backgrounds",
+          "Icon watermarks — fish, shrimp/krill and feed pellets, 2 layouts each; as a general rule landscape layouts only",
+          "They can be used in any orientation, are meant to bleed off the page and sit behind all other elements and type",
+          "Files fit A3 (297 × 420 mm) and scale proportionally to other formats",
+        ],
+        note: "Never try to re-create or edit the watermarks. If none of the variations fits your project's needs, contact Global Marketing.",
       },
-    ],
-    exercises: [
       {
-        id: "e1",
-        title: "Palette & watermark check",
-        prompt:
-          "Confirm a layout uses the correct Pantone colours, and if a watermark is used, that it's one of the 5 approved colour variations.",
-        successCriteria: ["Colours checked against the palette", "Watermark variation confirmed as approved"],
+        heading: "Watermark colours",
+        facts: [
+          { label: "01 Light Grey / 02 Dark Grey", value: "Behind body text, or where more interest is needed than a plain white background" },
+          { label: "03 Sky Blue / 04 Ocean Blue", value: "Page breaks and section breaks — Ocean Blue for a section break, Sky Blue for a sub-section" },
+          { label: "05 BioMar Blue", value: "In place of a plain dark blue background, back pages and the corporate sign off" },
+        ],
+        note: "These 5 colour variations are predefined and must never be altered. Files are named by series, shape number, colour setting and colour number so you can find the right one.",
+      },
+      {
+        heading: "Watermark usage",
+        bullets: [
+          "Light grey watermarks work best behind large bodies of text; coloured watermarks must never sit behind large bodies of text",
+          "Corporate sign off: use a BioMar Blue watermark behind the logo, tagline and footer — pick one that cuts through where the logo sits so it stands out",
+          "Business card: a dark organic watermark plus the icon layouts",
+          "Cover pages: a BioMar Blue watermark or an approved water photograph",
+        ],
       },
     ],
   },
@@ -1746,9 +1066,9 @@ export const modules: Module[] = [
       "Our values as a Brand House, the focus for water/sustainability/people/product photography, and dos & don'ts.",
     estMinutes: 25,
     material: {
-      file: `${SLICE}/brand-guidelines--04-photo-style-guide.pdf`,
+      file: `${SLICE}/brand-guidelines-2026--04-photo-style-guide.pdf`,
       type: "pdf",
-      range: "Pages 20–30",
+      range: "Pages 21–30",
     },
     sections: [
       {
@@ -1785,32 +1105,170 @@ export const modules: Module[] = [
           "Desaturation can improve harmony (skin tone, materials) versus an overly vibrant image",
         ],
       },
-    ],
-    quiz: [
       {
-        id: "q1",
-        type: "multi",
-        prompt: "What are the 4 values that form BioMar's 'Brand House'?",
-        options: ["Collaboration", "Innovation", "Sustainability", "Discounting"],
-        correct: [0, 1, 2],
-        explanation: "Collaboration, Innovation, Sustainability and Performance form the Brand House.",
-      },
-      {
-        id: "q2",
-        type: "boolean",
-        prompt: "Crashing waves and stormy seas are the preferred style for water imagery.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation: "False — water imagery should be calm, clear and location-neutral.",
+        heading: "Photographers and file management",
+        bullets: [
+          "Give any photographer the photo style guide before the shoot, to keep a uniform look across BioMar",
+          "Plan a detailed shot list and a mood board with a wide range of shot positions and angles — it avoids re-shoots and saves cost",
+          "Share all 'hero' shots from every shoot globally, in the Global Marketing Photo Library",
+          "Put the photo information in the file name: location, species, production type, personnel and date. All submitted photos must be GDPR compliant",
+          "Send a link instead of very large photo files by email — the aim is to eliminate external transfer tools like Dropbox and WeTransfer",
+        ],
       },
     ],
-    exercises: [
+  },
+  {
+    id: "brand-guidelines-06",
+    chapterId: "brand-guidelines",
+    title: "Layout Design",
+    summary:
+      "Bringing it all together: templates, grid, social media, email, stationery, promotional items, uniforms, signage, packaging, vehicles, special cases and print.",
+    estMinutes: 45,
+    material: {
+      file: `${SLICE}/brand-guidelines-2026--05-layout-design.pdf`,
+      type: "pdf",
+      range: "Pages 31–47",
+    },
+    sections: [
       {
-        id: "e1",
-        title: "Photo pick",
-        prompt:
-          "Choose 3 candidate stock photos for a campaign and evaluate each against the Photo Style Guide (values, water style if relevant, contrast/exposure).",
-        successCriteria: ["3 photos evaluated", "Each judged against at least two guide criteria"],
+        heading: "Templates — ease of use",
+        body: [
+          "Templates have been created to bring the guidelines together. Adobe templates have instructions inside the file and are ready to go; instructions in each template give a consistent look across all media.",
+        ],
+        bullets: [
+          "Adobe InDesign: business card, presentation folder, envelopes, certificate, greeting card, 'with compliments' card",
+          "Microsoft Word: letterhead, press release, corporate memo",
+          "Adobe Illustrator: feed bags, roll up banners, flags (each supplier has different templates — contact Global Marketing)",
+        ],
+        note: "Some templates are exceptions to the general rules — each template overrides them for its application. If the rules don't apply or don't display well, contact Global Marketing.",
+      },
+      {
+        heading: "Grid system",
+        facts: [
+          { label: "Margins (example)", value: "Top 12 mm · Bottom 12 mm · Inside 25 mm · Outside 12 mm" },
+          { label: "Grid", value: "Two grids: 3 columns × 5 rows, and 15 columns × 25 rows — each large square holds 25 smaller squares" },
+          { label: "Square (200×200)", value: "Margins 12 mm · small grid 7×7 · large grid 21×21" },
+          { label: "A4 (210×297)", value: "Margins 12 mm · small grid 9×6 · large grid 27×18" },
+        ],
+        note: "All grids sit within the margins and have no gutter.",
+      },
+      {
+        heading: "Social media — tone and emojis",
+        bullets: [
+          "Create a cohesive look and feel across all platforms; use the BioMar introduction statement (with or without hashtags)",
+          "Take a professional tone: say what we support/like, share simple facts and accurate figures, always be respectful",
+          "Avoid being overly friendly or familiar, debate-style or negative messaging, and 'don't support/like' wording; no opinions on discussions unless approved by Global Marketing or Corporate Communications",
+          "No emojis with facial expressions, and no more than 3 per post. Allowed: shrimp, fish, planet (sustainability), light bulb (innovation), two hands up, thumbs up",
+        ],
+      },
+      {
+        heading: "Social media — banners, icons and profile pictures",
+        bullets: [
+          "Use the same logo and cover image on every platform; to highlight a launch or campaign, pin a post instead of changing the cover. A cover video is provided",
+          "Use the BioMar social media icon set (rounded square like the logo): BioMar Blue for light backgrounds, Grey or White for dark ones — don't use other colours or shapes",
+          "Profile pictures: show the primary logo in a square with rounded corners wherever possible; only use a circle when the channel gives no square option, with clear space so the elements aren't touching or cropped",
+        ],
+      },
+      {
+        heading: "Email",
+        facts: [
+          { label: "Body text", value: "Arial, 10 pt, BioMar Blue" },
+          { label: "Signature — name", value: "Arial Bold, 11 pt, BioMar Blue" },
+          { label: "Signature — job title", value: "Arial, 9 pt, Ocean Blue" },
+          { label: "Signature — contact details & address", value: "Arial, 9 pt, BioMar Blue" },
+          { label: "Signature — BioMar title & website", value: "Arial Bold, 9 pt, BioMar Blue" },
+          { label: "Signature — legal info", value: "Arial, 9 pt, Light Grey" },
+          { label: "Logo", value: "125 px wide (file provided)" },
+        ],
+        note: "All BioMar employees worldwide use the same signature, which reinforces brand recognition. Social icons (20% black) are optional — only the ones relevant to your market. Advertising and tagline banners are optional templates; local languages are allowed, but text and image display must stay the same.",
+      },
+      {
+        heading: "Business cards",
+        bullets: [
+          "Front: choose from 3 options, each with the BioMar logo and tagline",
+          "Back: 3 watermarks — Pellets, Shrimp or Fish",
+          "Use the InDesign template so everyone has the same card",
+          "Optional personalised dynamic QR code with your contact details (a vCard) — it can be edited later without changing the code",
+          "Finish: satin paper with a matte finish recommended; spot gloss on the front is an optional extra",
+        ],
+      },
+      {
+        heading: "Envelopes, cards, folders and certificates",
+        facts: [
+          { label: "Envelopes", value: "3 variations (logo + office info; logo + tagline; logo only). Sizes C4, C5, M5, M65. For bulk buying across markets, print without the address and add it with a sticker or stamp" },
+          { label: "Greeting card", value: "A6 tent fold (flat 148×210 mm, folded 148×105 mm), blank inside; 260 gsm card, matte or silk finish; optional silver foil" },
+          { label: "'With Compliments' card", value: "A7 (105 × 74 mm), double-sided, no fold, for gifts; print-ready PDF in the template" },
+          { label: "Presentation folder", value: "Dark blue watermark or a neutral water image; full colour BioMar Blue inside recommended (blank interior permitted); matte finish; consider slits for business cards. Use your printer's own template" },
+          { label: "Certificate", value: "Watermark on the reverse; recipient's name by hand or in the typeface Signpainter; 160 gsm or higher silk coated paper" },
+        ],
+      },
+      {
+        heading: "Letterhead, press release, invoice and presentations",
+        bullets: [
+          "Letterhead, press release and corporate memo are Microsoft Word templates; the invoice follows the BioMar invoice layout",
+          "The PowerPoint template is installed on all BioMar computers — use the Widescreen format for all new presentations (apply the theme to a blank document if you need 4:3)",
+        ],
+      },
+      {
+        heading: "Promotional material and clothing",
+        bullets: [
+          "Promotional product colours should be blue; black only when blue isn't available; white only in certain countries for environmental and weather reasons",
+          "Dark blue, navy or black items: corporate logo without box, or solid white logo. Light items: solid blue logo. Clear items: corporate logo with box, solid blue or solid white. High-vis items: the silver logo, only on high-vis coloured items",
+          "The logo without the box is only for promotional items — never on light backgrounds, never with a black 'BioMar' text, never in print or digital media",
+          "T-shirt: logo over the heart and on the opposite sleeve (both recommended), 55 mm wide and the same size; the tagline only on the back, centred across the shoulder blades (140 mm down from the neckline, 70 mm in from the sleeve seams)",
+          "Never re-create the tagline; use the 'rt' ligature version so the r and t meet smoothly. Two versions: BioMar Blue for light fabric, White for medium to dark",
+        ],
+      },
+      {
+        heading: "Uniforms, corporate clothing and headwear",
+        bullets: [
+          "Navy or black items: logo without box. White/light items: solid BioMar Blue logo",
+          "Standard logo 55 mm wide (65 mm on thicker embroidered fabrics like puffa jackets and fleece); front left chest, upper arm or pants side pocket 55–65 mm; large back logo 180 mm wide, centred on the upper back; high-vis logo front left chest, silver when possible",
+          "Corporate clothing that isn't a uniform: logo embroidered in the same colour as the shirt — centred near the collar at the back (35–45 mm) or front left chest (35–55 mm)",
+          "Beanies and caps in high-quality navy blue (beanie logo 35–45 mm, cap 55–65 mm); hard hats get die-cut stickers with the full corporate logo, 45–55 mm wide",
+        ],
+      },
+      {
+        heading: "Signage",
+        facts: [
+          { label: "Background", value: "BioMar Blue" },
+          { label: "Text", value: "White, in the corporate typeface Avenir Next" },
+        ],
+        note: "All exterior signage follows this to carry BioMar's visual identity through our workspaces.",
+      },
+      {
+        heading: "Packaging — feed bags",
+        bullets: [
+          "Standard 20–25 kg bags are printed in BioMar Blue and show the BioMar logo, except in regions where the law restricts the use of the BioMar word mark on product packaging — there the logo element is used",
+          "Big bags: use the logo element when the solid blue BioMar logo can't be used for legal reasons",
+          "Black & white sticker labels for feed bags: use the Corporate Logo variation",
+          "Patterns (with logo, or element only) are provided. Each supplier has different templates — send them to Global Marketing to be updated with the new branding",
+        ],
+      },
+      {
+        heading: "Vehicles, containers and boats",
+        bullets: [
+          "Logo always centred vertically and horizontally; on trucks and trailers use the logo or the logo with tagline (tagline only once on the side and once on the back). Trucks fully painted BioMar Blue",
+          "Cars: aim for BioMar Blue (white is next best) — primary logo without the box on blue vehicles, solid blue logo on white. 3 logos in total: one on each front door and one on the rear, on the driver's side unless car branding gets in the way",
+          "Shipping containers: BioMar Blue (full colour corporate logo) or white (solid blue logo)",
+          "Boats: BioMar Blue with the logo (the word mark is also permitted); where surfaces can't be painted blue, always use the logo with the box",
+        ],
+      },
+      {
+        heading: "Special cases — engraving and QR codes",
+        bullets: [
+          "Metal: silver products; Wood: light-coloured wood. In both, use the corporate logo variation and engrave text in Avenir Next where possible",
+          "QR codes for business cards are generated on qr-code-generator.com (login from your Marketing Manager): vCard Plus → BioMar QR Template → customise with the BioMar preset → download as JPG with high error correction. The codes are dynamic, so contact details can be changed later",
+        ],
+        note: "These are general rules; special cases that need a different solution should go to Global Marketing.",
+      },
+      {
+        heading: "Paper and printing",
+        bullets: [
+          "Digital printing is best for small runs; offset is only cost-effective for large runs. Neither is best — it depends on cost, quantity and colour output, and the two can give slightly different colours",
+          "Whenever possible choose environmentally friendly/eco paper and printing suppliers, and look for eco-labels in your country (for example the Nordic Swan)",
+          "Settings listed in the guidelines (ring binder, divider tabs, internal pages) are just what was used locally — consult your own printer for your finish",
+        ],
       },
     ],
   },
@@ -1942,97 +1400,6 @@ export const modules: Module[] = [
         note: "Tip — ask yourself: “Could this post work without showing the bag?” If yes, lead with the concept and use the bag only when it adds value.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "boolean",
-        prompt: "Gradients are the preferred way to add depth to BioMar design concepts.",
-        options: ["True", "False"],
-        correct: [1],
-        explanation:
-          "False — avoid gradients (they hurt brand consistency and print reproduction). Use solid colours, colour blocks or overlays instead.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "What colour is generally avoided on BioMar packaging, except for medical feed?",
-        options: ["Blue", "Green", "Red", "White"],
-        correct: [2],
-        explanation:
-          "Red is a prohibited colour — it's strongly associated with a main competitor. Medical feed is the only exception, where local regulations may require it.",
-      },
-      {
-        id: "q3",
-        type: "single",
-        prompt: "A custom bag needs a colour that isn't in the approved palette. What do you do?",
-        options: [
-          "Pick the closest shade yourself",
-          "Get it approved by Global Marketing and the Product Manager before implementing",
-          "Copy the colour from a competitor's bag",
-          "Use a gradient to blend two approved colours",
-        ],
-        correct: [1],
-        explanation:
-          "Any new colour must be approved by Global Marketing and the Product Manager before implementation. Competitor colours and gradients are both to be avoided.",
-      },
-      {
-        id: "q4",
-        type: "single",
-        prompt: "What are the two main elements of a website bag?",
-        options: [
-          "Wave and icon set",
-          "Colour coding and life stage wheel",
-          "Blue top and white logo",
-          "Gradient and mockup",
-        ],
-        correct: [1],
-        explanation:
-          "Website bags are digital-only: colour coding shows the product category, the life stage wheel shows the target species stage. They're not a direct copy of the physical bag.",
-      },
-      {
-        id: "q5",
-        type: "single",
-        prompt: "How should the top area of a recent BioMar bag look?",
-        options: [
-          "BioMar Blue with the secondary white BioMar logo",
-          "White with a gradient",
-          "Red for medical feed, blue for everything else",
-          "Whatever the market prefers, no reference needed",
-        ],
-        correct: [0],
-        explanation:
-          "Recent bags keep the top in BioMar Blue with the secondary white logo so the brand is recognised first. Exceptions exist, but always review existing bags first.",
-      },
-      {
-        id: "q6",
-        type: "single",
-        prompt: "Which casing do you use for chart titles and short headings?",
-        options: ["Title Case", "Sentence case", "ALL CAPS", "lowercase"],
-        correct: [0],
-        explanation:
-          "Title Case for titles, headings and short elements; sentence case for longer copy, body text and captions.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Spot the fix",
-        prompt:
-          "Find an existing piece of BioMar marketing material (real or a mockup) that breaks one of these guidelines and note what you'd change.",
-        successCriteria: ["A concrete example found", "The specific guideline it breaks identified"],
-      },
-      {
-        id: "e2",
-        title: "Packaging review",
-        prompt:
-          "Open three existing BioMar bags from different ranges. For each, note whether it follows the BioMar Blue top, whether it avoids red, and any approved exception that applies.",
-        successCriteria: [
-          "Three bags reviewed",
-          "Blue top / red check done for each",
-          "Any exception identified and explained",
-        ],
-      },
-    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2050,35 +1417,6 @@ export const modules: Module[] = [
         note: "Logins and passwords are never stored here — request access through Loop Link and the tool owner. This map is only about what each tool is and when to reach for it.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You need an AI voice-over for a video. Which tool?",
-        options: ["Grammarly", "ElevenLabs", "Lasertryk", "Miro"],
-        correct: [1],
-        explanation:
-          "ElevenLabs generates AI voice-overs. Higgsfield.ai is for AI video/image; Grammarly is copy; Lasertryk is print.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "Where do the actual logins / passwords for these tools live?",
-        options: ["In this Tools Map", "In Loop Link (request access from the owner)", "In the task manager", "In Grammarly"],
-        correct: [1],
-        explanation:
-          "Access and credentials are managed via Loop Link and the tool owner — never stored in the onboarding material.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Get your access",
-        prompt:
-          "Open the Platforms & Accesses page in Loop Link (linked at the top of this map and in the Always-on info panel), then request access to the tools your role needs. Note the owner for any that require approval.",
-        successCriteria: ["Access requested for the tools your role uses", "Owner noted for anything pending"],
-      },
-    ],
   },
   {
     id: "folder-structure",
@@ -2092,88 +1430,31 @@ export const modules: Module[] = [
         note: "This is a live map of the real structure — not a simplified example. Use the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
       },
     ],
-    quiz: [
-      {
-        id: "q1",
-        type: "single",
-        prompt: "You need to save a roll-up banner for a specific LARVIVA sub-product campaign. What's the first question to ask yourself?",
-        options: [
-          "Is it an asset?",
-          "Is it a product?",
-          "Is it for a specific market?",
-          "Does that category have a folder?",
-        ],
-        correct: [1],
-        explanation:
-          "The wizard always starts by asking whether the file is for a product — that's what routes you into the Product folders (LARVIVA, INICIO, SmartCare, etc.) in the first place.",
-      },
-      {
-        id: "q2",
-        type: "single",
-        prompt: "A brand logo or template isn't tied to any one product or market. Where does it belong?",
-        options: ["Design Assets", "Global", "Corporate", "Create a new top-level folder"],
-        correct: [0],
-        explanation:
-          "Anything that isn't a product and isn't market/org-specific but is an asset (logo, template, guideline) goes into Design Assets.",
-      },
-    ],
-    exercises: [
-      {
-        id: "e1",
-        title: "Find it yourself",
-        prompt:
-          "Using the search, find where BioMar's brand guidelines live, and separately, where you'd save a new roll-up banner for a SmartCare campaign. Write down both paths.",
-        successCriteria: [
-          "Correct path found for the brand guidelines",
-          "Correct path found (or created, per the wizard) for the SmartCare roll-up banner",
-        ],
-      },
-    ],
   },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXTRA INFO — additional material, always last.
+  // ═══════════════════════════════════════════════════════════════════════════
   {
-    id: "global-strategy-2025",
+    id: "extra-info",
     chapterId: null,
-    title: "Global Marketing Strategy — Q2 2025 Update",
+    title: "Extra info",
     summary:
-      "How Global Marketing segments products and customers, and where that thinking is heading. Optional deep-dive, not required day-to-day.",
-    estMinutes: 25,
+      "Additional material worth knowing: the recent logo rebranding.",
+    estMinutes: 5,
     material: {
-      file: "/materials/global-marketing-strategy-house-q2-2025.pdf",
-      type: "pdf",
-      range: "Full deck (32 pages)",
+      file: `${SLICE}/extra-info--recent-logo-rebranding.pptx`,
+      type: "pptx",
+      range: "Recent logo rebranding (1 slide)",
     },
     sections: [
       {
-        heading: "Why this is here",
-        note: "This is internal Global Marketing strategy work, not something you need to do your day-to-day design tasks. It's here for context, for anyone who wants to understand how Marketing thinks about products and customers.",
-      },
-      {
-        heading: "Product segmentation",
-        body: [
-          "Products are segmented by life stage (Hatchery → Starter/Fresh Water → Grower/Sea Water) and by performance tier (Standard, High, Top), with optional attributes like Medicated or Premium. This segmentation now feeds a gross profit report, reconciled monthly with finance data.",
-        ],
-      },
-      {
-        heading: "Needs-based customer segmentation",
-        body: [
-          "Based on 23 in-depth interviews, four customer clusters were identified along two axes — Innovation & Risk Appetite (Conservative ↔ Progressive) and Business Mindset (Market Differentiation ↔ Operational Efficiency): Future Shapers, Scalable Performers, Solid Executors and Cautious Builders.",
-        ],
+        heading: "Recent logo rebranding",
         facts: [
-          { label: "Future Shapers", value: "Ambitious innovators — differentiation as their edge" },
-          { label: "Scalable Performers", value: "Operational minds — push for volume & efficiency" },
-          { label: "Solid Executors", value: "Reliable — stability, consistency, doing what works" },
-          { label: "Cautious Builders", value: "Risk-averse — differentiation through safe, proven steps" },
-        ],
-      },
-      {
-        heading: "Where this is heading",
-        body: [
-          "Next steps layer a BCG-style matrix (market growth vs. market share) onto the customer clusters, using 2022–2024 data on products/services used or needed, to define clear value propositions, a change-management matrix and KPIs per cluster.",
+          { label: "Before", value: "All brands treated independently, no alignment — seemed to be from different parents." },
+          { label: "Now", value: "All brands follow the same framework and carry the swoosh — seem to be from the same parent." },
         ],
       },
     ],
-    quiz: [],
-    exercises: [],
   },
 ];
 

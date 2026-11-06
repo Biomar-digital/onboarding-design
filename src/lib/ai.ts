@@ -32,7 +32,7 @@ export function recommendByProfile(
   const add = (id: string) => {
     if (modulesById[id] && !ids.includes(id)) ids.push(id);
   };
-  if (/(video|motion|animation)/.test(n)) add("dh2026-03");
+  if (/(video|motion|animation)/.test(n)) add("dh2026");
   if (/(print|packaging|production)/.test(n)) {
     add("playbook-04");
   }

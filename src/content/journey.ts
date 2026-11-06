@@ -1,12 +1,12 @@
-import { chapters, chaptersById } from "./chapters";
+import { chaptersById } from "./chapters";
 import { modules } from "./modules";
 
 // The didactic order of the whole onboarding, in one place. Everything that
 // lists, groups, schedules or sorts modules reads from here.
 //
-//   Welcome → why the Hub exists → access & where things live → brand rules
-//   (used in every piece from week one) → how work flows (Hub 2026, Playbook)
-//   → wider marketing organisation → reference.
+//   Welcome → Strategic (why the Hub exists) → Design Hub 2026 (how it works)
+//   → Brand Guidelines → Global & Group Marketing → set-up (tools & drive)
+//   → Playbook → Extra info.
 export interface JourneySection {
   key: string;
   icon: string;
@@ -33,9 +33,6 @@ const chapterSection = (id: string): JourneySection => {
 
 const SETUP_IDS = ["tools-map", "folder-structure"];
 
-const chapterKeys = chapters.map((c) => c.id);
-const [first, ...rest] = chapterKeys; // strategic first, then the setup block
-
 export const journey: JourneySection[] = [
   {
     key: "welcome",
@@ -44,7 +41,10 @@ export const journey: JourneySection[] = [
     highlight: true,
     moduleIds: ["welcome"],
   },
-  chapterSection(first),
+  chapterSection("strategic"),
+  chapterSection("dh2026"),
+  chapterSection("brand-guidelines"),
+  chapterSection("global"),
   {
     key: "setup",
     icon: "🧰",
@@ -53,12 +53,12 @@ export const journey: JourneySection[] = [
       "Get your access and learn where everything is stored before your first task.",
     moduleIds: SETUP_IDS,
   },
-  ...rest.map(chapterSection),
+  chapterSection("playbook"),
   {
-    key: "reference",
+    key: "extra",
     icon: "📎",
-    title: "Reference material",
-    description: "Not tied to a single document — always here to check back on.",
+    title: "Extra info",
+    description: "Additional material worth knowing — always here to check back on.",
     moduleIds: modules
       .filter(
         (m) =>

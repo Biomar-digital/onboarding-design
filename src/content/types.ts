@@ -31,27 +31,6 @@ export interface Chapter {
   description: string;
 }
 
-export interface QuizQuestion {
-  id: string;
-  /** "single" = one correct option, "multi" = several, "boolean" = true/false. */
-  type: "single" | "multi" | "boolean";
-  prompt: string;
-  options: string[];
-  /** Indexes into `options` that are correct. */
-  correct: number[];
-  /** Shown after answering, right or wrong, to reinforce the concept. */
-  explanation: string;
-}
-
-export interface Exercise {
-  id: string;
-  title: string;
-  /** A hands-on task the designer does in the real tools to cement the module. */
-  prompt: string;
-  /** What "done" looks like, so they can self-check. */
-  successCriteria: string[];
-}
-
 export interface LessonSection {
   heading?: string;
   /** Paragraphs of body copy. */
@@ -90,11 +69,11 @@ export interface Module {
   estMinutes: number;
   /** The exact original material for this module (slides/pages, unedited). */
   material?: ModuleMaterial;
+  /** Further original slides shown after the main material (e.g. a slide moved from another deck). */
+  extraMaterial?: ModuleMaterial[];
   /** Supplementary files (e.g. a template) referenced alongside the material. */
   resources?: ModuleResource[];
   sections: LessonSection[];
-  quiz: QuizQuestion[];
-  exercises: Exercise[];
 }
 
 export interface Profile {
@@ -161,6 +140,6 @@ export interface Person {
   /** Per-module progress the employee accrues. */
   progress: Record<
     string,
-    { completed: boolean; quizScore: number | null }
+    { completed: boolean; quizScore?: number | null }
   >;
 }

@@ -164,11 +164,54 @@ export async function savePeople(people: Person[]): Promise<Person[]> {
   return data.people;
 }
 
-export async function saveProgress(moduleId: string, quizScore: number | null): Promise<void> {
+export async function saveProgress(moduleId: string): Promise<void> {
   const res = await call("/api/progress", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ moduleId, quizScore }),
+    body: JSON.stringify({ moduleId }),
   });
   if (!res.ok) throw new Error(`Could not save progress (${res.status}).`);
+}
+
+// ── feedback / questions per chapter ────────────────────────────────────────
+export interface FeedbackRow {
+  id: string;
+  createdAt: string;
+  personId: string;
+  name: string;
+  email: string;
+  sectionKey: string;
+  sectionTitle: string;
+  message: string;
+  resolved: boolean;
+}
+
+export async function sendFeedback(
+  sectionKey: string,
+  sectionTitle: string,
+  message: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await call("/api/feedback", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sectionKey, sectionTitle, message }),
+  });
+  const data = await res.json();
+  if (!res.ok) return { ok: false, error: data.error ?? `Could not send (${res.status}).` };
+  return { ok: true };
+}
+
+export async function listFeedback(): Promise<FeedbackRow[]> {
+  const res = await call("/api/feedback");
+  if (!res.ok) throw new Error((await res.json()).error ?? "Could not load feedback.");
+  return (await res.json()).items;
+}
+
+export async function resolveFeedback(id: string, resolved: boolean): Promise<void> {
+  const res = await call(`/api/feedback/${encodeURIComponent(id)}/resolve`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ resolved }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error ?? "Could not update.");
 }

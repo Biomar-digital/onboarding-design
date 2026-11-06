@@ -4,7 +4,7 @@ import { infoPanel } from "../content/infoPanel";
 // The persistent reference panel. Collapsible so it can live alongside module
 // content without crowding it, but is always one click away.
 export function InfoPanel() {
-  const [open, setOpen] = useState<string | null>("contacts");
+  const [open, setOpen] = useState<string | null>(infoPanel[0]?.id ?? null);
   return (
     <aside className="space-y-3">
       <div className="flex items-center gap-2 px-1">

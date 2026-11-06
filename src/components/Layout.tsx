@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { SearchPalette } from "./SearchPalette";
 import { Logo, TAGLINE } from "./Brand";
 import { useStore } from "../lib/store";
 
@@ -8,6 +9,21 @@ export function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isAdmin = currentUser?.role === "admin";
+  const [searchOpen, setSearchOpen] = useState(false);
+  const canSearch = !!currentUser && !isAdmin;
+
+  // Ctrl/Cmd+K opens the search for designers.
+  useEffect(() => {
+    if (!canSearch) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canSearch]);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -30,9 +46,22 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </>
               ) : (
-                <NavLink to="/" active={pathname === "/"}>
-                  My onboarding
-                </NavLink>
+                <>
+                  <NavLink to="/" active={pathname === "/"}>
+                    My onboarding
+                  </NavLink>
+                  <button
+                    onClick={() => setSearchOpen(true)}
+                    className="ml-1 flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-slate-500 transition hover:border-biomar-swoosh hover:text-biomar-navy"
+                    aria-label="Search"
+                  >
+                    <span aria-hidden>🔍</span>
+                    <span className="hidden sm:inline">Search</span>
+                    <kbd className="hidden rounded border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-400 sm:inline">
+                      Ctrl K
+                    </kbd>
+                  </button>
+                </>
               )}
               <div className="ml-3 flex items-center gap-2 border-l border-slate-200 pl-3">
                 <Link to="/account" className="text-right leading-tight hover:opacity-70">
@@ -57,6 +86,14 @@ export function Layout({ children }: { children: ReactNode }) {
           )}
         </div>
       </header>
+
+      {canSearch && currentUser && (
+        <SearchPalette
+          assignedIds={currentUser.assignedModuleIds}
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">{children}</main>
 

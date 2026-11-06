@@ -535,8 +535,7 @@ function ProgressSummary({ person }: { person: Person }) {
         </span>
       </div>
       <p className="text-xs text-slate-400">
-        {stats.done}/{stats.total} modules ·{" "}
-        {stats.avgScore == null ? "no quizzes yet" : `avg quiz ${stats.avgScore}%`}
+        {stats.done}/{stats.total} modules
       </p>
     </div>
   );
