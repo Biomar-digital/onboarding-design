@@ -15,7 +15,7 @@ pre = src[:src.index('# ---- disposicion trazada')]
 pre = pre.replace("args = sys.argv[sys.argv.index('--') + 1:]; OUT = args[0]", "OUT = ''").replace("SPP = int(args[1]) if len(args) > 1 else 48; RW = int(args[2]) if len(args) > 2 else 1000", "")
 os.environ.setdefault('CIOR', '1.03'); os.environ.setdefault('CROUGH', '0.07'); os.environ.setdefault('YT', '0.9'); os.environ.setdefault('CT', '0.92')   # el interior del huevo atenua lo que hay detras: los huevos tapan el logo                         # menos lente: los huevos ya no 'agrandan' el logo como bolas blancas
 exec(pre)
-FPS, NF = 24, int(os.environ.get('NF', '408'))                # 17 s
+FPS, NF = 24, int(os.environ.get('NF', '456'))                # 19 s
 sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
 R = 1.28                                                       # radio del huevo (mismo que en la foto)
 # ---------------------------------------------------------------- variantes de huevo (colecciones instanciables)
@@ -72,135 +72,82 @@ def build_variant(k, seed):
     return col
 NV = int(os.environ.get('NV', '16'))
 VARS = [build_variant(k, 100 + k) for k in range(NV)]
-# ---------------------------------------------------------------- simulacion (numpy): huevos hundiendose en agua
-# Fisica de una esfera apenas mas densa que el agua: arrastre viscoso (se acerca a su velocidad limite en ~0.5 s, cada
-# huevo con la suya), una corriente suave que los lleva desde arriba del cuadro hacia donde se posan, vaiven lento
-# por la turbulencia del agua, giro lento que se frena por el agua. Al tocar la placa se posan sin rebotar y casi no
-# se deslizan; si caen sobre otro huevo ruedan despacio hacia un costado y algunos quedan montados (se solapan en la
-# imagen). Se posan en todo el cuadro, pero con menos densidad sobre el logo, para que siga leyendose entre huevos.
+# ---------------------------------------------------------------- simulacion: fisica de cuerpos rigidos (Blender)
+# Como las animaciones de "pelotas que caen y llenan la pantalla", pero en agua: los huevos entran por arriba del
+# cuadro, caen (gravedad reducida y arrastre del agua: lento), chocan, ruedan y se amontonan desde abajo hasta llenar
+# todo el rectangulo. Hay profundidad (un poco mas de una capa entre el fondo de la placa y el vidrio de adelante), asi
+# que se solapan en la imagen. Los 8 huevos del principio ya estan posados abajo, dejando el logo libre.
 rng = np.random.default_rng(11)
-W_, H_ = 30.0, 30.0 * 9 / 16                                   # campo visible en el plano de la placa
-LW, LH = 18.0, 18.0 * 584 / 2000                               # logo en el fondo, centrado
-LCX, LCY = 0.0, 0.4
+W_, H_ = 30.0, 30.0 * 9 / 16
+LW, LH = 18.0, 18.0 * 584 / 2000; LCX, LCY = 0.0, 0.4
 def in_logo(x, y, m=0.0): return abs(x - LCX) < LW / 2 + m and abs(y - LCY) < LH / 2 + m
-# los 8 del principio: sobre la placa, en los bordes, sin tapar el logo
-start = [(-12.8, 6.6), (-9.3, 7.2), (-13.2, 2.9), (12.6, 6.4), (10.2, -6.8), (13.3, -3.5), (-12.3, -6.3), (-8.6, -7.3)]
-NS = len(start)
-# destinos: panal con jitter en todo el cuadro (lleno), pero dentro del logo se deja ~1 de cada 2.5 lugares; y unos
-# cuantos extra caen sobre los demas (quedan montados: solape en la imagen)
-tg = [np.array(p) for p in start]
-dx_ = 2 * R * 1.04; dy_ = dx_ * math.sqrt(3) / 2
-for r_ in range(-6, 7):
-    for c_ in range(-9, 10):
-        x = c_ * dx_ + (dx_ / 2 if r_ % 2 else 0) + rng.normal(0, 0.03 * R); y = r_ * dy_ + rng.normal(0, 0.03 * R)
-        if abs(x) > W_ / 2 + 0.5 * R or abs(y) > H_ / 2 + 0.5 * R: continue
-        if min(np.linalg.norm(np.array([x, y]) - q) for q in tg[:NS]) < 2.15 * R: continue
-        if in_logo(x, y, 0.3) and rng.random() > float(os.environ.get('LOGOFILL', '0.4')): continue
-        tg.append(np.array([x, y]))
-for _ in range(6000):                                          # rellenar huecos (bordes y alrededor de los 8 iniciales)
-    p = np.array([rng.uniform(-W_ / 2 - 0.5 * R, W_ / 2 + 0.5 * R), rng.uniform(-H_ / 2 - 0.5 * R, H_ / 2 + 0.5 * R)])
-    if in_logo(*p, 0.3): continue
-    if min(np.linalg.norm(p - q) for q in tg) >= (2.2 * R if any(np.linalg.norm(p - np.array(q)) < 3.2 * R for q in start) else 2.03 * R): tg.append(p)
-for _ in range(int(os.environ.get('NTOP', '16'))):              # montados sobre otros, fuera del logo
-    while True:
-        p = np.array([rng.uniform(-W_ / 2, W_ / 2), rng.uniform(-H_ / 2, H_ / 2)])
-        if not in_logo(*p, 0.5): break
-    tg.append(p)
-keep = []
-for k_, p in enumerate(tg):                                    # nunca dos lugares en la placa a menos de un huevo
-    if k_ < NS or k_ >= len(tg) - int(os.environ.get('NTOP', '16')) or all(np.linalg.norm(p - tg[q]) >= 2.0 * R for q in keep): keep.append(k_)
-tg = np.array([tg[k_] for k_ in keep]); N_ = len(tg)
-# Trayectorias planificadas (sin choques en el aire ni saltos): cada huevo arranca arriba del cuadro y cerca del lente,
-# acelera en ~0.5 s hasta su velocidad limite de hundimiento (cada uno la suya), deriva en lo alto hacia su lugar con un
-# vaiven suave que se apaga al bajar, frena los ultimos milimetros y se posa sin rebotar. Gira lento y el agua le va
-# frenando el giro; al posarse rueda apenas en la direccion en que venia. Los "montados" se posan sobre dos vecinos.
-NTOPN = int(os.environ.get('NTOP', '16')); base = tg[:N_ - NTOPN]; tops = []
-for p in tg[N_ - NTOPN:]:                                      # lugar de apoyo sobre dos huevos posados
-    d2 = np.linalg.norm(base - p, axis=1); a, b = np.argsort(d2)[:2]; A, B = base[a], base[b]; dd = np.linalg.norm(A - B)
-    if dd > 2 * R * 1.9 or dd < 2 * R * 0.9: continue
-    m = (A + B) / 2; z = R + math.sqrt(max((2 * R) ** 2 - (dd / 2) ** 2, 0))
-    q = np.array([m[0], m[1], z])
-    if all(np.linalg.norm(q - np.array([*o, R])) >= 2 * R * 0.995 for o in base) and all(np.linalg.norm(q - o) >= 2 * R for o in tops): tops.append(q)
-TG = np.vstack([np.c_[base, np.full(len(base), R)], np.array(tops).reshape(-1, 3)]); N_ = len(TG)
-DCAM = 72 * W_ / 36 + R
-VS = rng.uniform(1.6, 2.4, N_); TAU = 0.45
-t0 = np.zeros(N_); S0 = np.zeros((N_, 3))
-order = list(np.argsort(TG[NS:len(base), 1] + rng.normal(0, 1.2, len(base) - NS)) + NS) + list(range(len(base), N_))
-for k_, i in enumerate(order):
-    z0 = rng.uniform(7.0, 10.0) * R; vis = (DCAM - z0) / DCAM * H_ / 2
-    S0[i] = [TG[i, 0] + rng.normal(0, 0.3), vis + 1.6 * R + rng.uniform(0, 1.0), z0]   # cae en su columna: no se cruza con otros
-    t0[i] = 0.4 + 5.6 * k_ / max(len(order) - 1, 1) + rng.uniform(-0.15, 0.15)
-wob_f = rng.uniform(0.2, 0.4, (N_, 2)); wob_p = rng.uniform(0, 6.28, (N_, 2))
-def path(i, t):
-    """posicion del huevo i en el tiempo t (despues de soltarse)"""
-    T = t - t0[i]; z0 = S0[i, 2]; zt = TG[i, 2]; H0 = z0 - zt
-    fall = VS[i] * (T - TAU * (1 - math.exp(-T / TAU))) if T > 0 else 0.0   # arrastre: llega a velocidad limite en ~0.5 s
-    land = 0.35 * R                                                         # ultimo tramo: frena (se posa sin rebote)
-    if fall < H0 - land: z = z0 - fall
-    else:
-        T1 = None; z = zt + land * math.exp(-(fall - (H0 - land)) / land)
-    u = min(max((z0 - z) / H0, 0), 1); hu = 1 - (1 - u) ** 2.2             # lo horizontal se hace en lo alto
-    xy = S0[i, :2] + (TG[i, :2] - S0[i, :2]) * hu
-    w = 0.22 * R * (1 - u) ** 1.5
-    xy = xy + w * np.array([math.sin(6.283 * wob_f[i, 0] * T + wob_p[i, 0]), math.sin(6.283 * wob_f[i, 1] * T + wob_p[i, 1])])
-    return np.array([xy[0], xy[1], z])
-quat = np.zeros((N_, 4)); w_ = np.zeros((N_, 3))
-def qmul(a, b):
-    w1, x1, y1, z1 = a; w2, x2, y2, z2 = b
-    return np.array([w1*w2 - x1*x2 - y1*y2 - z1*z2, w1*x2 + x1*w2 + y1*z2 - z1*y2, w1*y2 - x1*z2 + y1*w2 + z1*x2, w1*z2 + x1*y2 - y1*x2 + z1*w2])
-def qax(ax, an): ax = np.asarray(ax, float); ax = ax / np.linalg.norm(ax); return np.array([math.cos(an / 2), *(math.sin(an / 2) * ax)])
+ZB, ZF = 0.0, float(os.environ.get('DEPTH', '3.2')) * R         # fondo (placa) y vidrio de adelante
+YF = -H_ / 2 - 0.25 * R; XW = W_ / 2 + 0.35 * R
+sc.frame_start = 1; sc.frame_end = NF
+bpy.ops.rigidbody.world_add(); rw = sc.rigidbody_world
+rw.point_cache.frame_start = 1; rw.point_cache.frame_end = NF
+rw.substeps_per_frame = 20; rw.solver_iterations = 20
+sc.gravity = (0, -float(os.environ.get('GRAV', '3.2')), 0)        # gravedad aparente en agua (lento)
+def box(name, loc, size):
+    bpy.ops.mesh.primitive_cube_add(location=loc); o = bpy.context.object; o.name = name; o.scale = size
+    bpy.ops.rigidbody.object_add(); o.rigid_body.type = 'PASSIVE'; o.rigid_body.friction = 0.6; o.rigid_body.restitution = 0.05
+    o.rigid_body.collision_shape = 'BOX'; o.hide_render = True; return o
+TH = 2.0
+box('piso', (0, YF - TH, (ZB + ZF) / 2), (XW + 4, TH, (ZF - ZB) / 2 + 4))
+box('pared_izq', (-XW - TH, 0, (ZB + ZF) / 2), (TH, 40, (ZF - ZB) / 2 + 4))
+box('pared_der', (XW + TH, 0, (ZB + ZF) / 2), (TH, 40, (ZF - ZB) / 2 + 4))
+box('placa', (0, 0, ZB - TH), (XW + 4, 40, TH))
+box('vidrio', (0, 0, ZF + TH), (XW + 4, 40, TH))
+NFALL = int(os.environ.get('NFALL', '118'))
+start = [(x, YF + R, R + rng.uniform(0, 0.4) * R) for x in (-13.3, -10.5, -7.6, 7.9, 10.8, 13.4)] + [(-11.9, YF + 3.1 * R, 1.9 * R), (12.1, YF + 3.1 * R, 1.9 * R)]
+NS = len(start); N_ = NS + NFALL
+proxies = []; t0 = np.zeros(N_)
+NL = 11; lane_x = np.linspace(-XW + 1.2 * R, XW - 1.2 * R, NL); lane_z = np.where(np.arange(NL) % 2, ZF - R - 0.05, ZB + R + 0.05)   # separados > 1 huevo
+lane_off = rng.permutation(NL) / NL * 0.8
+LANE_DT = float(os.environ.get('LANE_DT', '0.75'))
 for i in range(N_):
-    q = qax([0, 0, 1], rng.uniform(0, 6.28))
-    if i >= NS: q = qmul(qax([rng.normal(), rng.normal(), 0], rng.uniform(0, 0.3)), q); w_[i] = [rng.normal(0, 0.12), rng.normal(0, 0.12), rng.normal(0, 0.45)]
-    quat[i] = q
-home = TG[:NS].copy(); wph = rng.uniform(0, 6.28, (NS, 2)); wfr = rng.uniform(0.15, 0.3, (NS, 2)); wspin = rng.uniform(-0.15, 0.15, NS)
-def positions(t):
-    pos = np.zeros((N_, 3))
-    for i in range(N_):
-        if i < NS: pos[i] = home[i] + np.array([0.1 * math.sin(6.283 * wfr[i, 0] * t + wph[i, 0]), 0.08 * math.sin(6.283 * wfr[i, 1] * t + wph[i, 1]), 0.0])
-        elif t < t0[i]: pos[i] = S0[i]
-        else: pos[i] = path(i, t)
-    return pos
-for it in range(80):                                           # si dos huevos se cruzan en el aire, el que sale despues espera
-    bad = set()
-    for f in range(0, NF, 2):
-        t = f / FPS; pos = positions(t); act = np.array([i < NS or t >= t0[i] for i in range(N_)])
-        vy = (DCAM - pos[:, 2]) / DCAM * H_ / 2 + R; act &= np.abs(pos[:, 1]) < vy   # fuera de cuadro no importa
-        d = np.linalg.norm(pos[:, None] - pos[None], axis=-1) + np.eye(N_) * 99
-        ii, jj = np.where(np.triu(d < 2 * R * 0.99) & act[:, None] & act[None])
-        for a_, b_ in zip(ii, jj):
-            late = a_ if t0[a_] >= t0[b_] else b_
-            if late >= NS: bad.add(late)
-    if not bad: break
-    for i in bad: t0[i] += 0.1; VS[i] = min(VS[i], np.min(VS[[j for j in range(NS, N_) if t0[j] < t0[i]] or [i]]) + 0.05) if it > 40 else VS[i]
-print('ajuste de salidas: %d pasadas' % (it + 1))
-for i in bad: t0[i] = 1e9                                    # si alguno no encuentra hueco, no cae
-print('conflictos que quedan:', sorted(bad)[:10], [(round(t0[i],2), np.round(TG[i],1).tolist()) for i in sorted(bad)[:4]])
-P_ = np.zeros((NF, N_, 3)); Q_ = np.zeros((NF, N_, 4)); prev = None
-for f in range(NF):
-    t = f / FPS; pos = positions(t)
-    if prev is not None:
-        for i in range(N_):
-            if i < NS: quat[i] = qmul(qax([0, 0, 1], wspin[i] / FPS), quat[i]); continue
-            if t < t0[i]: continue
-            v = (pos[i] - prev[i]) * FPS
-            if pos[i, 2] < TG[i, 2] + 0.05 * R: w = np.cross([0, 0, 1.0], v) / R   # posado: rueda lo que le queda de movimiento
-            else: w = w_[i] * math.exp(-(t - t0[i]) / 3.0) + np.cross([0, 0, 1.0], v) / R * 0.3
-            om = np.linalg.norm(w)
-            if om > 1e-6: quat[i] = qmul(qax(w, om / FPS), quat[i]); quat[i] /= np.linalg.norm(quat[i])
-    P_[f] = pos; Q_[f] = quat; prev = pos
-# control: que nunca se crucen (en el aire o al posarse)
-def _md(f):
-    t = f / FPS; act = np.array([i < NS or t >= t0[i] for i in range(N_)]); act &= np.abs(P_[f][:, 1]) < (DCAM - P_[f][:, 2]) / DCAM * H_ / 2 + R; X = P_[f][act]
-    return (np.linalg.norm(X[:, None] - X[None], axis=-1) + np.eye(len(X)) * 99).min()
-mind = min(_md(f) for f in range(0, NF, 2))
-print('distancia minima entre huevos en toda la animacion: %.3f (2R = %.3f)' % (mind, 2 * R))
-tg = TG[:, :2]
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=R, segments=16, ring_count=8)
+    o = bpy.context.object; o.name = 'rb%d' % i; o.hide_render = True
+    bpy.ops.rigidbody.object_add(); rb = o.rigid_body
+    rb.collision_shape = 'SPHERE'; rb.mass = 1.0; rb.friction = 0.45; rb.restitution = 0.08
+    rb.linear_damping = float(os.environ.get('LDAMP', '0.55')); rb.angular_damping = 0.6   # arrastre del agua
+    rb.use_margin = True; rb.collision_margin = 0.0
+    o.rotation_mode = 'QUATERNION'
+    if i < NS:
+        o.location = start[i]
+    else:
+        k_ = i - NS; lane = k_ % NL; rnd = k_ // NL                # carriles de salida: nunca aparecen encimados
+        t0[i] = 0.3 + rnd * LANE_DT + lane_off[lane] + rng.uniform(0, 0.15)
+        x = lane_x[lane] + rng.uniform(-0.1, 0.1); z = lane_z[lane]
+        ystart = H_ / 2 + 2.2 * R + rnd * 2.05 * R                # cola de espera apilada arriba, fuera de cuadro
+        # espera quieto fuera de cuadro (cinematico) y en su momento se suelta
+        rb.kinematic = True; fr = max(3, int(t0[i] * FPS))
+        o.location = (x, ystart, z); o.keyframe_insert('location', frame=1); o.keyframe_insert('location', frame=fr - 2)
+        o.location = (x + rng.normal(0, 0.03), ystart - 0.05, z); o.keyframe_insert('location', frame=fr)
+        rb.keyframe_insert('kinematic', frame=1)
+        o.rotation_quaternion = (1, 0, 0, 0); o.keyframe_insert('rotation_quaternion', frame=1); o.keyframe_insert('rotation_quaternion', frame=fr - 2)
+        ax = rng.normal(size=3); ax[2] *= 0.3; ax /= np.linalg.norm(ax); an = rng.uniform(0.05, 0.15)
+        o.rotation_quaternion = (math.cos(an / 2), *(math.sin(an / 2) * ax)); o.keyframe_insert('rotation_quaternion', frame=fr)
+        rb.kinematic = True; rb.keyframe_insert('kinematic', frame=fr); rb.kinematic = False; rb.keyframe_insert('kinematic', frame=fr + 1)
+    proxies.append(o)
+# orientacion de cada huevo: giro aleatorio en el plano + la rotacion que le da la fisica
+base_q = [mathutils.Quaternion((0, 0, 1), rng.uniform(0, 6.28)) for _ in range(N_)]
+P_ = np.zeros((NF, N_, 3)); Q_ = np.zeros((NF, N_, 4))
+for f in range(1, NF + 1):
+    sc.frame_set(f)
+    for i, o in enumerate(proxies):
+        mw = o.matrix_world; P_[f - 1, i] = mw.translation; q = mw.to_quaternion() @ base_q[i]; Q_[f - 1, i] = q
+    if f % 48 == 0: print('fisica', f, flush=True)
+for o in proxies: bpy.data.objects.remove(o)
+for n in ('piso', 'pared_izq', 'pared_der', 'placa', 'vidrio'): bpy.data.objects.remove(bpy.data.objects[n])
+bpy.ops.rigidbody.world_remove()
+tg = P_[-1, :, :2]
 np.savez(os.path.join(OUTD, 'sim.npz'), P=P_, Q=Q_, T=tg)
 fin = P_[-1]; d = np.linalg.norm(fin[:, None] - fin[None], axis=-1) + np.eye(N_) * 9
-onlogo = sum(in_logo(x, y) for x, y, _ in fin)
-print('SIM ok: huevos %d, sobre el logo %d, solape 3D max %.3f R, montados %d, vel final max %.3f, en placa final %d' % (
-    N_, onlogo, max(0, (2 * R - d.min()) / R), int((fin[:, 2] > 1.3 * R).sum()), np.abs(P_[-1] - P_[-2]).max() * FPS, int((fin[:, 2] < 1.05 * R).sum())))
+v = np.linalg.norm(np.diff(P_, axis=0), axis=2) * FPS
+inframe = (np.abs(fin[:, 0]) < W_ / 2 + R) & (fin[:, 1] < H_ / 2 + R)
+print('SIM ok: huevos %d, en cuadro %d, solape max %.3f R, moviendose al final %d, vel max %.2f, altura pila %.2f (borde %.2f)' % (
+    N_, inframe.sum(), max(0, (2 * R - d.min()) / R), int((v[-1] > 0.1).sum()), v[:, :].max(), fin[:, 1].max(), H_ / 2))
 if os.environ.get('SIMONLY'): raise SystemExit
 # ---------------------------------------------------------------- instancias animadas
 for i in range(N_):
@@ -265,7 +212,9 @@ rm, N, Lk = mat('ring'); g = G(N, Lk); xw, xu = across(N, Lk, g)
 core = g.rng(xw, 0.3, 0.9); halo = g.rng(xw, 0.0, 0.6)
 col = N.new('ShaderNodeMix'); col.data_type = 'RGBA'; Lk.new(core, col.inputs['Factor']); col.inputs[6].default_value = (0.66, 0.62, 0.95, 1); col.inputs[7].default_value = (1.0, 0.98, 1.0, 1)
 re_ = N.new('ShaderNodeEmission'); Lk.new(col.outputs[2], re_.inputs['Color'])
-Lk.new(g.m('ADD', g.m('MULTIPLY', core, K('RINGC', '0.85')), g.m('MULTIPLY', halo, K('RINGH', '0.4'))), re_.inputs['Strength'])
+lpr = N.new('ShaderNodeLightPath'); dpr = g.m('ADD', lpr.outputs['Transparent Depth'], lpr.outputs['Transmission Depth'])
+visr = g.m('POWER', 0.3, g.m('MULTIPLY', dpr, 0.25))                   # visto a traves de huevos: mas tenue (no quedan huevos blancos)
+Lk.new(g.m('MULTIPLY', g.m('ADD', g.m('MULTIPLY', core, K('RINGC', '0.85')), g.m('MULTIPLY', halo, K('RINGH', '0.4'))), visr), re_.inputs['Strength'])
 rt = N.new('ShaderNodeBsdfTransparent'); ra = N.new('ShaderNodeAddShader'); Lk.new(rt.outputs[0], ra.inputs[0]); Lk.new(re_.outputs[0], ra.inputs[1]); Lk.new(ra.outputs[0], N['Material Output'].inputs['Surface'])
 ring.data.materials.append(rm)
 Rr = random.Random(5)
