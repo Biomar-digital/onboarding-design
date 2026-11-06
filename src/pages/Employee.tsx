@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { InfoPanel } from "../components/InfoPanel";
+import { ChapterFeedback } from "../components/ChapterFeedback";
 import { journey } from "../content/journey";
 import { modulesById } from "../content/modules";
 import { profilesById } from "../content/profiles";
@@ -171,6 +172,9 @@ function ChapterView({ person, base }: { person: Person; base: string }) {
                 <ModuleRow key={id} person={person} moduleId={id} base={base} />
               ))}
             </div>
+            {base === "" && (
+              <ChapterFeedback sectionKey={sec.key} sectionTitle={sec.title} />
+            )}
           </section>
         );
       })}

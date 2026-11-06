@@ -8,6 +8,7 @@ import { ModuleView } from "./pages/ModuleView";
 import { Admin } from "./pages/Admin";
 import { AdminPerson } from "./pages/AdminPerson";
 import { AdminSignupRequests } from "./pages/AdminSignupRequests";
+import { AdminFeedback } from "./pages/AdminFeedback";
 import { Account } from "./pages/Account";
 import type { ReactNode } from "react";
 
@@ -141,6 +142,16 @@ export default function App() {
           <Require role="admin">
             <Layout>
               <ModuleView />
+            </Layout>
+          </Require>
+        }
+      />
+      <Route
+        path="/admin/feedback"
+        element={
+          <Require role="admin">
+            <Layout>
+              <AdminFeedback />
             </Layout>
           </Require>
         }

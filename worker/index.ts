@@ -20,6 +20,9 @@
 //   GET  /api/people             → admin: every person record; employee: only their own
 //   PUT  /api/people             → admin: save the people list (employee progress is kept)
 //   POST /api/progress           → the signed-in person records a completed module
+//   POST /api/feedback           → the signed-in person sends feedback / a question about a chapter
+//   GET  /api/feedback           → admin: all feedback, newest first
+//   POST /api/feedback/:id/resolve → admin: mark a message resolved (or reopen it)
 //   *                            → static assets (dist/) + SPA fallback
 //
 // Credentials live in Cloudflare KV (binding: AUTH_KV) — see worker/auth.ts and
@@ -72,6 +75,9 @@ export default {
     }
     if (path === "/api/people" || path === "/api/progress") {
       return handlePeopleRoute(path, request, env);
+    }
+    if (path === "/api/feedback" || path.startsWith("/api/feedback/")) {
+      return handleFeedbackRoute(path, request, env);
     }
 
     // Not an API route → static site (SPA fallback handled by the assets config).
@@ -294,6 +300,91 @@ async function handlePeopleRoute(path: string, request: Request, env: Env): Prom
     const person = JSON.parse(raw) as Person;
     person.progress = { ...person.progress, [moduleId]: { completed: true, quizScore: score } };
     await env.AUTH_KV.put(`person:${person.id}`, JSON.stringify(person));
+    return json({ ok: true });
+  }
+
+  return json({ error: "Not found." }, 404);
+}
+
+// ── feedback / questions per chapter ─────────────────────────────────────────
+// KV layout:  feedback:<id> → FeedbackItem   ·   fbrate:<email>:<day> → count (TTL)
+interface FeedbackItem {
+  id: string;
+  createdAt: string;
+  personId: string;
+  name: string;
+  email: string;
+  sectionKey: string;
+  sectionTitle: string;
+  message: string;
+  resolved: boolean;
+}
+
+async function handleFeedbackRoute(path: string, request: Request, env: Env): Promise<Response> {
+  if (!env.AUTH_KV) return json({ error: "Login isn't configured yet." }, 501);
+  const user = await getSessionUser(request, env);
+  if (!user) return json({ error: "Not signed in." }, 401);
+
+  if (path === "/api/feedback" && request.method === "POST") {
+    const body = (await safeJson(request)) as
+      | { sectionKey?: string; sectionTitle?: string; message?: string }
+      | null;
+    const message = body?.message?.trim() ?? "";
+    if (message.length < 3) return json({ error: "Please write a message." }, 400);
+    if (message.length > 2000) return json({ error: "Please keep it under 2000 characters." }, 400);
+
+    // Light abuse guard: at most 20 messages per person per day.
+    const day = new Date().toISOString().slice(0, 10);
+    const rateKey = `fbrate:${user.email}:${day}`;
+    const count = Number((await env.AUTH_KV.get(rateKey)) ?? 0);
+    if (count >= 20) return json({ error: "Daily feedback limit reached — try again tomorrow." }, 429);
+    await env.AUTH_KV.put(rateKey, String(count + 1), { expirationTtl: 172800 });
+
+    const personRaw = await env.AUTH_KV.get(`person:${user.personId}`);
+    const name = personRaw ? (JSON.parse(personRaw) as Person).name : user.email;
+    const createdAt = new Date().toISOString();
+    const id = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+    const item: FeedbackItem = {
+      id,
+      createdAt,
+      personId: user.personId,
+      name,
+      email: user.email,
+      sectionKey: (body?.sectionKey ?? "").slice(0, 60),
+      sectionTitle: (body?.sectionTitle ?? "").slice(0, 120),
+      message,
+      resolved: false,
+    };
+    await env.AUTH_KV.put(`feedback:${id}`, JSON.stringify(item));
+    return json({ ok: true });
+  }
+
+  if (path === "/api/feedback" && request.method === "GET") {
+    if (user.role !== "admin") return json({ error: "Admins only." }, 403);
+    const list = await env.AUTH_KV.list({ prefix: "feedback:" });
+    const items = await Promise.all(
+      list.keys.map(async (k) => {
+        const raw = await env.AUTH_KV.get(k.name);
+        return raw ? (JSON.parse(raw) as FeedbackItem) : null;
+      }),
+    );
+    return json({
+      items: items
+        .filter((i): i is FeedbackItem => !!i)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    });
+  }
+
+  const resolve = path.match(/^\/api\/feedback\/([^/]+)\/resolve$/);
+  if (resolve && request.method === "POST") {
+    if (user.role !== "admin") return json({ error: "Admins only." }, 403);
+    const id = decodeURIComponent(resolve[1]);
+    const raw = await env.AUTH_KV.get(`feedback:${id}`);
+    if (!raw) return json({ error: "Not found." }, 404);
+    const body = (await safeJson(request)) as { resolved?: boolean } | null;
+    const item = JSON.parse(raw) as FeedbackItem;
+    item.resolved = body?.resolved !== false;
+    await env.AUTH_KV.put(`feedback:${id}`, JSON.stringify(item));
     return json({ ok: true });
   }
 

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStore } from "../lib/store";
+import * as authApi from "../lib/authApi";
 import { completionStats } from "../lib/progress";
 import { profilesById } from "../content/profiles";
 import { modules } from "../content/modules";
@@ -11,6 +12,13 @@ export function Admin() {
   const employees = people.filter((p) => p.role === "employee");
   const [msg, setMsg] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [openFeedback, setOpenFeedback] = useState(0);
+  useEffect(() => {
+    authApi
+      .listFeedback()
+      .then((rows) => setOpenFeedback(rows.filter((r) => !r.resolved).length))
+      .catch(() => {});
+  }, []);
 
   const doPublish = async () => {
     setPublishing(true);
@@ -33,6 +41,14 @@ export function Admin() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link to="/admin/feedback" className="btn-ghost">
+            💬 Feedback
+            {openFeedback > 0 && (
+              <span className="ml-2 rounded-full bg-biomar-orange px-2 py-0.5 text-[11px] font-bold text-white">
+                {openFeedback}
+              </span>
+            )}
+          </Link>
           <Link to="/admin/signup-requests" className="btn-ghost">
             📥 Signup requests
           </Link>
