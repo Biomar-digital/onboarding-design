@@ -4,9 +4,9 @@ import { modules } from "./modules";
 // The didactic order of the whole onboarding, in one place. Everything that
 // lists, groups, schedules or sorts modules reads from here.
 //
-//   Welcome → how the Hub works (Design Hub 2026) → why the Hub exists
-//   (Strategic) → access & where things live → brand rules (used in every
-//   piece from week one) → Playbook → wider marketing organisation → reference.
+//   Welcome → Strategic (why the Hub exists) → Design Hub 2026 (how it works)
+//   → Brand Guidelines → Global & Group Marketing → set-up (tools & drive)
+//   → Playbook → reference.
 export interface JourneySection {
   key: string;
   icon: string;
@@ -41,8 +41,10 @@ export const journey: JourneySection[] = [
     highlight: true,
     moduleIds: ["welcome"],
   },
-  chapterSection("dh2026"),
   chapterSection("strategic"),
+  chapterSection("dh2026"),
+  chapterSection("brand-guidelines"),
+  chapterSection("global"),
   {
     key: "setup",
     icon: "🧰",
@@ -51,9 +53,7 @@ export const journey: JourneySection[] = [
       "Get your access and learn where everything is stored before your first task.",
     moduleIds: SETUP_IDS,
   },
-  chapterSection("brand-guidelines"),
   chapterSection("playbook"),
-  chapterSection("global"),
   {
     key: "reference",
     icon: "📎",

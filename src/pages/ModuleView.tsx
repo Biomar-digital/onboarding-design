@@ -65,6 +65,9 @@ export function ModuleView() {
         </div>
 
         <DeckViewer material={module.material} resources={module.resources} />
+        {module.extraMaterial?.map((m) => (
+          <DeckViewer key={m.file} material={m} />
+        ))}
         <VideoPlayer moduleId={module.id} />
 
         {module.id === "tools-map" ? (

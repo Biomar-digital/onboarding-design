@@ -69,6 +69,8 @@ export interface Module {
   estMinutes: number;
   /** The exact original material for this module (slides/pages, unedited). */
   material?: ModuleMaterial;
+  /** Further original slides shown after the main material (e.g. a slide moved from another deck). */
+  extraMaterial?: ModuleMaterial[];
   /** Supplementary files (e.g. a template) referenced alongside the material. */
   resources?: ModuleResource[];
   sections: LessonSection[];
