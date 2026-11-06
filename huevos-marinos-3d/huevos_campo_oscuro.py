@@ -38,7 +38,7 @@ class G:                                                      # ayuda para armar
         s.Lk.new(g.outputs['Normal'], v.inputs[0]); v.inputs[1].default_value = LDIR; return s.m('MAXIMUM', v.outputs['Value'], 0.0)
     def glow(s, strength, col=(1, 1, 1), trans=(1, 1, 1), ior=None, back=None):
         e = s.N.new('ShaderNodeEmission'); e.inputs['Color'].default_value = (*col, 1); s.Lk.new(strength, e.inputs['Strength'])
-        if ior: t = s.N.new('ShaderNodeBsdfRefraction'); t.inputs['IOR'].default_value = ior; t.inputs['Roughness'].default_value = 0.0; t.inputs['Color'].default_value = (*trans, 1)
+        if ior: t = s.N.new('ShaderNodeBsdfRefraction'); t.inputs['IOR'].default_value = ior; t.inputs['Roughness'].default_value = K('CROUGH', '0'); t.inputs['Color'].default_value = (*trans, 1)
         else: t = s.N.new('ShaderNodeBsdfTransparent'); t.inputs['Color'].default_value = (*trans, 1)
         if back is not None and back < 0.999:                # cara trasera (al salir del huevo): atenua lo que hay detras, no lo de adentro
             gb = s.N.new('ShaderNodeNewGeometry'); mc = s.N.new('ShaderNodeMix'); mc.data_type = 'RGBA'; s.Lk.new(gb.outputs['Backfacing'], mc.inputs['Factor'])
