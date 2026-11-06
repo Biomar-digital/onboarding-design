@@ -105,8 +105,8 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-blue",
     icon: "📇",
     tools: [
-      { name: "Add to Wallet", purpose: "Digital business cards (wallet passes)", icon: "📲" },
-      { name: "Cards admin panel", purpose: "Create & manage the digital cards", icon: "🗂️" },
+      { name: "Add to Wallet", purpose: "Digital business cards (wallet passes)", icon: "📲", url: "https://app.addtowallet.co/" },
+      { name: "Cards admin panel", purpose: "Create & manage the digital cards", icon: "🗂️", url: "https://igitalbusinesscards.marketing-70b.workers.dev/" },
     ],
   },
   {
@@ -131,7 +131,7 @@ export const toolGroups: ToolGroup[] = [
     accent: "biomar-navy",
     icon: "🏛️",
     tools: [
-      { name: "Global Policies Library", purpose: "Repository of BioMar global policies", icon: "📚" },
+      { name: "Global Policies Library", purpose: "Repository of BioMar global policies", icon: "📚", url: "https://globa-policies.marketing-70b.workers.dev/" },
       { name: "GitHub", purpose: "Version control & hosting (this platform)", icon: "🐙", url: "https://github.com/Biomar-digital/onboarding-design" },
     ],
   },
