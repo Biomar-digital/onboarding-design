@@ -507,14 +507,14 @@ export const modules: Module[] = [
   {
     id: "dh2026-02",
     chapterId: "dh2026",
-    title: "Deadlines, Priority & the InCopy Course",
+    title: "Deadlines & Priority",
     summary:
-      "Real dates instead of 'ASAP', how priority is set by business value, and the InCopy/InDesign training.",
-    estMinutes: 30,
+      "Real dates instead of 'ASAP', and how priority is set by business value.",
+    estMinutes: 10,
     material: {
-      file: `${SLICE}/dh2026--02-deadlines-priority-incopy.pptx`,
+      file: `${SLICE}/dh2026--02-deadlines-priority-v2.pptx`,
       type: "pptx",
-      range: "Slides 7–14",
+      range: "Slides 7–9",
     },
     sections: [
       {
@@ -527,29 +527,6 @@ export const modules: Module[] = [
       {
         heading: "How we set priority — business value",
         bullets: ["Low priority → lower business value", "High priority → higher business value / impact"],
-      },
-      {
-        heading: "What is Adobe InCopy?",
-        body: [
-          "InCopy lets people create, edit and format content and helps teams work collaboratively. It integrates with InDesign so designers and writers work on the same layout without clashing — avoiding unnecessary back-and-forth.",
-        ],
-      },
-      {
-        heading: "The course — 4 modules",
-        bullets: [
-          "Module 1: Introduction to InCopy",
-          "Module 2: Editing Text",
-          "Module 3: Reviewing Copy",
-          "Module 4: Saving and Export",
-        ],
-      },
-      {
-        heading: "Available courses",
-        facts: [
-          { label: "EN — 5 hours", value: "Beginner–Intermediate" },
-          { label: "EN — 3 hours", value: "Infrequent users" },
-          { label: "ES — 5 hours", value: "Beginner–Intermediate" },
-        ],
       },
     ],
   },
@@ -738,7 +715,7 @@ export const modules: Module[] = [
       "How the inbox stays tagged, and the task manager board — columns, cards, tags, to-dos and notes.",
     estMinutes: 35,
     material: {
-      file: `${SLICE}/playbook--02-email-tags-task-manager.pptx`,
+      file: `${SLICE}/playbook--02-email-tags-task-manager-v2.pptx`,
       type: "pptx",
       range: "Slides 6–12",
     },
