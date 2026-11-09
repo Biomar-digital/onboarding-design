@@ -4,6 +4,7 @@ import { useStore } from "../lib/store";
 import { modules, modulesById } from "../content/modules";
 import { journey } from "../content/journey";
 import { profiles, profilesById } from "../content/profiles";
+import { InviteCard } from "../components/InviteCard";
 import { suggestWithAI, recommendByProfile, type Suggestion } from "../lib/ai";
 import { completionStats } from "../lib/progress";
 import {
@@ -169,6 +170,8 @@ export function AdminPerson({ mode }: { mode: "edit" | "new" }) {
               )}
             </div>
           </div>
+
+          {mode === "edit" && existing && <InviteCard person={existing} />}
 
           <div className="card p-5">
             <h2 className="flex items-center gap-2 text-sm font-bold text-biomar-navy">

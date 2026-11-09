@@ -159,6 +159,13 @@ function Row({ person }: { person: Person }) {
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-4">
           <Link
+            to={`/admin/person/${person.id}`}
+            className="text-sm font-semibold text-slate-500 hover:text-biomar-swoosh hover:underline"
+            title="Create a link so they can set their password"
+          >
+            ✉ Invite
+          </Link>
+          <Link
             to={`/admin/view/${person.id}`}
             className="text-sm font-semibold text-slate-500 hover:text-biomar-swoosh hover:underline"
           >

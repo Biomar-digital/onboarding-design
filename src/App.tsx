@@ -9,6 +9,7 @@ import { Admin } from "./pages/Admin";
 import { AdminPerson } from "./pages/AdminPerson";
 import { AdminSignupRequests } from "./pages/AdminSignupRequests";
 import { AdminFeedback } from "./pages/AdminFeedback";
+import { SetPassword } from "./pages/SetPassword";
 import { Account } from "./pages/Account";
 import type { ReactNode } from "react";
 
@@ -166,6 +167,8 @@ export default function App() {
           </Require>
         }
       />
+
+      <Route path="/set-password" element={<SetPassword />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

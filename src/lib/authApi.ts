@@ -215,3 +215,49 @@ export async function resolveFeedback(id: string, resolved: boolean): Promise<vo
   });
   if (!res.ok) throw new Error((await res.json()).error ?? "Could not update.");
 }
+
+// ── invitations ("set your password" links) ─────────────────────────────────
+export interface InviteResult {
+  link: string;
+  expiresInDays: number;
+  emailSent: boolean;
+  emailError: string | null;
+}
+
+export async function inviteUser(
+  email: string,
+  personId: string,
+  role: "admin" | "employee",
+): Promise<{ ok: true; invite: InviteResult } | { ok: false; error: string }> {
+  const res = await call("/api/admin/invite", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, personId, role }),
+  });
+  const data = await res.json();
+  if (!res.ok) return { ok: false, error: data.error ?? `Failed (${res.status}).` };
+  return { ok: true, invite: data };
+}
+
+export async function getInvite(
+  token: string,
+): Promise<{ ok: true; email: string; name: string } | { ok: false; error: string }> {
+  const res = await call(`/api/auth/invite?token=${encodeURIComponent(token)}`);
+  const data = await res.json();
+  if (!res.ok) return { ok: false, error: data.error ?? "Invalid link." };
+  return data;
+}
+
+export async function acceptInvite(
+  token: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await call("/api/auth/accept-invite", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) return { ok: false, error: data.error ?? `Failed (${res.status}).` };
+  return { ok: true };
+}
