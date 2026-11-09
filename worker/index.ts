@@ -17,6 +17,9 @@
 //   POST /api/auth/signup-requests/:id/reject  → admin: decline the request
 //   POST /api/auth/change-password       → the signed-in user sets a new password
 //   POST /api/admin/reset-password       → admin: set someone else's password
+//   POST /api/admin/invite               → admin: create a one-time "set your password" link (emails it if a mail provider is configured)
+//   GET  /api/auth/invite?token=…        → public: validate an invite link
+//   POST /api/auth/accept-invite         → public: the invited person chooses a password and is signed in
 //   GET  /api/people             → admin: every person record; employee: only their own
 //   PUT  /api/people             → admin: save the people list (employee progress is kept)
 //   POST /api/progress           → the signed-in person records a completed module
@@ -55,6 +58,9 @@ export interface Env extends AuthEnv {
   GITHUB_REPO?: string;
   GITHUB_BRANCH?: string;
   ANTHROPIC_API_KEY?: string;
+  /** Optional: with both set, invites are emailed via Resend; otherwise the admin gets the link. */
+  RESEND_API_KEY?: string;
+  MAIL_FROM?: string;
 }
 
 export default {
@@ -105,6 +111,10 @@ async function handleAuthRoute(path: string, request: Request, env: Env): Promis
     return handleChangePassword(request, env);
   if (path === "/api/admin/reset-password" && request.method === "POST")
     return handleAdminResetPassword(request, env);
+  if (path === "/api/admin/invite" && request.method === "POST") return handleInvite(request, env);
+  if (path === "/api/auth/invite" && request.method === "GET") return handleGetInvite(request, env);
+  if (path === "/api/auth/accept-invite" && request.method === "POST")
+    return handleAcceptInvite(request, env);
 
   const approveMatch = path.match(/^\/api\/auth\/signup-requests\/([^/]+)\/approve$/);
   if (approveMatch && request.method === "POST") return handleApprove(approveMatch[1], request, env);
@@ -400,6 +410,150 @@ async function listPeople(env: Env): Promise<Person[]> {
     }),
   );
   return people.filter((p): p is Person => !!p);
+}
+
+// ── invitations: "set your password" links ────────────────────────────────────
+// KV layout:  invite:<token> → Invite (TTL 7 days, single use)
+//             invite-email:<email> → token   (a new invite replaces the previous one)
+interface Invite {
+  email: string;
+  personId: string;
+  role: "admin" | "employee";
+  createdAt: string;
+  createdBy: string;
+}
+const INVITE_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+function newToken(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function handleInvite(request: Request, env: Env): Promise<Response> {
+  const admin = await requireAdmin(request, env);
+  if (admin instanceof Response) return admin;
+
+  const body = (await safeJson(request)) as
+    | { email?: string; personId?: string; role?: "admin" | "employee" }
+    | null;
+  const email = body?.email?.trim().toLowerCase();
+  const personId = body?.personId?.trim();
+  if (!email || !email.includes("@") || !personId) {
+    return json({ error: "A valid email and a personId are required." }, 400);
+  }
+  if (await getUser(env, email)) {
+    return json({ error: "That person already has an account — use Reset password instead." }, 409);
+  }
+
+  // Replace any earlier pending invite for this email.
+  const previous = await env.AUTH_KV.get(`invite-email:${email}`);
+  if (previous) await env.AUTH_KV.delete(`invite:${previous}`);
+
+  const token = newToken();
+  const invite: Invite = {
+    email,
+    personId,
+    role: body?.role === "admin" ? "admin" : "employee",
+    createdAt: new Date().toISOString(),
+    createdBy: admin.email,
+  };
+  await env.AUTH_KV.put(`invite:${token}`, JSON.stringify(invite), { expirationTtl: INVITE_TTL_SECONDS });
+  await env.AUTH_KV.put(`invite-email:${email}`, token, { expirationTtl: INVITE_TTL_SECONDS });
+
+  const link = `${new URL(request.url).origin}/set-password?token=${token}`;
+  const personRaw = await env.AUTH_KV.get(`person:${personId}`);
+  const name = personRaw ? (JSON.parse(personRaw) as Person).name : email;
+  const mail = await sendInviteEmail(env, email, name, link);
+  return json({
+    ok: true,
+    link,
+    expiresInDays: 7,
+    emailSent: mail.sent,
+    emailError: mail.error ?? null,
+  });
+}
+
+async function sendInviteEmail(
+  env: Env,
+  to: string,
+  name: string,
+  link: string,
+): Promise<{ sent: boolean; error?: string }> {
+  if (!env.RESEND_API_KEY || !env.MAIL_FROM) return { sent: false };
+  const first = name.split(" ")[0];
+  const safeFirst = first.replace(/[&<>"]/g, "");
+  const text =
+    `Hi ${first},\n\n` +
+    `You've been added to the BioMar Design Hub onboarding. Use this link to choose your password and sign in:\n\n` +
+    `${link}\n\n` +
+    `The link works once and expires in 7 days. If it expires, ask the Design Hub team for a new one.\n\n` +
+    `Powered by Partnership. Driven by Innovation.`;
+  const html =
+    `<p>Hi ${safeFirst},</p>` +
+    `<p>You've been added to the <strong>BioMar Design Hub onboarding</strong>. Use the button below to choose your password and sign in.</p>` +
+    `<p><a href="${link}" style="display:inline-block;background:#1F3E77;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Set my password</a></p>` +
+    `<p style="color:#64748b;font-size:13px">The link works once and expires in 7 days. If it expires, ask the Design Hub team for a new one.</p>` +
+    `<p style="color:#64748b;font-size:13px">Powered by Partnership. Driven by Innovation.</p>`;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from: env.MAIL_FROM,
+        to: [to],
+        subject: "Set your password — BioMar Design Hub onboarding",
+        text,
+        html,
+      }),
+    });
+    if (!res.ok) return { sent: false, error: `The email service answered ${res.status}.` };
+    return { sent: true };
+  } catch (err) {
+    return { sent: false, error: (err as Error).message };
+  }
+}
+
+async function readInvite(env: Env, token: string | null | undefined): Promise<Invite | null> {
+  if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
+  const raw = await env.AUTH_KV.get(`invite:${token}`);
+  return raw ? (JSON.parse(raw) as Invite) : null;
+}
+
+async function handleGetInvite(request: Request, env: Env): Promise<Response> {
+  const invite = await readInvite(env, new URL(request.url).searchParams.get("token"));
+  if (!invite) return json({ error: "This link is invalid or has expired. Ask the Design Hub team for a new one." }, 404);
+  const personRaw = await env.AUTH_KV.get(`person:${invite.personId}`);
+  const name = personRaw ? (JSON.parse(personRaw) as Person).name : invite.email;
+  return json({ ok: true, email: invite.email, name });
+}
+
+async function handleAcceptInvite(request: Request, env: Env): Promise<Response> {
+  const body = (await safeJson(request)) as { token?: string; password?: string } | null;
+  const invite = await readInvite(env, body?.token);
+  if (!invite) return json({ error: "This link is invalid or has expired. Ask the Design Hub team for a new one." }, 404);
+  const password = body?.password ?? "";
+  if (password.length < 8) return json({ error: "Password must be at least 8 characters." }, 400);
+  if (await getUser(env, invite.email)) {
+    return json({ error: "This account already exists — sign in instead." }, 409);
+  }
+
+  const { hash, salt, iterations } = await hashPassword(password);
+  await putUser(env, {
+    email: invite.email,
+    personId: invite.personId,
+    role: invite.role,
+    passwordHash: hash,
+    salt,
+    iterations,
+  });
+  // Single use: burn the link, then sign the person in.
+  await env.AUTH_KV.delete(`invite:${body!.token}`);
+  await env.AUTH_KV.delete(`invite-email:${invite.email}`);
+  const session = await createSession(env, invite.email);
+  return json({ ok: true, personId: invite.personId, role: invite.role }, 200, {
+    "Set-Cookie": sessionCookieHeader(session),
+  });
 }
 
 async function requireAdmin(request: Request, env: Env) {
