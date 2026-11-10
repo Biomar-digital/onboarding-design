@@ -24,11 +24,6 @@ NAVY = lin((18, 52, 96))
 shapes = json.load(open(SIL))
 X0, X1 = shapes[4]['bbox'][0], shapes[4]['bbox'][2]; S = 1 / (X1 - X0); XC = (X0 + X1) / 2; YC = 566.0
 outer = max(shapes[4]['subpaths'], key=len)
-def hf(u):                                                                       # alto relativo: algo mas gordito, cabeza bastante mas grande
-    t = min(max((u - 0.45) / 0.4, 0), 1); return 1.06 + 0.24 * t * t * (3 - 2 * t)
-def P(x, y):                                                                     # artboard -> (X, Z), con la forma "personaje"
-    u = (x - X0) / (X1 - X0); sct = section(min(max(x, X0 + 1.5), X1 - 1.5)); zc_ = -((sct[0] + sct[1]) / 2 - YC) * S if sct else 0.0
-    Z0 = -(y - YC) * S; return ((x - XC) * S * 0.9, zc_ + (Z0 - zc_) * hf(u))
 def section(x):                                                                  # arriba / abajo del contorno en esa x
     ys = []
     n = len(outer)
@@ -36,20 +31,44 @@ def section(x):                                                                 
         (xa, ya), (xb, yb) = outer[i], outer[(i + 1) % n]
         if (xa - x) * (xb - x) <= 0 and xa != xb: ys.append(ya + (yb - ya) * (x - xa) / (xb - xa))
     return (min(ys), max(ys)) if len(ys) >= 2 else None
-def thick(u):                                                                    # medio espesor / media altura, de cola (0) a nariz (1)
-    if u < 0.10: return 0.07
-    if u < 0.22: return 0.07 + (u - 0.10) / 0.12 * 0.33
-    if u < 0.72: return 0.40 + (u - 0.22) / 0.50 * 0.24
-    return 0.64
+# ---- forma 3D: perfil del icono suavizado y con menos contraste cabeza/cuerpo (huso redondeado, sin cabeza de bulbo)
 NS, M = 90, 40
-rings = []; ring_u = []
+_us, _zc, _h = [], [], []
 for k in range(NS + 1):
-    u = k / NS; x = X0 + 1.2 + u * (X1 - X0 - 2.4)
-    sct = section(x)
+    u = k / NS; x = X0 + 1.2 + u * (X1 - X0 - 2.4); sct = section(x)
     if sct is None: continue
-    top, bot = sct; X, Zt = P(x, top); _, Zb = P(x, bot)                        # (P ya aplica la forma)
-    zc, h = (Zt + Zb) / 2, (Zt - Zb) / 2; w = h * thick(u)
-    if u > 0.94: w *= max(0.25, 1 - (u - 0.94) / 0.06 * 0.6)
+    zt, zb = -(sct[0] - YC) * S, -(sct[1] - YC) * S; _us.append(u); _zc.append((zt + zb) / 2); _h.append((zt - zb) / 2)
+def _smooth(a, k=4):
+    return [sum(a[max(0, i - k):i + k + 1]) / len(a[max(0, i - k):i + k + 1]) for i in range(len(a))]
+_zcs = _smooth(_zc, 6); _hs = _smooth(_h, 4)
+# perfil de alto disenado (media altura, unidades de modelo): pedunculo fino -> cuerpo lleno -> cabeza redondeada integrada
+_HCP = [(0.0, 0.030), (0.10, 0.030), (0.16, 0.034), (0.30, 0.056), (0.48, 0.074), (0.64, 0.090), (0.78, 0.104), (0.88, 0.106), (0.94, 0.095), (0.985, 0.060), (1.0, 0.03)]
+def _hprof(u):
+    for (u0, h0), (u1, h1) in zip(_HCP[:-1], _HCP[1:]):
+        if u0 <= u <= u1:
+            t = (u - u0) / (u1 - u0); t = t * t * (3 - 2 * t); return h0 + (h1 - h0) * t
+    return _HCP[-1][1]
+_h3 = [_hprof(u) for u in _us]
+def _interp(arr, u):
+    if u <= _us[0]: return arr[0]
+    if u >= _us[-1]: return arr[-1]
+    for i in range(len(_us) - 1):
+        if _us[i] <= u <= _us[i + 1]:
+            t = (u - _us[i]) / (_us[i + 1] - _us[i]); return arr[i] * (1 - t) + arr[i + 1] * t
+def P(x, y):                                                                     # artboard -> (X, Z) con la misma deformacion que el cuerpo
+    u = (x - X0) / (X1 - X0); Z0 = -(y - YC) * S
+    zr, zs, hr, h3 = _interp(_zc, u), _interp(_zcs, u), _interp(_h, u), _interp(_h3, u)
+    return ((x - XC) * S, zs + (Z0 - zr) * (h3 / max(hr, 1e-4)))
+def thick(u):                                                                    # medio ancho / media altura (vista de arriba: huso)
+    if u < 0.16: return 0.55                                                     # pedunculo redondeado (la aleta caudal va aparte)
+    if u < 0.70: return 0.55 + (u - 0.16) / 0.54 * 0.13
+    return 0.68
+rings = []; ring_u = []
+UT = 0.105                                                                       # el cuerpo empieza en el pedunculo; la cola en abanico es una aleta
+for u, zc, h in zip(_us, _zcs, _h3):
+    if u < UT: continue
+    X = (X0 + 1.2 + u * (X1 - X0 - 2.4) - XC) * S; w = h * thick(u)
+    if u > 0.93: f_ = (u - 0.93) / 0.07; w *= math.sqrt(max(0.0, 1 - 0.75 * f_ * f_))   # nariz redondeada
     rings.append([(X, w * math.sin(2 * math.pi * j / M), zc + h * math.cos(2 * math.pi * j / M)) for j in range(M)]); ring_u.append(u)
 me = bpy.data.meshes.new('fry'); bm = bmesh.new()
 vv = [[bm.verts.new(p) for p in r] for r in rings]
@@ -76,11 +95,36 @@ def flat_poly(name, shp, y, rot_x=0.0, th=0.004):
     sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 1
     return o
 dorsal = flat_poly('FRY_aleta_dorsal', shapes[2], 0.0)
+# aleta caudal en abanico (con una leve horquilla), pegada al pedunculo
+xb_ = rings[0][0][0] + 0.03; zb_ = sum(p[2] for p in rings[0]) / M; xe_ = xb_ - 0.16
+def mk_fin(name, pts, th=0.005):
+    m = bpy.data.meshes.new(name); b = bmesh.new(); vs = [b.verts.new((X, 0, Z)) for X, Z in pts]; b.faces.new(vs); b.to_mesh(m)
+    o = bpy.data.objects.new(name, m); sc.collection.objects.link(o)
+    sol = o.modifiers.new('sol', 'SOLIDIFY'); sol.thickness = th; sol.offset = 0
+    sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 2
+    return o
+caudal = mk_fin('FRY_aleta_caudal', [(xb_, zb_ + 0.026), (xb_ - 0.05, zb_ + 0.05), (xe_ + 0.01, zb_ + 0.088), (xe_ - 0.012, zb_ + 0.07), (xe_ + 0.022, zb_),
+                                     (xe_ - 0.012, zb_ - 0.07), (xe_ + 0.01, zb_ - 0.088), (xb_ - 0.05, zb_ - 0.05), (xb_, zb_ - 0.026)], 0.006)
 fins = [dorsal]
 for k in (0, 1):
     for sgn in (-1, 1):
         cx = sum(P(*q)[0] for q in shapes[k]['subpaths'][0]) / len(shapes[k]['subpaths'][0])
         fins.append(flat_poly(f'FRY_aleta_{k}_{sgn}', shapes[k], sgn * half_w(cx) * 0.55, sgn * math.radians(-18)))
+GX = P(1238, 560)[0]                                                             # aletas pectorales: detras del borde del operculo, a media altura
+gz, gh = z_mid(GX - 0.03)
+for sgn in (-1, 1):
+    pe = mk_fin(f'FRY_aleta_pect_{sgn}', [(GX - 0.06 + 0.05 * math.cos(a_), gz - gh * 0.3 + 0.022 * math.sin(a_)) for a_ in [i * 2 * math.pi / 16 for i in range(16)]], 0.004)
+    pe.location.y = sgn * half_w(GX - 0.05) * 1.02; pe.rotation_euler.x = sgn * math.radians(-25); fins.append(pe)
+# aletas pegadas al cuerpo: en el icono hay una linea blanca entre aleta y cuerpo; en 3D la base tiene que entrar en el cuerpo
+for o in fins:
+    vs_ = o.data.vertices; up = o is dorsal
+    edge = sorted(vs_, key=lambda v: v.co.z)[:max(3, len(vs_) // 4)] if up else sorted(vs_, key=lambda v: -v.co.z)[:max(3, len(vs_) // 4)]
+    gap = 0.0
+    for v in edge:
+        zm, hh = z_mid(v.co.x); surf = zm + hh if up else zm - hh * 0.78
+        gap = max(gap, (v.co.z - surf) if up else (surf - v.co.z))
+    dz = -(gap + 0.012) if up else (gap + 0.01)
+    for v in vs_: v.co.z += dz
 # ------------------------------------------------------------------ materiales
 def mat(name, col, rough=0.4, alpha=1.0, emit=0.0, sss=0.0, rim=None):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; bs = nt.nodes['Principled BSDF']
@@ -188,7 +232,7 @@ rays = smooth(nt, wv.outputs['Fac'], 0.55, 0.9)
 bs.inputs['Base Color'].default_value = (*lin((236, 214, 200)), 1); bs.inputs['Roughness'].default_value = 0.35   # aletas con un toque calido
 nt.links.new(M(nt, 'MULTIPLY_ADD', rays, 0.3), bs.inputs['Alpha']); nt.nodes[-1].inputs[2].default_value = 0.5
 m_fin.surface_render_method = 'DITHERED'
-for f in fins: f.data.materials.append(m_fin)
+for f in fins + [caudal]: f.data.materials.append(m_fin)
 # ojo real: iris plateado-dorado con estrias, pupila negra grande y brillante, brillo puntual
 m_white = bpy.data.materials.new('iris'); m_white.use_nodes = True; nt = m_white.node_tree; bs = nt.nodes['Principled BSDF']
 noi = N(nt, 'ShaderNodeTexNoise', Scale=40.0, Detail=2.0)
@@ -200,10 +244,10 @@ m_hl = mat('brillo', (1, 1, 1), 0.1, emit=6)
 m_brow = mat('ceja', lin((44, 58, 62)), 0.4)
 m_lid = mat('parpado', lin((150, 200, 225)), 0.35, rim=lin((70, 120, 150)))   # opaco: sin SSS (una cascara fina con SSS se ve de vidrio)
 # ------------------------------------------------------------------ cara: ojos, ceja, boca (sobre el ojo y la boca del icono)
-EX, EZ = P(1292, 552); ER = 0.058
+EX, EZ = P(1292, 552); ER = 0.05
 eyes = []
 for sgn in (-1, 1):
-    yb = sgn * half_w(EX) * 0.66
+    yb = sgn * half_w(EX) * 0.58                                                  # ojo mas metido en la cabeza (no de insecto)
     piv = bpy.data.objects.new(f'FRY_ojo_piv_{sgn}', None); sc.collection.objects.link(piv); piv.location = (EX, yb, EZ)
     ctl = bpy.data.objects.new(f'FRY_ojo_ctl_{sgn}', None); sc.collection.objects.link(ctl); ctl.parent = piv   # mirada + parpadeo
     bpy.ops.mesh.primitive_uv_sphere_add(radius=ER, location=(0, 0, 0), segments=32, ring_count=16); ball = bpy.context.object
@@ -284,7 +328,7 @@ for o in fins[1:]:
     for v in me_.vertices: v.co -= piv_
     o.location = (piv_.x, o.location.y, piv_.z); o.rotation_mode = 'XYZ'
 bpy.context.view_layer.update()
-for o in [body, mouth] + mouth_o + fins:
+for o in [body, mouth] + mouth_o + fins + [caudal]:
     if o.type == 'CURVE' or o in mouth_o:
         o.parent = rig; o.parent_type = 'BONE'; o.parent_bone = 'b0'; o.matrix_parent_inverse = bone_tail_inv(); continue
     mw0 = o.matrix_world.copy(); weigh(o); am = o.modifiers.new('arm', 'ARMATURE'); am.object = rig
@@ -354,7 +398,7 @@ for F_ in range(1, NF + 1):
         mo_.scale = (0.014, 0.006, 0.0001 + 0.009 * op); mo_.keyframe_insert('scale', frame=F_)
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
-for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(((5.0, 0.12, -4.2, 3.6, 0.75, 0.0), (6.2, -0.12, 4.4, -3.4, 0.7, 2.0))):   # lejos, cerca del fondo, lejos del globo
+for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
     r2 = rig.copy(); r2.data = rig.data; r2.animation_data_clear(); sc.collection.objects.link(r2); r2.name = f'CARDUMEN_rig_{j}'
     b2 = body.copy(); sc.collection.objects.link(b2); b2.name = f'CARDUMEN_{j}'; b2.parent = r2
     for md in b2.modifiers:
@@ -458,7 +502,7 @@ b_.inputs['Base Color'].default_value = (*lin((70, 160, 80)), 1); b_.inputs['Sub
 b_.inputs['Emission Color'].default_value = (*lin((200, 255, 160)), 1); nn.links.new(caustic(nn, 0.5), b_.inputs['Emission Strength'])
 m_pl2 = m_pl.copy(); m_pl2.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*lin((150, 180, 60)), 1)
 for i in range(46):                                                             # plantas: cintas que se mecen (a los costados y al fondo)
-    side = -1 if i % 2 else 1; y = R.uniform(0.3, 6.5); x = side * R.uniform(1.0 + 0.3 * y, 1.6 + 0.5 * y) if i % 5 else R.uniform(-1.5, 1.5)
+    side = -1 if i % 2 else 1; y = R.uniform(1.6, 6.5); x = side * R.uniform(1.0 + 0.3 * y, 1.6 + 0.5 * y) if i % 5 else R.uniform(-1.5, 1.5)
     if i % 5 == 0: y = R.uniform(3.5, 7.0)
     hgt = R.uniform(0.35, 1.0) * (1 + 0.1 * y); cu = bpy.data.curves.new(f'planta_{i}', 'CURVE'); cu.dimensions = '3D'
     cu.bevel_depth = R.uniform(0.012, 0.02) * (1 + 0.1 * y); cu.bevel_resolution = 2; spl = cu.splines.new('BEZIER'); nseg = 5; spl.bezier_points.add(nseg - 1)
@@ -633,10 +677,10 @@ if not VOLUMEN:
     sc.use_nodes = True; cn = sc.node_tree; cn.nodes.clear()
     rl = cn.nodes.new('CompositorNodeRLayers'); rl.layer = 'escena'; rb = cn.nodes.new('CompositorNodeRLayers'); rb.layer = 'burbujas'
     co = cn.nodes.new('CompositorNodeComposite')
-    gi = bpy.data.images.new('agua_gradiente', 4, 256, float_buffer=True)       # color de agua: azul profundo abajo -> turquesa claro arriba
+    gi = bpy.data.images.new('agua_gradiente', 256, 256, float_buffer=True)  # grande: al estirar, el borde no se mezcla con negro       # color de agua: azul profundo abajo -> turquesa claro arriba
     lo_, hi_ = lin((22, 100, 168)), lin((80, 200, 212)); px = []
     for yy in range(256):
-        t_ = (yy / 255) ** 1.3; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 4
+        t_ = (yy / 255) ** 1.3; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 256
     gi.pixels = px
     gn_ = cn.nodes.new('CompositorNodeImage'); gn_.image = gi
     gsz = cn.nodes.new('CompositorNodeScale'); gsz.space = 'RENDER_SIZE'; gsz.frame_method = 'STRETCH'; cn.links.new(gn_.outputs['Image'], gsz.inputs[0])
@@ -656,11 +700,16 @@ if not VOLUMEN:
     cb_ = cn.nodes.new('CompositorNodeColorBalance'); cb_.correction_method = 'LIFT_GAMMA_GAIN'   # sombras azul profundo, luces calidas
     cb_.lift = (0.97, 0.99, 1.04); cb_.gamma = (1.0, 1.0, 1.0); cb_.gain = (1.05, 1.02, 0.96); cn.links.new(gl.outputs[0], cb_.inputs[1])
     bc = cn.nodes.new('CompositorNodeBrightContrast'); bc.inputs['Contrast'].default_value = 8.0; cn.links.new(cb_.outputs[0], bc.inputs[0])
-    vg = cn.nodes.new('CompositorNodeEllipseMask'); vg.x = 0.5; vg.y = 0.5; vg.width = 1.25; vg.height = 1.25
-    vb = cn.nodes.new('CompositorNodeBlur'); vb.size_x = vb.size_y = int(RW * 0.2); vb.use_relative = False; cn.links.new(vg.outputs[0], vb.inputs[0])
-    vm = cn.nodes.new('CompositorNodeMixRGB'); vm.blend_type = 'MULTIPLY'; vm.inputs[2].default_value = (*lin((195, 210, 225)), 1)
-    vi = cn.nodes.new('CompositorNodeMath'); vi.operation = 'SUBTRACT'; vi.inputs[0].default_value = 1.0; cn.links.new(vb.outputs[0], vi.inputs[1])
-    cn.links.new(vi.outputs[0], vm.inputs[0]); cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vm.outputs[0], co.inputs[0])   # vineta suave
+    vgi = bpy.data.images.new('vineta', 256, 144, float_buffer=True); px = []      # vineta suave: imagen radial escalada al cuadro
+    for yy in range(144):
+        for xx in range(256):
+            d_ = math.hypot((xx + 0.5) / 256 - 0.5, ((yy + 0.5) / 144 - 0.5) * 0.75) / 0.62; v_ = 1 - 0.32 * min(1, max(0, (d_ - 0.55) / 0.45)) ** 1.6
+            px += [v_, v_ * 1.0, v_ * 1.01, 1.0]
+    vgi.pixels = px
+    vgn = cn.nodes.new('CompositorNodeImage'); vgn.image = vgi
+    vgs = cn.nodes.new('CompositorNodeScale'); vgs.space = 'RENDER_SIZE'; vgs.frame_method = 'STRETCH'; cn.links.new(vgn.outputs['Image'], vgs.inputs[0])
+    vm = cn.nodes.new('CompositorNodeMixRGB'); vm.blend_type = 'MULTIPLY'; vm.inputs[0].default_value = 1.0
+    cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vgs.outputs[0], vm.inputs[2]); cn.links.new(vm.outputs[0], co.inputs[0])
 CLOSE = '--cerca' in argv                                                         # camara de primer plano a la cabeza (para revisar ojos/parpados)
 if SAVE: bpy.ops.wm.save_as_mainfile(filepath=SAVE)
 a, b = (int(v) for v in FR.split('-'))
