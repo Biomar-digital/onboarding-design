@@ -354,7 +354,7 @@ for F_ in range(1, NF + 1):
         mo_.scale = (0.014, 0.006, 0.0001 + 0.009 * op); mo_.keyframe_insert('scale', frame=F_)
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
-for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(((3.6, 0.55, -3.4, 3.2, 0.9, 0.0), (5.2, 0.05, 3.6, -3.0, 0.85, 2.0), (4.4, 1.0, -3.8, 2.2, 0.8, 4.0))):
+for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(((5.0, 0.12, -4.2, 3.6, 0.75, 0.0), (6.2, -0.12, 4.4, -3.4, 0.7, 2.0))):   # lejos, cerca del fondo, lejos del globo
     r2 = rig.copy(); r2.data = rig.data; r2.animation_data_clear(); sc.collection.objects.link(r2); r2.name = f'CARDUMEN_rig_{j}'
     b2 = body.copy(); sc.collection.objects.link(b2); b2.name = f'CARDUMEN_{j}'; b2.parent = r2
     for md in b2.modifiers:
@@ -365,7 +365,6 @@ for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(((3.6, 0.55, -3.4, 3.2, 0.9, 0.0)
         if md.type == 'ARMATURE': m2.object = r2
         if md.type == 'SOLIDIFY': m2.thickness = md.thickness; m2.offset = md.offset
         if md.type == 'SUBSURF': m2.levels = m2.render_levels = 1
-    for vg_ in dorsal.vertex_groups: d2.vertex_groups.new(name=vg_.name)         # los pesos viven en la malla compartida: solo hacen falta los nombres
     r2.scale = (sc_, sc_, sc_); r2.rotation_euler = (0, 0, 0 if x1 > x0 else math.pi); ph2 = ph0
     for F_ in range(1, NF + 1):
         t = (F_ - 1) / FPS; ph2 += 2 * math.pi * 2.4 / FPS
@@ -470,8 +469,8 @@ for i in range(46):                                                             
     o.data.materials.append(m_pl if i % 3 else m_pl2); ph_ = R.uniform(0, 6.3); o.scale = (2.6, 0.7, 1.0)
     for f in range(1, NF + 1, 4):
         o.rotation_euler.x = 0.12 * math.sin(f / FPS * 1.6 + ph_); o.rotation_euler.y = 0.06 * math.sin(f / FPS * 1.1 + ph_); o.keyframe_insert('rotation_euler', frame=f)
-for i in range(8):                                                              # primer plano: hojas altas cerca de camara, fuera de foco
-    side = -1 if i % 2 else 1; x = side * R.uniform(0.55, 0.8); y = R.uniform(-1.35, -1.0); hgt = R.uniform(0.85, 1.15)
+for i in range(0):                                                              # primer plano: desactivado (tapaba los bordes)
+    side = -1 if i % 2 else 1; x = side * R.uniform(0.82, 0.95); y = R.uniform(-1.3, -1.1); hgt = R.uniform(0.6, 0.85)
     cu = bpy.data.curves.new(f'planta_cerca_{i}', 'CURVE'); cu.dimensions = '3D'; cu.bevel_depth = R.uniform(0.01, 0.016); cu.bevel_resolution = 2
     spl = cu.splines.new('BEZIER'); spl.bezier_points.add(4)
     for k in range(5):
@@ -634,12 +633,16 @@ if not VOLUMEN:
     sc.use_nodes = True; cn = sc.node_tree; cn.nodes.clear()
     rl = cn.nodes.new('CompositorNodeRLayers'); rl.layer = 'escena'; rb = cn.nodes.new('CompositorNodeRLayers'); rb.layer = 'burbujas'
     co = cn.nodes.new('CompositorNodeComposite')
-    gm = cn.nodes.new('CompositorNodeBoxMask'); gm.x = 0.5; gm.y = 1.0; gm.width = 2.0; gm.height = 1.1
-    gb = cn.nodes.new('CompositorNodeBlur'); gb.size_x = gb.size_y = int(RW * 0.3); gb.use_relative = False; cn.links.new(gm.outputs[0], gb.inputs[0])
-    fogc = cn.nodes.new('CompositorNodeMixRGB'); fogc.inputs[1].default_value = (*lin((22, 102, 168)), 1); fogc.inputs[2].default_value = (*lin((76, 196, 210)), 1)
-    cn.links.new(gb.outputs[0], fogc.inputs[0])                                    # color de agua: azul profundo abajo -> turquesa claro arriba
-    mx = cn.nodes.new('CompositorNodeMixRGB'); mx.blend_type = 'MIX'; cn.links.new(fogc.outputs[0], mx.inputs[2])
-    cn.links.new(rl.outputs['Mist'], mx.inputs[0]); cn.links.new(rl.outputs['Image'], mx.inputs[1])
+    gi = bpy.data.images.new('agua_gradiente', 4, 256, float_buffer=True)       # color de agua: azul profundo abajo -> turquesa claro arriba
+    lo_, hi_ = lin((22, 100, 168)), lin((80, 200, 212)); px = []
+    for yy in range(256):
+        t_ = (yy / 255) ** 1.3; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 4
+    gi.pixels = px
+    gn_ = cn.nodes.new('CompositorNodeImage'); gn_.image = gi
+    gsz = cn.nodes.new('CompositorNodeScale'); gsz.space = 'RENDER_SIZE'; gsz.frame_method = 'STRETCH'; cn.links.new(gn_.outputs['Image'], gsz.inputs[0])
+    pre = cn.nodes.new('CompositorNodeAlphaOver'); cn.links.new(gsz.outputs[0], pre.inputs[1]); cn.links.new(rl.outputs['Image'], pre.inputs[2])   # fondo vacio = agua
+    mx = cn.nodes.new('CompositorNodeMixRGB'); mx.blend_type = 'MIX'; cn.links.new(gsz.outputs[0], mx.inputs[2])
+    cn.links.new(rl.outputs['Mist'], mx.inputs[0]); cn.links.new(pre.outputs[0], mx.inputs[1])
     # brillo de la superficie arriba: mezcla aditiva de una franja clara (mascara de caja difusa)
     bx = cn.nodes.new('CompositorNodeBoxMask'); bx.x = 0.5; bx.y = 1.05; bx.width = 1.6; bx.height = 0.7
     bl = cn.nodes.new('CompositorNodeBlur'); bl.size_x = bl.size_y = int(RW * 0.12); bl.use_relative = False
@@ -655,7 +658,7 @@ if not VOLUMEN:
     bc = cn.nodes.new('CompositorNodeBrightContrast'); bc.inputs['Contrast'].default_value = 8.0; cn.links.new(cb_.outputs[0], bc.inputs[0])
     vg = cn.nodes.new('CompositorNodeEllipseMask'); vg.x = 0.5; vg.y = 0.5; vg.width = 1.25; vg.height = 1.25
     vb = cn.nodes.new('CompositorNodeBlur'); vb.size_x = vb.size_y = int(RW * 0.2); vb.use_relative = False; cn.links.new(vg.outputs[0], vb.inputs[0])
-    vm = cn.nodes.new('CompositorNodeMixRGB'); vm.blend_type = 'MULTIPLY'; vm.inputs[2].default_value = (*lin((150, 175, 200)), 1)
+    vm = cn.nodes.new('CompositorNodeMixRGB'); vm.blend_type = 'MULTIPLY'; vm.inputs[2].default_value = (*lin((195, 210, 225)), 1)
     vi = cn.nodes.new('CompositorNodeMath'); vi.operation = 'SUBTRACT'; vi.inputs[0].default_value = 1.0; cn.links.new(vb.outputs[0], vi.inputs[1])
     cn.links.new(vi.outputs[0], vm.inputs[0]); cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vm.outputs[0], co.inputs[0])   # vineta suave
 CLOSE = '--cerca' in argv                                                         # camara de primer plano a la cabeza (para revisar ojos/parpados)
