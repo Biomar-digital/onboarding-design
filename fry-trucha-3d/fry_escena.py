@@ -12,7 +12,7 @@ RW = int(argv[2]) if len(argv) > 2 else 1920
 SPP = int(argv[3]) if len(argv) > 3 else 32
 FR = argv[4] if len(argv) > 4 and not argv[4].startswith('--') else '1-125'
 SAVE = argv[argv.index('--save') + 1] if '--save' in argv else None
-FPS, NF = 25, 150
+FPS, NF = 25, 225                                                                # 9 s: el globo queda ~4,5 s quieto para leer la frase
 TS = 1.2                                                                         # la actuacion se estira x1.2 (mas tiempo para la duda)
 def FT(x): return int(round(1 + (x - 1) * TS))                                   # frame de diseno (5 s) -> frame real (6 s)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -32,7 +32,7 @@ def section(x):                                                                 
         if (xa - x) * (xb - x) <= 0 and xa != xb: ys.append(ya + (yb - ya) * (x - xa) / (xb - xa))
     return (min(ys), max(ys)) if len(ys) >= 2 else None
 # ---- forma 3D: perfil del icono suavizado y con menos contraste cabeza/cuerpo (huso redondeado, sin cabeza de bulbo)
-NS, M = 90, 40
+NS, M = 200, 72                                                                  # mucha resolucion: sin anillos ni facetas
 _us, _zc, _h = [], [], []
 for k in range(NS + 1):
     u = k / NS; x = X0 + 1.2 + u * (X1 - X0 - 2.4); sct = section(x)
@@ -40,13 +40,17 @@ for k in range(NS + 1):
     zt, zb = -(sct[0] - YC) * S, -(sct[1] - YC) * S; _us.append(u); _zc.append((zt + zb) / 2); _h.append((zt - zb) / 2)
 def _smooth(a, k=4):
     return [sum(a[max(0, i - k):i + k + 1]) / len(a[max(0, i - k):i + k + 1]) for i in range(len(a))]
-_zcs = _smooth(_zc, 6); _hs = _smooth(_h, 4)
+_zcs = _smooth(_smooth(_zc, 10), 10); _hs = _smooth(_h, 4)                             # linea media muy suave
 # perfil de alto disenado (media altura, unidades de modelo): pedunculo fino -> cuerpo lleno -> cabeza redondeada integrada
 _HCP = [(0.0, 0.030), (0.10, 0.030), (0.16, 0.034), (0.30, 0.056), (0.48, 0.074), (0.64, 0.090), (0.78, 0.104), (0.88, 0.106), (0.94, 0.095), (0.985, 0.060), (1.0, 0.03)]
-def _hprof(u):
-    for (u0, h0), (u1, h1) in zip(_HCP[:-1], _HCP[1:]):
-        if u0 <= u <= u1:
-            t = (u - u0) / (u1 - u0); t = t * t * (3 - 2 * t); return h0 + (h1 - h0) * t
+def _hprof(u):                                                                   # Catmull-Rom por los puntos de control: curva continua y suave
+    P_ = [_HCP[0]] + _HCP + [_HCP[-1]]
+    for i in range(1, len(P_) - 2):
+        (u0, h0), (u1, h1), (u2, h2), (u3, h3) = P_[i - 1], P_[i], P_[i + 1], P_[i + 2]
+        if u1 <= u <= u2:
+            t = (u - u1) / max(u2 - u1, 1e-6)
+            m1 = (h2 - h0) / max(u2 - u0, 1e-6) * (u2 - u1); m2 = (h3 - h1) / max(u3 - u1, 1e-6) * (u2 - u1)
+            return (2 * t ** 3 - 3 * t * t + 1) * h1 + (t ** 3 - 2 * t * t + t) * m1 + (-2 * t ** 3 + 3 * t * t) * h2 + (t ** 3 - t * t) * m2
     return _HCP[-1][1]
 _h3 = [_hprof(u) for u in _us]
 def _interp(arr, u):
@@ -60,9 +64,7 @@ def P(x, y):                                                                    
     zr, zs, hr, h3 = _interp(_zc, u), _interp(_zcs, u), _interp(_h, u), _interp(_h3, u)
     return ((x - XC) * S, zs + (Z0 - zr) * (h3 / max(hr, 1e-4)))
 def thick(u):                                                                    # medio ancho / media altura (vista de arriba: huso)
-    if u < 0.16: return 0.55                                                     # pedunculo redondeado (la aleta caudal va aparte)
-    if u < 0.70: return 0.55 + (u - 0.16) / 0.54 * 0.13
-    return 0.68
+    t = min(max((u - 0.1) / 0.75, 0), 1); return 0.55 + 0.13 * t * t * (3 - 2 * t)   # sin quiebres
 rings = []; ring_u = []
 UT = 0.105                                                                       # el cuerpo empieza en el pedunculo; la cola en abanico es una aleta
 for u, zc, h in zip(_us, _zcs, _h3):
@@ -80,7 +82,7 @@ att = me.attributes.new('pez', 'FLOAT_VECTOR', 'POINT')                         
 for k, u in enumerate(ring_u):
     for j in range(M): att.data[k * M + j].vector = (u, math.cos(2 * math.pi * j / M), math.sin(2 * math.pi * j / M))
 for p in me.polygons: p.use_smooth = True
-sub = body.modifiers.new('sub', 'SUBSURF'); sub.levels = sub.render_levels = 1
+sub = body.modifiers.new('sub', 'SUBSURF'); sub.levels = 1; sub.render_levels = 1
 def half_w(X):                                                                   # medio espesor del cuerpo en X (para apoyar ojos/aletas)
     best = min(rings, key=lambda r: abs(r[0][0] - X)); return max(abs(p[1]) for p in best)
 def z_mid(X):
@@ -92,7 +94,7 @@ def flat_poly(name, shp, y, rot_x=0.0, th=0.004):
     o = bpy.data.objects.new(name, m); sc.collection.objects.link(o)
     o.location.y = y; o.rotation_euler.x = rot_x
     sol = o.modifiers.new('sol', 'SOLIDIFY'); sol.thickness = th; sol.offset = 0
-    sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 1
+    sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 2
     return o
 dorsal = flat_poly('FRY_aleta_dorsal', shapes[2], 0.0)
 # aleta caudal en abanico (con una leve horquilla), pegada al pedunculo
@@ -145,12 +147,12 @@ def caustic(nt, strength):                                                      
     geo = nt.nodes.new('ShaderNodeNewGeometry'); vo = nt.nodes.new('ShaderNodeTexVoronoi'); vo.voronoi_dimensions = '4D'; vo.feature = 'DISTANCE_TO_EDGE'
     vo.inputs['Scale'].default_value = 7.0
     wn = nt.nodes.new('ShaderNodeTexNoise'); wn.inputs['Scale'].default_value = 4.0; wn.inputs['Detail'].default_value = 1.0; nt.links.new(geo.outputs['Position'], wn.inputs['Vector'])
-    wa = nt.nodes.new('ShaderNodeVectorMath'); wa.operation = 'SCALE'; wa.inputs['Scale'].default_value = 0.09; nt.links.new(wn.outputs['Color'], wa.inputs[0])
+    wa = nt.nodes.new('ShaderNodeVectorMath'); wa.operation = 'SCALE'; wa.inputs['Scale'].default_value = 0.16; nt.links.new(wn.outputs['Color'], wa.inputs[0])
     wp = nt.nodes.new('ShaderNodeVectorMath'); wp.operation = 'ADD'; nt.links.new(geo.outputs['Position'], wp.inputs[0]); nt.links.new(wa.outputs[0], wp.inputs[1])
     nt.links.new(wp.outputs[0], vo.inputs['Vector'])
     for f in (1, NF):
         vo.inputs['W'].default_value = f * 0.03; vo.inputs['W'].keyframe_insert('default_value', frame=f)
-    mr = nt.nodes.new('ShaderNodeMapRange'); mr.interpolation_type = 'SMOOTHSTEP'; mr.inputs['From Min'].default_value = 0.0; mr.inputs['From Max'].default_value = 0.06
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.interpolation_type = 'SMOOTHSTEP'; mr.inputs['From Min'].default_value = 0.0; mr.inputs['From Max'].default_value = 0.1
     mr.inputs['To Min'].default_value = 1.0; mr.inputs['To Max'].default_value = 0.0; nt.links.new(vo.outputs['Distance'], mr.inputs['Value'])
     sn = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(geo.outputs['Normal'], sn.inputs[0])
     up = nt.nodes.new('ShaderNodeMath'); up.operation = 'MAXIMUM'; up.inputs[1].default_value = 0.0; nt.links.new(sn.outputs['Z'], up.inputs[0])
@@ -250,7 +252,7 @@ for sgn in (-1, 1):
     yb = sgn * half_w(EX) * 0.58                                                  # ojo mas metido en la cabeza (no de insecto)
     piv = bpy.data.objects.new(f'FRY_ojo_piv_{sgn}', None); sc.collection.objects.link(piv); piv.location = (EX, yb, EZ)
     ctl = bpy.data.objects.new(f'FRY_ojo_ctl_{sgn}', None); sc.collection.objects.link(ctl); ctl.parent = piv   # mirada + parpadeo
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER, location=(0, 0, 0), segments=32, ring_count=16); ball = bpy.context.object
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER, location=(0, 0, 0), segments=64, ring_count=32); ball = bpy.context.object
     ball.name = f'FRY_ojo_{sgn}'; ball.data.materials.append(m_white); ball.parent = ctl
     bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.5, location=(0.004, sgn * ER * 0.84, 0.004), segments=24, ring_count=12); pup = bpy.context.object
     pup.scale.y = 0.55; pup.data.materials.append(m_navy); pup.parent = ctl; pup.name = f'FRY_pupila_{sgn}'
@@ -260,10 +262,10 @@ for sgn in (-1, 1):
     hl2.data.materials.append(m_hl); hl2.parent = ctl; hl2.name = f'FRY_brillo2_{sgn}'
     # parpado superior: media cascara del color del cuerpo; girando en X baja/sube (expresion)
     lm = bpy.data.meshes.new(f'parpado_{sgn}'); lb = bmesh.new()
-    bmesh.ops.create_uvsphere(lb, u_segments=32, v_segments=16, radius=ER * 1.08)
+    bmesh.ops.create_uvsphere(lb, u_segments=64, v_segments=32, radius=ER * 1.08)
     bmesh.ops.delete(lb, geom=[v for v in lb.verts if v.co.z < -0.001], context='VERTS'); lb.to_mesh(lm)
     lid = bpy.data.objects.new(f'FRY_parpado_{sgn}', lm); sc.collection.objects.link(lid); lid.parent = piv; lid.data.materials.append(m_lid)
-    so_ = lid.modifiers.new('grosor', 'SOLIDIFY'); so_.thickness = ER * 0.12; so_.offset = 1
+    so_ = lid.modifiers.new('grosor', 'SOLIDIFY'); so_.thickness = ER * 0.12; so_.offset = 1; lid.modifiers.new('suave', 'SUBSURF').render_levels = 2
     lid.rotation_mode = 'XYZ'
     for p in lm.polygons: p.use_smooth = True
     for o in (ball, pup, hl):
@@ -277,10 +279,10 @@ for sgn in (-1, 1):
     brow.data.materials.append(m_brow)
     brow.hide_render = True; brow.hide_viewport = True                         # sin cejas dibujadas: la expresion la dan los parpados
     lm2 = bpy.data.meshes.new(f'parpado_inf_{sgn}'); lb2 = bmesh.new()               # parpado de abajo (sube en la duda / al sonreir con los ojos)
-    bmesh.ops.create_uvsphere(lb2, u_segments=32, v_segments=16, radius=ER * 1.07)
+    bmesh.ops.create_uvsphere(lb2, u_segments=64, v_segments=32, radius=ER * 1.07)
     bmesh.ops.delete(lb2, geom=[v for v in lb2.verts if v.co.z > 0.001], context='VERTS'); lb2.to_mesh(lm2)
     lid2 = bpy.data.objects.new(f'FRY_parpado_inf_{sgn}', lm2); sc.collection.objects.link(lid2); lid2.parent = piv; lid2.data.materials.append(m_lid)
-    so2 = lid2.modifiers.new('grosor', 'SOLIDIFY'); so2.thickness = ER * 0.1; so2.offset = 1; lid2.rotation_mode = 'XYZ'
+    so2 = lid2.modifiers.new('grosor', 'SOLIDIFY'); so2.thickness = ER * 0.1; so2.offset = 1; lid2.rotation_mode = 'XYZ'; lid2.modifiers.new('suave', 'SUBSURF').render_levels = 2
     for p in lm2.polygons: p.use_smooth = True
     eyes.append((piv, brow, ctl, lid, lid2))
 MX, MZ = P(1371, 604)
@@ -393,7 +395,8 @@ for F_ in range(1, NF + 1):
     hmm = squint * (1 - wide)
     mouth.rotation_euler = (0, math.radians(14) * hmm, 0); mouth.scale = (1 - 0.25 * hmm + 0.15 * wide, 1, 1 + 0.4 * wide)
     mouth.keyframe_insert('rotation_euler', frame=F_); mouth.keyframe_insert('scale', frame=F_)
-    op = 0.25 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 1.1)) * hover + 1.0 * puff + 0.35 * wide * (1 - ease((f - 112) / 10))
+    talk = bump(f, 92, 112) * abs(math.sin(t * 2 * math.pi * 2.6))             # habla (pregunta) mientras aparece el globo
+    op = 0.2 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 1.1)) * hover * (1 - bump(f, 92, 112)) + 1.0 * puff + 0.9 * talk
     for mo_ in mouth_o:
         mo_.scale = (0.014, 0.006, 0.0001 + 0.009 * op); mo_.keyframe_insert('scale', frame=F_)
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
@@ -612,8 +615,55 @@ def dialog(name, f0, f1, p_end, r_end, veil=True, wob=0.03, asp=1.0):
         ctl.location = loc; ctl.scale = (r_ * asp * (1 + w_), r_ * 0.94, r_ * (1 - w_))
         ctl.keyframe_insert('location', frame=f); ctl.keyframe_insert('scale', frame=f)
     return ctl
-for i, (p_, r_) in enumerate(TRAIL): dialog(f'PENSAMIENTO_burbuja{i}', FT(80 + 4 * i), FT(90 + 4 * i), p_, r_, veil=True, wob=0.05)
-dialog('PENSAMIENTO_globo', FT(90), FT(108), BIG, RBIG, asp=ASP)
+# globo de dialogo estilo historieta (como la referencia): ovalo blanco opaco, contorno azul oscuro y colita curva que apunta a la boca
+def speech(name, C, A, B, tip, f0, f1):
+    ctl = bpy.data.objects.new(name, None); sc.collection.objects.link(ctl); ctl.location = C
+    a1, a2 = math.radians(205), math.radians(238)                                # la colita sale entre estos angulos del ovalo (abajo a la izquierda)
+    pts = []
+    for i in range(160):
+        a_ = a2 + (2 * math.pi - (a2 - a1)) * i / 159; pts.append((A * math.cos(a_), B * math.sin(a_)))
+    e1 = (A * math.cos(a1), B * math.sin(a1)); e2 = (A * math.cos(a2), B * math.sin(a2))
+    for i in range(1, 30):                                                       # lado de afuera: del ovalo a la punta, curvado
+        t = i / 30; c_ = (e1[0] * 0.55 + tip[0] * 0.45, e1[1] * 0.2 + tip[1] * 0.8)
+        pts.append(((1 - t) ** 2 * e1[0] + 2 * (1 - t) * t * c_[0] + t * t * tip[0], (1 - t) ** 2 * e1[1] + 2 * (1 - t) * t * c_[1] + t * t * tip[1]))
+    pts.append(tip)
+    for i in range(1, 30):                                                       # lado de adentro: de la punta de vuelta al ovalo
+        t = i / 30; c_ = (e2[0] * 0.3 + tip[0] * 0.7, e2[1] * 0.75 + tip[1] * 0.25)
+        pts.append(((1 - t) ** 2 * tip[0] + 2 * (1 - t) * t * c_[0] + t * t * e2[0], (1 - t) ** 2 * tip[1] + 2 * (1 - t) * t * c_[1] + t * t * e2[1]))
+    def offset(pp, d):                                                           # contorno: el mismo borde corrido hacia afuera
+        n_ = len(pp); out_ = []
+        for i in range(n_):
+            x0, y0 = pp[i - 1]; x1, y1 = pp[i]; x2, y2 = pp[(i + 1) % n_]
+            nx, ny = (y2 - y0), -(x2 - x0); l_ = math.hypot(nx, ny) or 1; out_.append((x1 + d * nx / l_, y1 + d * ny / l_))
+        return out_
+    def shape(nm, pp, y, colr, strength=1.0):
+        m_ = bpy.data.meshes.new(nm); b_ = bmesh.new(); vs_ = [b_.verts.new((x, y, z)) for x, z in pp]
+        es_ = [b_.edges.new((vs_[i], vs_[(i + 1) % len(vs_)])) for i in range(len(vs_))]
+        bmesh.ops.triangle_fill(b_, use_beauty=True, use_dissolve=False, edges=es_); b_.to_mesh(m_)
+        o_ = bpy.data.objects.new(nm, m_); sc.collection.objects.link(o_); o_.parent = ctl
+        mm_ = bpy.data.materials.new(nm); mm_.use_nodes = True; nn_ = mm_.node_tree; nn_.nodes.clear()
+        out_ = nn_.nodes.new('ShaderNodeOutputMaterial'); em_ = nn_.nodes.new('ShaderNodeEmission'); em_.inputs['Color'].default_value = (*colr, 1)
+        em_.inputs['Strength'].default_value = strength; nn_.links.new(em_.outputs[0], out_.inputs[0]); o_.data.materials.append(mm_)
+        return o_
+    # el contorno no puede invertir la orientacion del poligono: se calcula el sentido y se corre hacia afuera
+    def grow(pp, d):                                                             # mismo contorno agrandado desde el centro del ovalo (borde parejo)
+        return [(x * (1 + d / A), z * (1 + d / B)) for x, z in pp]
+    shape(f'{name}_sombra', [(x + 0.01, z - 0.012) for x, z in grow(pts, 0.008)], 0.004, lin((10, 30, 66)), 0.5)
+    shape(f'{name}_contorno', grow(pts, 0.008), 0.002, lin((16, 44, 92)), 1.0)
+    shape(f'{name}_relleno', pts, 0.0, (1.0, 1.0, 1.0), 2.3)                    # blanco puro despues de la gradacion
+    ctl.rotation_euler = (0, 0, 0)
+    for F_ in range(f0 - 1, NF + 1):
+        t = (F_ - f0) / max(1, f1 - f0); tt = (F_ - f0) / FPS
+        if F_ < f0: s_ = 0.0
+        elif t < 0.6: s_ = ease(t / 0.6) * 1.08
+        elif t < 1.0: s_ = 1.08 - 0.08 * ease((t - 0.6) / 0.4)
+        else: s_ = 1.0 + 0.012 * math.sin(tt * 3.1)
+        ctl.scale = (s_, s_, s_); ctl.location = C + Vector((0, 0, 0.006 * math.sin(tt * 2.0))) * (1 if F_ >= f1 else 0)
+        ctl.keyframe_insert('scale', frame=F_); ctl.keyframe_insert('location', frame=F_)
+    return ctl
+MOUTH = mouth_world(FT(108)); SPC = Vector((MOUTH.x + 0.37, -0.04, MOUTH.z + 0.25))
+TIP = MOUTH + Vector((0.05, -0.04, 0.03)) - SPC                                  # la punta queda cerca de la boca
+speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100))
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
 sun.data.energy = 5.0; sun.data.color = (1.0, 0.96, 0.9); sun.data.angle = math.radians(3)
@@ -702,6 +752,6 @@ for f in range(a, b + 1):
     sc.frame_set(f)
     if CLOSE:
         hp = rig.matrix_world @ Vector((0.36, 0, 0.0)); cam.animation_data_clear(); cam.location = hp + Vector((0.05, -0.75, 0.04))
-        cam.rotation_euler = (math.radians(87), 0, 0); cam.data.dof.focus_distance = 0.72; cam.data.lens = 60
+        cam.data.animation_data_clear(); cam.rotation_euler = (math.radians(87), 0, 0); cam.data.dof.focus_distance = 0.72; cam.data.lens = 60
     sc.render.filepath = f'{OUT}/f_{f:04d}{"_cerca" if CLOSE else ""}.png'; bpy.ops.render.render(write_still=True)
 print('FRY_DONE')
