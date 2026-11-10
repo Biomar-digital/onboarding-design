@@ -428,12 +428,6 @@ for i in range(7):
         o.location.x = -1.4 + i * 0.75 + 0.15 * math.sin(i + f / FPS * 0.5); o.keyframe_insert('location', index=0, frame=f)
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.nodes['Background'].inputs[0].default_value = (*TEAL, 1)
 w.node_tree.nodes['Background'].inputs[1].default_value = 0.7
-# 5) otros fry del cardumen, lejos y desenfocados (como en la foto real)
-for i, (x, y, z, s, sp_) in enumerate(((-2.2, 4.8, 0.75, 0.8, 0.10), (2.6, 5.6, 0.1, 0.8, 0.08), (0.4, 7.0, 1.1, 0.8, 0.12))):
-    o = body.copy(); o.data = body.data; o.modifiers.clear(); o.parent = None; sc.collection.objects.link(o); o.name = f'CARDUMEN_{i}'
-    o.scale = (s, s, s); o.rotation_euler = (0, math.radians(-6 + 4 * i), math.radians(8 - 10 * i))
-    for f in (1, NF):
-        o.location = (x + sp_ * (f - 1) / FPS, y, z + 0.03 * math.sin(f * 0.1 + i)); o.keyframe_insert('location', frame=f)
 # 6) particulas en suspension (como MOTES): puntitos finos que derivan
 R = random.Random(9)
 m_part = emit_mat('particula', lin((235, 248, 250)), 0.6)
@@ -443,56 +437,84 @@ for i in range(900):
     bmesh.ops.create_icosphere(pb, subdivisions=1, radius=r, matrix=Matrix.Translation(c))
 pb.to_mesh(pm_); motes = bpy.data.objects.new('MOTAS', pm_); sc.collection.objects.link(motes); motes.data.materials.append(m_part)
 motes.keyframe_insert('location', frame=1); motes.location = (0.08, 0.0, 0.10); motes.keyframe_insert('location', frame=NF)
-# ------------------------------------------------------------------ burbujas de aire reales + burbuja de pensamiento VACIA (tambien de aire)
+# ------------------------------------------------------------------ burbujas de aire reales + burbuja de dialogo (aire que se infla, lista para texto)
+# Se renderizan en una capa propia ('burbujas', con el fry como recorte) y se suman despues de la niebla: la niebla de
+# profundidad no sabe de objetos transparentes y las borraba.
 bpy.context.view_layer.update()
-m_air = bpy.data.materials.new('aire'); m_air.use_nodes = True; n = m_air.node_tree; n.nodes.clear()
-out = n.nodes.new('ShaderNodeOutputMaterial'); lw = n.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.25
-pw = n.nodes.new('ShaderNodeMath'); pw.operation = 'POWER'; n.links.new(lw.outputs['Facing'], pw.inputs[0]); pw.inputs[1].default_value = 2.2
-gl = n.nodes.new('ShaderNodeBsdfGlossy'); gl.inputs['Roughness'].default_value = 0.02; gl.inputs['Color'].default_value = (1, 1, 1, 1)
-emr = n.nodes.new('ShaderNodeEmission'); emr.inputs['Color'].default_value = (*lin((225, 250, 255)), 1); emr.inputs['Strength'].default_value = 0.9
-ad = n.nodes.new('ShaderNodeAddShader'); n.links.new(gl.outputs[0], ad.inputs[0]); n.links.new(emr.outputs[0], ad.inputs[1])
-tr = n.nodes.new('ShaderNodeBsdfTransparent'); mx = n.nodes.new('ShaderNodeMixShader')
-fac = n.nodes.new('ShaderNodeMath'); fac.operation = 'MULTIPLY_ADD'; n.links.new(pw.outputs[0], fac.inputs[0]); fac.inputs[1].default_value = 0.92; fac.inputs[2].default_value = 0.06
-n.links.new(fac.outputs[0], mx.inputs['Fac']); n.links.new(tr.outputs[0], mx.inputs[1]); n.links.new(ad.outputs[0], mx.inputs[2]); n.links.new(mx.outputs[0], out.inputs[0])
-m_air.surface_render_method = 'DITHERED'
-def bubble(name, r):
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=32, ring_count=16); o = bpy.context.object; o.name = name
+def air_mat(name, rim_em=1.1, method='BLENDED'):
+    m = bpy.data.materials.new(name); m.use_nodes = True; n = m.node_tree; n.nodes.clear()
+    out = n.nodes.new('ShaderNodeOutputMaterial'); lw = n.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.2
+    pw = n.nodes.new('ShaderNodeMath'); pw.operation = 'POWER'; n.links.new(lw.outputs['Facing'], pw.inputs[0]); pw.inputs[1].default_value = 2.4
+    gl = n.nodes.new('ShaderNodeBsdfGlossy'); gl.inputs['Roughness'].default_value = 0.03; gl.inputs['Color'].default_value = (1, 1, 1, 1)
+    emr = n.nodes.new('ShaderNodeEmission'); emr.inputs['Color'].default_value = (*lin((210, 248, 255)), 1); emr.inputs['Strength'].default_value = rim_em
+    ad = n.nodes.new('ShaderNodeAddShader'); n.links.new(gl.outputs[0], ad.inputs[0]); n.links.new(emr.outputs[0], ad.inputs[1])
+    tr = n.nodes.new('ShaderNodeBsdfTransparent'); mx = n.nodes.new('ShaderNodeMixShader')
+    fac = n.nodes.new('ShaderNodeMath'); fac.operation = 'MULTIPLY_ADD'; n.links.new(pw.outputs[0], fac.inputs[0]); fac.inputs[1].default_value = 0.9; fac.inputs[2].default_value = 0.05
+    n.links.new(fac.outputs[0], mx.inputs['Fac']); n.links.new(tr.outputs[0], mx.inputs[1]); n.links.new(ad.outputs[0], mx.inputs[2]); n.links.new(mx.outputs[0], out.inputs[0])
+    m.surface_render_method = method; m.use_backface_culling = True; return m
+m_air = air_mat('aire', 1.6); m_air_far = air_mat('aire_lejos', 0.6, 'DITHERED')
+m_hlb = bpy.data.materials.new('brillo_burbuja'); m_hlb.use_nodes = True; n = m_hlb.node_tree; n.nodes.clear()
+out = n.nodes.new('ShaderNodeOutputMaterial'); em = n.nodes.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = 3.0
+n.links.new(em.outputs[0], out.inputs[0]); m_hlb.surface_render_method = 'BLENDED'
+def bubble(name, r, mat_=None):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=48, ring_count=24); o = bpy.context.object; o.name = name
     for p in o.data.polygons: p.use_smooth = True
-    o.data.materials.append(m_air); return o
+    o.data.materials.append(mat_ or m_air); return o
+def highlights(parent, k=1.0):                                                   # reflejo de "ventana" arriba a la izquierda + puntito abajo
+    for nm, loc, sc_, rz in (('a', (-0.42, -0.86, 0.44), (0.2, 0.05, 0.07), 0.75), ('b', (0.47, -0.84, -0.42), (0.05, 0.03, 0.05), 0.0)):
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=24, ring_count=12); h = bpy.context.object; h.name = f'{parent.name}_brillo_{nm}'
+        h.parent = parent; h.location = loc; h.scale = tuple(v * k for v in sc_); h.rotation_euler = (0, -rz, 0); h.data.materials.append(m_hlb)
+        for p in h.data.polygons: p.use_smooth = True
 def mouth_world(f):                                                              # boca en el mundo en ese frame (la cabeza casi no ondula)
     sc.frame_set(f); return rig.matrix_world @ Vector((MX + 0.02, 0, MZ))
-for i, (f0, r) in enumerate(((60, 0.011), (64, 0.007), (67, 0.014), (71, 0.006), (74, 0.009))):   # burbujitas que suelta por la boca
+def ez(t): t = min(max(t, 0.0), 1.0); return 1 - (1 - t) ** 3
+for i, (f0, r) in enumerate(((60, 0.014), (64, 0.009), (67, 0.017), (71, 0.008), (74, 0.012))):   # burbujitas que suelta por la boca y suben
     p0 = mouth_world(f0); o = bubble(f'AIRE_{i}', r)
+    o.scale = (0, 0, 0); o.location = p0; o.keyframe_insert('scale', frame=f0 - 1); o.keyframe_insert('location', frame=f0 - 1)
     for f in range(f0, NF + 1, 2):
-        t = (f - f0) / FPS; o.location = p0 + Vector((0.03 * math.sin(t * 9 + i), 0, 0.22 * t + 0.08 * t * t))
-        s = min(1.0, (f - f0) / 3.0); o.scale = (s * (1 + 0.08 * math.sin(t * 20)), s, s * (1 - 0.08 * math.sin(t * 20))); o.keyframe_insert('location', frame=f); o.keyframe_insert('scale', frame=f)
-    o.scale = (0, 0, 0); o.keyframe_insert('scale', frame=f0 - 1)
-for i in range(14):                                                             # hilo de burbujas que sube al fondo
-    o = bubble(f'AIRE_fondo_{i}', R.uniform(0.006, 0.016)); x0 = 1.15 + R.uniform(-0.05, 0.05); y0 = 1.4; ph_ = R.uniform(0, 10)
+        t = (f - f0) / FPS; o.location = p0 + Vector((0.025 * math.sin(t * 9 + i) + 0.05 * t, -0.02, 0.2 * t + 0.1 * t * t))
+        s = min(1.0, (f - f0) / 3.0); w_ = 0.07 * math.sin(t * 22 + i); o.scale = (s * (1 + w_), s, s * (1 - w_))
+        o.keyframe_insert('location', frame=f); o.keyframe_insert('scale', frame=f)
+for i in range(14):                                                             # hilo de burbujas lejano (queda en la capa con niebla)
+    o = bubble(f'AIREFONDO_{i}', R.uniform(0.006, 0.016), m_air_far); x0 = 1.15 + R.uniform(-0.05, 0.05); y0 = 1.4; ph_ = R.uniform(0, 10)
     for f in range(1, NF + 1, 3):
         z = -1.3 + ((f / FPS * 0.45 + i / 14 * 2.6) % 2.6); o.location = (x0 + 0.02 * math.sin(f / FPS * 7 + ph_), y0, z); o.keyframe_insert('location', frame=f)
-pm = mouth_world(80)
-trail = [(pm + Vector((0.06, -0.08, 0.05)), 0.014, 80), (pm + Vector((0.11, -0.11, 0.11)), 0.021, 84), (pm + Vector((0.17, -0.13, 0.18)), 0.03, 88)]
-big_c = Vector((pm.x + 0.34, -0.15, 0.27))                                     # arriba a la derecha, entera en cuadro
-# burbuja de pensamiento para TEXTO: esfera medio grande, blanca-celeste casi opaca, borde brillante y reflejo (se lee bien encima)
-m_globo = bpy.data.materials.new('globo_texto'); m_globo.use_nodes = True; n = m_globo.node_tree; bs = n.nodes['Principled BSDF']
-lw = n.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.3
-cg = n.nodes.new('ShaderNodeValToRGB'); cg.color_ramp.elements[0].color = (*lin((236, 248, 251)), 1); cg.color_ramp.elements[1].color = (*lin((150, 215, 232)), 1)
-cg.color_ramp.elements[0].position = 0.35; n.links.new(lw.outputs['Facing'], cg.inputs['Fac']); n.links.new(cg.outputs['Color'], bs.inputs['Base Color'])
-bs.inputs['Roughness'].default_value = 0.25; bs.inputs['Coat Weight'].default_value = 1.0; bs.inputs['Coat Roughness'].default_value = 0.03
-bs.inputs['Subsurface Weight'].default_value = 0.4; bs.inputs['Emission Color'].default_value = (*lin((230, 248, 252)), 1); bs.inputs['Emission Strength'].default_value = 0.25
-def think(name, loc, rx, rz, f0, dur=7):
-    o = bubble(name, 1.0); o.data.materials[0] = m_globo
-    for f, s in ((f0, 0.0), (f0 + dur * 0.6, 1.1), (f0 + dur, 1.0)):
-        o.scale = (rx * s, rx * 0.9 * s, rz * s); o.keyframe_insert('scale', frame=int(f))
-    for k in range(int(f0 + dur) + 2, NF + 1, 3):                               # flota y tiembla como una burbuja real
-        t = k / FPS; o.location = loc + Vector((0, 0, 0.008 * math.sin(t * 2.4)))
-        o.scale = (rx * (1 + 0.015 * math.sin(t * 9)), rx * 0.9, rz * (1 - 0.015 * math.sin(t * 9)))
-        o.keyframe_insert('location', frame=k); o.keyframe_insert('scale', frame=k)
-    o.location = loc; o.keyframe_insert('location', frame=f0)
-    return o
-for i, (loc, r, f0) in enumerate(trail): think(f'PENSAMIENTO_burbuja{i}', loc, r, r, f0, 6)
-think('PENSAMIENTO_globo', big_c, 0.16, 0.16, 92, 9)
+# burbuja de dialogo: sale de la boca como burbujita, se infla mientras sube y queda temblando arriba a la derecha.
+# Por dentro un velo blanco suave (mas opaco en el centro) para que el texto se lea; borde y reflejos de burbuja real.
+sc.frame_set(100); HEAD = rig.matrix_world @ Vector((0.40, 0, 0.085))              # arriba de la cabeza, en la pose final (mirando hacia arriba)
+BIG = HEAD + Vector((0.42, -0.02, 0.17)); RBIG = 0.15                              # globo arriba a la derecha, en el plano de foco
+_d = (BIG - HEAD); EDGE = BIG - _d.normalized() * RBIG * 1.12                      # borde del globo que mira a la cabeza
+TRAIL = [(HEAD.lerp(EDGE, t), r) for t, r in ((0.16, 0.013), (0.44, 0.02), (0.74, 0.03))]   # de menor a mayor, en linea y sin tocarse
+def head_world(f):
+    sc.frame_set(f); return rig.matrix_world @ Vector((0.40, 0, 0.085))
+def dialog(name, f0, f1, p_end, r_end, veil=True, wob=0.03):
+    ctl = bpy.data.objects.new(name, None); sc.collection.objects.link(ctl)
+    shell = bubble(f'{name}_cascara', 1.0); shell.parent = ctl; highlights(shell)
+    if veil:                                                                     # velo para el texto: disco que mira a camara, detras del centro
+        vm_ = bpy.data.meshes.new(f'{name}_velo'); vb_ = bmesh.new()
+        bmesh.ops.create_circle(vb_, cap_ends=True, segments=64, radius=0.9); vb_.to_mesh(vm_)
+        vo_ = bpy.data.objects.new(f'{name}_velo', vm_); sc.collection.objects.link(vo_); vo_.parent = ctl
+        vo_.rotation_euler = (math.radians(90), 0, 0); vo_.location = (0, 0.12, 0)
+        mv_ = bpy.data.materials.new(f'{name}_velo'); mv_.use_nodes = True; n = mv_.node_tree; n.nodes.clear()
+        out = n.nodes.new('ShaderNodeOutputMaterial'); em = n.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((236, 248, 252)), 1)
+        em.inputs['Strength'].default_value = 0.9; tr = n.nodes.new('ShaderNodeBsdfTransparent'); mx = n.nodes.new('ShaderNodeMixShader')
+        tc = n.nodes.new('ShaderNodeTexCoord'); vl = n.nodes.new('ShaderNodeVectorMath'); vl.operation = 'LENGTH'; n.links.new(tc.outputs['Object'], vl.inputs[0])
+        mr = n.nodes.new('ShaderNodeMapRange'); mr.interpolation_type = 'SMOOTHSTEP'; mr.inputs['From Min'].default_value = 0.45; mr.inputs['From Max'].default_value = 0.9
+        mr.inputs['To Min'].default_value = 0.72; mr.inputs['To Max'].default_value = 0.0; n.links.new(vl.outputs['Value'], mr.inputs['Value'])
+        n.links.new(mr.outputs[0], mx.inputs['Fac']); n.links.new(tr.outputs[0], mx.inputs[1]); n.links.new(em.outputs[0], mx.inputs[2]); n.links.new(mx.outputs[0], out.inputs[0])
+        mv_.surface_render_method = 'BLENDED'; vo_.data.materials.append(mv_)
+    p0 = head_world(f0); ctl.scale = (0, 0, 0); ctl.location = p0; ctl.keyframe_insert('scale', frame=f0 - 1); ctl.keyframe_insert('location', frame=f0 - 1)
+    for f in range(f0, NF + 1):
+        t = (f - f0) / max(1, f1 - f0); k = ez(t); tt = (f - f0) / FPS
+        arc = Vector((0, 0, 0.06 * math.sin(math.pi * min(t, 1))))                # sube en arco
+        loc = p0.lerp(p_end, k) + arc * (1 - k) + Vector((0.004 * math.sin(tt * 2.2), 0, 0.007 * math.sin(tt * 1.7)))
+        r_ = 0.012 + (r_end - 0.012) * k + r_end * 0.08 * math.sin(math.pi * min(max((f - f1 + 4) / 8, 0), 1))   # pequeno rebote al llegar
+        w_ = wob * math.sin(tt * 24) * math.exp(-max(0, f - f1) / 18) + 0.012 * math.sin(tt * 7)
+        ctl.location = loc; ctl.scale = (r_ * (1 + w_), r_ * 0.94, r_ * (1 - w_))
+        ctl.keyframe_insert('location', frame=f); ctl.keyframe_insert('scale', frame=f)
+    return ctl
+for i, (p_, r_) in enumerate(TRAIL): dialog(f'PENSAMIENTO_burbuja{i}', 78 + 4 * i, 88 + 4 * i, p_, r_, veil=False, wob=0.05)
+dialog('PENSAMIENTO_globo', 88, 106, BIG, RBIG)
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
 sun.data.energy = 5.0; sun.data.color = (1.0, 0.95, 0.85); sun.data.angle = math.radians(3)
@@ -507,10 +529,10 @@ except Exception: pass
 fill = bpy.data.objects.new('UW_FILL', bpy.data.lights.new('UW_FILL', 'SUN')); sc.collection.objects.link(fill)
 fill.data.energy = 1.6; fill.data.color = (0.75, 0.95, 0.95); fill.rotation_euler = (math.radians(110), 0, math.radians(-20)); fill.data.volume_factor = 0.0
 cam = bpy.data.objects.new('CAM', bpy.data.cameras.new('CAM')); sc.collection.objects.link(cam); sc.camera = cam
-cam.data.lens = 50; cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 2.0
+cam.data.lens = 50; cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 2.8
 for f, y, x in ((1, -2.5, 0.0), (NF, -2.2, 0.04)):
     cam.location = (x, y, 0.2); cam.rotation_euler = (math.radians(86), 0, 0); cam.keyframe_insert('location', frame=f)
-cam.data.dof.focus_distance = 2.3
+cam.data.dof.focus_distance = 2.22
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
@@ -522,16 +544,24 @@ sc.view_settings.exposure = 0.0
 sc.render.use_motion_blur = True; sc.render.motion_blur_shutter = 0.4
 sc.render.image_settings.file_format = 'PNG'
 # niebla de agua en composicion (reemplaza al volumen): cuanto mas lejos, mas color de agua; mas claro hacia arriba (luz de superficie)
+# capas: 'escena' (todo menos las burbujas, con niebla de agua) + 'burbujas' (burbujas cercanas; el fry las tapa como recorte)
+cols = {k: bpy.data.collections.new(k) for k in ('ENTORNO', 'FRY', 'BURBUJAS', 'LUCES')}
+for c in cols.values(): sc.collection.children.link(c)
+for o in list(sc.collection.objects):
+    k = ('BURBUJAS' if o.name.startswith(('AIRE_', 'PENSAMIENTO')) else 'FRY' if o.name.startswith('FRY_') else
+         'LUCES' if o.type in ('LIGHT', 'CAMERA') else 'ENTORNO')
+    cols[k].objects.link(o); sc.collection.objects.unlink(o)
+vl_esc = sc.view_layers[0]; vl_esc.name = 'escena'; vl_bub = sc.view_layers.new('burbujas')
+vl_esc.layer_collection.children['BURBUJAS'].exclude = True
+vl_bub.layer_collection.children['ENTORNO'].exclude = True; vl_bub.layer_collection.children['FRY'].holdout = True
+sc.render.film_transparent = True; sc.render.image_settings.color_mode = 'RGB'
 if not VOLUMEN:
-    sc.view_layers[0].use_pass_mist = True; w.mist_settings.start = 0.8; w.mist_settings.depth = 8.0; w.mist_settings.falloff = 'QUADRATIC'
+    vl_esc.use_pass_mist = True; w.mist_settings.start = 0.8; w.mist_settings.depth = 8.0; w.mist_settings.falloff = 'QUADRATIC'
     sc.use_nodes = True; cn = sc.node_tree; cn.nodes.clear()
-    rl = cn.nodes.new('CompositorNodeRLayers'); co = cn.nodes.new('CompositorNodeComposite')
-    grad = cn.nodes.new('CompositorNodeMixRGB')                                     # color del agua: gradiente vertical
-    mx = cn.nodes.new('CompositorNodeMixRGB'); mx.blend_type = 'MIX'
-    mx.inputs[2].default_value = (*lin((52, 165, 200)), 1)
-    mm = cn.nodes.new('CompositorNodeMath'); mm.operation = 'MULTIPLY'; mm.inputs[1].default_value = 1.0
-    cn.links.new(rl.outputs['Mist'], mm.inputs[0]); cn.links.new(mm.outputs[0], mx.inputs[0])
-    cn.links.new(rl.outputs['Image'], mx.inputs[1])
+    rl = cn.nodes.new('CompositorNodeRLayers'); rl.layer = 'escena'; rb = cn.nodes.new('CompositorNodeRLayers'); rb.layer = 'burbujas'
+    co = cn.nodes.new('CompositorNodeComposite')
+    mx = cn.nodes.new('CompositorNodeMixRGB'); mx.blend_type = 'MIX'; mx.inputs[2].default_value = (*lin((52, 165, 200)), 1)
+    cn.links.new(rl.outputs['Mist'], mx.inputs[0]); cn.links.new(rl.outputs['Image'], mx.inputs[1])
     # brillo de la superficie arriba: mezcla aditiva de una franja clara (mascara de caja difusa)
     bx = cn.nodes.new('CompositorNodeBoxMask'); bx.x = 0.5; bx.y = 1.05; bx.width = 1.6; bx.height = 0.7
     bl = cn.nodes.new('CompositorNodeBlur'); bl.size_x = bl.size_y = int(RW * 0.12); bl.use_relative = False
@@ -539,9 +569,9 @@ if not VOLUMEN:
     sk = cn.nodes.new('CompositorNodeMixRGB'); sk.blend_type = 'SCREEN'; sk.inputs[2].default_value = (*lin((190, 240, 245)), 1)
     mk = cn.nodes.new('CompositorNodeMath'); mk.operation = 'MULTIPLY'; mk.inputs[1].default_value = 0.55
     cn.links.new(bl.outputs[0], mk.inputs[0]); cn.links.new(mk.outputs[0], sk.inputs[0]); cn.links.new(mx.outputs[0], sk.inputs[1])
-    gl = cn.nodes.new('CompositorNodeGlare'); gl.glare_type = 'FOG_GLOW'; gl.threshold = 0.85; gl.size = 7; gl.mix = -0.75   # brillo suave
-    cn.links.new(sk.outputs[0], gl.inputs[0]); cn.links.new(gl.outputs[0], co.inputs[0])
-    cn.nodes.remove(grad)
+    ao = cn.nodes.new('CompositorNodeAlphaOver'); cn.links.new(sk.outputs[0], ao.inputs[1]); cn.links.new(rb.outputs['Image'], ao.inputs[2])
+    gl = cn.nodes.new('CompositorNodeGlare'); gl.glare_type = 'FOG_GLOW'; gl.threshold = 1.0; gl.size = 7; gl.mix = -0.75   # brillo suave
+    cn.links.new(ao.outputs[0], gl.inputs[0]); cn.links.new(gl.outputs[0], co.inputs[0])
 CLOSE = '--cerca' in argv                                                         # camara de primer plano a la cabeza (para revisar ojos/parpados)
 if SAVE: bpy.ops.wm.save_as_mainfile(filepath=SAVE)
 a, b = (int(v) for v in FR.split('-'))
