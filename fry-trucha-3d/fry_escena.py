@@ -480,11 +480,11 @@ for i in range(14):                                                             
     for f in range(1, NF + 1, 3):
         z = -1.3 + ((f / FPS * 0.45 + i / 14 * 2.6) % 2.6); o.location = (x0 + 0.02 * math.sin(f / FPS * 7 + ph_), y0, z); o.keyframe_insert('location', frame=f)
 # burbuja de dialogo: sale de la boca como burbujita, se infla mientras sube y queda temblando arriba a la derecha.
-# Por dentro un velo blanco suave (mas opaco en el centro) para que el texto se lea; borde y reflejos de burbuja real.
+# Globo grande (~1/3 del ancho) y casi solido por dentro para el texto, con borde y reflejos de burbuja real; las burbujitas tambien llenas.
 sc.frame_set(100); HEAD = rig.matrix_world @ Vector((0.40, 0, 0.085))              # arriba de la cabeza, en la pose final (mirando hacia arriba)
-BIG = HEAD + Vector((0.42, -0.02, 0.17)); RBIG = 0.15                              # globo arriba a la derecha, en el plano de foco
-_d = (BIG - HEAD); EDGE = BIG - _d.normalized() * RBIG * 1.12                      # borde del globo que mira a la cabeza
-TRAIL = [(HEAD.lerp(EDGE, t), r) for t, r in ((0.16, 0.013), (0.44, 0.02), (0.74, 0.03))]   # de menor a mayor, en linea y sin tocarse
+BIG = HEAD + Vector((0.50, -0.02, 0.22)); RBIG = 0.24                              # globo arriba a la derecha, en el plano de foco
+_d = (BIG - HEAD); EDGE = BIG - _d.normalized() * RBIG * 1.08                      # borde del globo que mira a la cabeza
+TRAIL = [(HEAD.lerp(EDGE, t), r) for t, r in ((0.12, 0.022), (0.40, 0.034), (0.72, 0.05))]   # de menor a mayor, en linea y sin tocarse
 def head_world(f):
     sc.frame_set(f); return rig.matrix_world @ Vector((0.40, 0, 0.085))
 def dialog(name, f0, f1, p_end, r_end, veil=True, wob=0.03):
@@ -492,15 +492,15 @@ def dialog(name, f0, f1, p_end, r_end, veil=True, wob=0.03):
     shell = bubble(f'{name}_cascara', 1.0); shell.parent = ctl; highlights(shell)
     if veil:                                                                     # velo para el texto: disco que mira a camara, detras del centro
         vm_ = bpy.data.meshes.new(f'{name}_velo'); vb_ = bmesh.new()
-        bmesh.ops.create_circle(vb_, cap_ends=True, segments=64, radius=0.9); vb_.to_mesh(vm_)
+        bmesh.ops.create_circle(vb_, cap_ends=True, segments=64, radius=0.97); vb_.to_mesh(vm_)
         vo_ = bpy.data.objects.new(f'{name}_velo', vm_); sc.collection.objects.link(vo_); vo_.parent = ctl
         vo_.rotation_euler = (math.radians(90), 0, 0); vo_.location = (0, 0.12, 0)
         mv_ = bpy.data.materials.new(f'{name}_velo'); mv_.use_nodes = True; n = mv_.node_tree; n.nodes.clear()
         out = n.nodes.new('ShaderNodeOutputMaterial'); em = n.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((236, 248, 252)), 1)
-        em.inputs['Strength'].default_value = 0.9; tr = n.nodes.new('ShaderNodeBsdfTransparent'); mx = n.nodes.new('ShaderNodeMixShader')
+        em.inputs['Strength'].default_value = 1.0; tr = n.nodes.new('ShaderNodeBsdfTransparent'); mx = n.nodes.new('ShaderNodeMixShader')
         tc = n.nodes.new('ShaderNodeTexCoord'); vl = n.nodes.new('ShaderNodeVectorMath'); vl.operation = 'LENGTH'; n.links.new(tc.outputs['Object'], vl.inputs[0])
-        mr = n.nodes.new('ShaderNodeMapRange'); mr.interpolation_type = 'SMOOTHSTEP'; mr.inputs['From Min'].default_value = 0.45; mr.inputs['From Max'].default_value = 0.9
-        mr.inputs['To Min'].default_value = 0.72; mr.inputs['To Max'].default_value = 0.0; n.links.new(vl.outputs['Value'], mr.inputs['Value'])
+        mr = n.nodes.new('ShaderNodeMapRange'); mr.interpolation_type = 'SMOOTHSTEP'; mr.inputs['From Min'].default_value = 0.62; mr.inputs['From Max'].default_value = 0.97
+        mr.inputs['To Min'].default_value = 0.9; mr.inputs['To Max'].default_value = 0.0; n.links.new(vl.outputs['Value'], mr.inputs['Value'])
         n.links.new(mr.outputs[0], mx.inputs['Fac']); n.links.new(tr.outputs[0], mx.inputs[1]); n.links.new(em.outputs[0], mx.inputs[2]); n.links.new(mx.outputs[0], out.inputs[0])
         mv_.surface_render_method = 'BLENDED'; vo_.data.materials.append(mv_)
     p0 = head_world(f0); ctl.scale = (0, 0, 0); ctl.location = p0; ctl.keyframe_insert('scale', frame=f0 - 1); ctl.keyframe_insert('location', frame=f0 - 1)
@@ -513,7 +513,7 @@ def dialog(name, f0, f1, p_end, r_end, veil=True, wob=0.03):
         ctl.location = loc; ctl.scale = (r_ * (1 + w_), r_ * 0.94, r_ * (1 - w_))
         ctl.keyframe_insert('location', frame=f); ctl.keyframe_insert('scale', frame=f)
     return ctl
-for i, (p_, r_) in enumerate(TRAIL): dialog(f'PENSAMIENTO_burbuja{i}', 78 + 4 * i, 88 + 4 * i, p_, r_, veil=False, wob=0.05)
+for i, (p_, r_) in enumerate(TRAIL): dialog(f'PENSAMIENTO_burbuja{i}', 78 + 4 * i, 88 + 4 * i, p_, r_, veil=True, wob=0.05)
 dialog('PENSAMIENTO_globo', 88, 106, BIG, RBIG)
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
@@ -530,9 +530,9 @@ fill = bpy.data.objects.new('UW_FILL', bpy.data.lights.new('UW_FILL', 'SUN')); s
 fill.data.energy = 1.6; fill.data.color = (0.75, 0.95, 0.95); fill.rotation_euler = (math.radians(110), 0, math.radians(-20)); fill.data.volume_factor = 0.0
 cam = bpy.data.objects.new('CAM', bpy.data.cameras.new('CAM')); sc.collection.objects.link(cam); sc.camera = cam
 cam.data.lens = 50; cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 2.8
-for f, y, x in ((1, -2.5, 0.0), (NF, -2.2, 0.04)):
-    cam.location = (x, y, 0.2); cam.rotation_euler = (math.radians(86), 0, 0); cam.keyframe_insert('location', frame=f)
-cam.data.dof.focus_distance = 2.22
+for f, y, x in ((1, -2.75, 0.0), (NF, -2.45, 0.08)):
+    cam.location = (x, y, 0.32); cam.rotation_euler = (math.radians(86), 0, 0); cam.keyframe_insert('location', frame=f)
+cam.data.dof.focus_distance = 2.45
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
