@@ -481,7 +481,7 @@ for F_ in range(1, NF + 1):
     zs = -0.07 + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
     panic = ease((F_ - (E0 - 7)) / 4.0)                                           # ve que el globo se hincha: ojos grandes, boca en "o"
     hit = bump(F_, E0, E0 + 7)                                                    # golpe del globo: se aplasta
-    uf = min(1.0, max(0.0, (F_ - E0 - 3) / 16.0)); fl = uf ** 2.2                  # sale despedido: acelera con el globo
+    uf = min(1.0, max(0.0, (F_ - E0 - 5) / 15.0)); fl = uf ** 2.2                  # sale despedido: acelera con el globo
     if F_ >= 106: xs -= 0.02 * bump(f, 90.5, 96)                                 # retrocede apenas cuando el globo le sale de la boca
     xs -= 0.03 * hit; zs -= 0.015 * hit
     rig.location = (xs, 0, zs); rig.keyframe_insert('location', frame=F_)
@@ -898,7 +898,7 @@ for F_ in range(E0 - 9, NF + 1):
     T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z)); lam_ = (0.0 - cpos.y) / (T_.y - cpos.y); P_ = cpos + (T_ - cpos) * lam_
     if F_ == E0: P0_ = P_.copy()
     if F_ >= E0:
-        d_ = P_ - P0_; uf_ = min(1.0, max(0.0, (F_ - E0 - 5) / 14.0)) ** 2.4
+        d_ = P_ - P0_; uf_ = min(1.0, max(0.0, (F_ - E0 - 8) / 12.0)) ** 2.4
         rig.location = Vector(rig.location) + Vector((d_.x - 1.5 * uf_, 0, d_.z - 0.65 * uf_)); rig.keyframe_insert('location', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
