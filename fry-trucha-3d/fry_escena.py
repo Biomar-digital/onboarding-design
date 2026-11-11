@@ -470,6 +470,7 @@ for F_ in range(1, NF + 1):
     cruise = 1 - ease((f - 40) / 12); hover = ease((f - 56) / 12)
     freq = 3.0 * cruise + 0.7 * hover + 1.4 * (1 - cruise) * (1 - hover); phase += 2 * math.pi * freq / FPS
     amp = 0.21 * cruise + 0.05 * hover + 0.12 * (1 - cruise) * (1 - hover)
+    pn_ = ease((F_ - (E0 - 7)) / 4.0); amp += 0.16 * pn_; phase += 2 * math.pi * 3.0 * pn_ / FPS   # colea de susto al final
     cbend = 0.11 * bump(f, 42, 60)                                                # frenada: curva en C
     for i, b in enumerate(rig.pose.bones):
         b.rotation_mode = 'XYZ'
@@ -478,15 +479,21 @@ for F_ in range(1, NF + 1):
         b.keyframe_insert('rotation_euler', frame=F_)
     xs = -2.45 + 2.2 * (1 - (1 - min(1, (f - 1) / 58)) ** 2.2) + 0.03 * hover * math.sin(t * 1.3)
     zs = -0.07 + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
-    po = ease((F_ - E0) / (E1 - 6 - E0)); xs -= 1.1 * po * po; zs -= 0.45 * po * po   # el globo que crece lo empuja fuera de cuadro
+    panic = ease((F_ - (E0 - 7)) / 4.0)                                           # ve que el globo se hincha: ojos grandes, boca en "o"
+    hit = bump(F_, E0, E0 + 7)                                                    # golpe del globo: se aplasta
+    uf = min(1.0, max(0.0, (F_ - E0 - 1) / 17.0)); fl = uf ** 2.6                  # sale despedido: acelera con el globo
+    if F_ >= 106: xs -= 0.02 * bump(f, 90.5, 96)                                 # retrocede apenas cuando el globo le sale de la boca
+    xs -= 0.035 * hit + 2.3 * fl; zs -= 0.02 * hit + 1.0 * fl
     rig.location = (xs, 0, zs); rig.keyframe_insert('location', frame=F_)
+    st = ease((F_ - E0 - 5) / 6.0)                                                # aplastado en el golpe -> estirado en el vuelo
+    rig.scale = (1 - 0.10 * hit + 0.10 * st, 1 + 0.06 * hit - 0.04 * st, 1 + 0.10 * hit - 0.06 * st); rig.keyframe_insert('scale', frame=F_)
     turn = ease((f - 54) / 10) * (1 - 0.5 * ease((f - 70) / 14))                   # gira hacia camara
     up_ = ease((f - 66) / 20)                                                    # sube la cabeza (duda) hacia la burbuja
     tilt = math.radians(7) * bump(f, 62, 104)                                    # inclina la cabeza (gesto de pregunta)
-    rig.rotation_euler = (tilt, -math.radians(17) * up_ + math.radians(1.2) * math.sin(t * 1.7), -math.radians(14) * turn)
+    rig.rotation_euler = (tilt + math.radians(40) * fl, -math.radians(17) * up_ * (1 - fl) + math.radians(1.2) * math.sin(t * 1.7) + math.radians(8) * hit + math.radians(150) * fl, -math.radians(14) * turn)
     rig.keyframe_insert('rotation_euler', frame=F_)
     # aletas pares: remo rapido al nadar, se abren para frenar, remo suave (y se curvan) para quedarse quieto
-    brake = bump(f, 40, 62)
+    brake = max(bump(f, 40, 62), panic)
     for k, o in enumerate(pects):
         sg = 1 if o.name.endswith('_1') else -1; fq = 3.2 * cruise + 1.6 * hover + 1.2
         flap = math.sin(t * 2 * math.pi * fq + k * 0.5)
@@ -499,8 +506,10 @@ for F_ in range(1, NF + 1):
     sacc = 0.22 * (1 if (f // 4) % 2 else -1) * bump(f, 46, 56)
     look_cam = ease((f - 56) / 5) * (1 - ease((f - 70) / 8)); look_up = ease((f - 70) / 10)
     squint = ease((f - 62) / 6) * (1 - ease((f - 94) / 6)); wide = ease((f - 94) / 5)
-    blink = max(bump(f, 124, 127.5), bump(f, 150, 153.5), bump(f, 176, 179.5))
+    blink = max(bump(f, 124, 127.5), bump(f, 150, 153.5), bump(f, 176, 179.5)) * (1 - panic)
+    wide = max(wide, panic); squint = squint * (1 - panic)
     look_cam = max(look_cam, ease((f - 132) / 5) * (1 - ease((f - 160) / 6))); look_up = look_up * (1 - 0.8 * ease((f - 132) / 5) * (1 - ease((f - 160) / 6)))
+    look_cam = look_cam * (1 - panic); look_up = max(look_up, panic)
     for (piv, brow, ctl, lid, lid2), sgn in zip(eyes, (-1, 1)):
         cover = 0.16 + 0.24 * squint * (1 if sgn == -1 else 0.35) - 0.12 * wide
         cover = cover + (0.62 - cover) * blink                                   # parpadeo: los dos parpados se juntan en el medio
@@ -509,7 +518,7 @@ for F_ in range(1, NF + 1):
         lid.rotation_euler = (sgn * math.radians(90 - 180 * cover), 0, 0); lid.keyframe_insert('rotation_euler', frame=F_)
         lid2.rotation_euler = (-sgn * math.radians(90 - 180 * cover2), 0, 0); lid2.keyframe_insert('rotation_euler', frame=F_)
         ctl.rotation_euler = (sgn * 0.28 * look_up, 0, -sgn * (0.22 * look_up - 0.35 * look_cam + sacc)); ctl.keyframe_insert('rotation_euler', frame=F_)
-        s_ = 1 + 0.06 * wide; ctl.scale = (s_, s_, s_); ctl.keyframe_insert('scale', frame=F_)
+        s_ = 1 + 0.06 * wide + 0.10 * panic; ctl.scale = (s_, s_, s_); ctl.keyframe_insert('scale', frame=F_)
         for hn in (f'FRY_brillo_{sgn}', f'FRY_brillo2_{sgn}'):                   # el brillo se apaga con el ojo cerrado (no atraviesa el parpado)
             h_ = bpy.data.objects[hn]; hs = 1 - ease((blink - 0.45) / 0.3); h_.scale = (hs, hs, hs); h_.keyframe_insert('scale', frame=F_)
     # boca 3D: "o" al soplar burbujitas, torcida en la duda, habla en silabas mientras aparece el globo, media sonrisa al final
@@ -518,9 +527,9 @@ for F_ in range(1, NF + 1):
     SYL = [(92, 95.5, 0.85, 0.0), (95.5, 98.5, 0.45, 0.6), (98.5, 102.5, 1.0, 0.0), (102.5, 105.5, 0.5, 0.5), (105.5, 110, 0.8, 0.2)]
     talk = sum(a_ * bump(f, s0, s1) for s0, s1, a_, _ in SYL); rnd_ = sum(r_ * bump(f, s0, s1) for s0, s1, _, r_ in SYL)
     breath = 0.06 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 0.9)) * hover * (1 - bump(f, 90, 112))
-    smile = 0.7 * ease((f - 112) / 10)
+    smile = 0.7 * ease((f - 112) / 10) * (1 - panic)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff), o=min(1.0, 0.9 * puff + 0.6 * rnd_), sonrie=smile, duda=0.8 * hmm)
+        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff + 0.5 * panic + 0.5 * ease((F_ - E0) / 4.0)), o=min(1.0, 0.9 * puff + 0.6 * rnd_ + 0.8 * panic), sonrie=smile, duda=0.8 * hmm)
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
@@ -830,15 +839,20 @@ def speech(name, C, A, B, tip, f0, f1):
     sb_ = o_.modifiers.new('sub', 'SUBSURF'); sb_.levels = sb_.render_levels = 1
     so_ = o_.modifiers.new('contorno', 'SOLIDIFY'); so_.show_render = False;   # sin contorno: el globo 3D aprobado no lo tenia
     so_.thickness = 0.009; so_.offset = 1; so_.use_flip_normals = True; so_.material_offset = 1; so_.use_rim = False
+    tipL = Vector((tip[0], 0, tip[1])); tipW = C + tipL                           # la punta (boca) es el ancla: el globo se infla DESDE la boca
     for F_ in range(f0 - 1, NF + 1):
-        t = (F_ - f0) / max(1, f1 - f0); tt = (F_ - f0) / FPS
-        if F_ < f0: s_ = 0.0
-        elif t < 0.6: s_ = ease(t / 0.6) * 1.08
-        elif t < 1.0: s_ = 1.08 - 0.08 * ease((t - 0.6) / 0.4)
-        else: s_ = 1.0 + 0.012 * math.sin(tt * 3.1)
-        sq = 0.04 * math.sin(tt * 9) * math.exp(-max(0.0, F_ - f1) / 10) if F_ >= f0 else 0.0   # se sacude un poco al inflarse
-        ctl.scale = (s_ * (1 + sq), s_, s_ * (1 - sq)); ctl.location = C + Vector((0, 0, 0.006 * math.sin(tt * 2.0))) * (1 if F_ >= f1 else 0)
-        ctl.keyframe_insert('scale', frame=F_); ctl.keyframe_insert('location', frame=F_)
+        tt = max(0.0, (F_ - f0) / FPS)
+        if F_ < f0: s_ = 0.0; q = 0.0; th = 0.0
+        else:
+            s_ = (1 - math.exp(-5.0 * tt) * math.cos(2 * math.pi * 1.3 * tt)) * ease(tt / 0.12)        # resorte: llega en ~5 cuadros, se pasa 15% y asienta
+            q = 0.11 * math.exp(-4.5 * tt) * math.sin(2 * math.pi * 1.3 * tt + 0.4)                    # gelatina: se estira y se aplasta mientras asienta
+            th = math.radians(-13) * math.exp(-3.5 * tt) * math.cos(2 * math.pi * 1.05 * tt)           # balanceo que se va apagando
+        idle = 1 - math.exp(-3.0 * tt); wb = 1.0 + 0.012 * math.sin(tt * 3.1) * idle
+        sx, sz = s_ * (1 + q), s_ * (1 - q)
+        off = Matrix.Rotation(th, 4, 'Y') @ Vector((sx * tipL.x, 0, sz * tipL.z))                      # la punta no se despega de la boca
+        ctl.scale = (sx * wb, s_ * wb, sz * wb); ctl.rotation_euler = (0, th, 0)
+        ctl.location = tipW - off + Vector((0, 0, 0.006 * math.sin(tt * 2.0))) * idle
+        ctl.keyframe_insert('scale', frame=F_); ctl.keyframe_insert('location', frame=F_); ctl.keyframe_insert('rotation_euler', frame=F_)
     return ctl
 MOUTH = mouth_world(FT(108)); SPC = Vector((MOUTH.x + 0.37, -0.04, MOUTH.z + 0.25))
 TIP = MOUTH + Vector((0.035, -0.04, 0.02)) - SPC                                  # la punta queda cerca de la boca
@@ -866,14 +880,19 @@ for F_ in range(1, NF + 1):
     cam.data.dof.focus_distance = 2.78 - push; cam.data.dof.keyframe_insert('focus_distance', frame=F_)
 # final: el globo se sigue inflando y viene hacia camara hasta tapar todo; se enciende a blanco puro para el titulo
 _mw = bpy.data.materials['PENSAMIENTO_globo_blanco'].node_tree.nodes['Principled BSDF'].inputs['Emission Strength']
-_mw.keyframe_insert('default_value', frame=E0)
-for F_ in range(E0, NF + 1):
-    sc.frame_set(F_); k = ease((F_ - E0) / (E1 - E0)); k2 = k * k
+_mw.keyframe_insert('default_value', frame=E0 - 10)
+for F_ in range(E0 - 9, NF + 1):
+    sc.frame_set(F_); u = min(1.0, max(0.0, (F_ - E0) / (E1 - E0))); k = u ** 2.4          # acelera siempre (ease-in): arranca contenido y termina explotando
     cpos = cam.matrix_world.translation; fwd = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-    tgt = cpos + fwd * 1.05 + Vector((0.0, 0, -0.02))
-    base_ = SPC + Vector((0, 0, 0.006 * math.sin((F_ - FT(90)) / FPS * 2.0)))
-    GLOBO.location = base_.lerp(tgt, k); s_ = 1.0 + 2.2 * k2 + 0.6 * k
-    GLOBO.scale = (s_, s_, s_); GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_)
+    tgt = cpos + fwd * 1.05 + Vector((0.0, 0, -0.02)); tt = (F_ - FT(90)) / FPS
+    base_ = SPC + Vector((0, 0, 0.006 * math.sin(tt * 2.0)))
+    ant = bump(F_, E0 - 9, E0 + 1)                                                          # anticipacion: se encoge 9% y tiembla ("toma aire")
+    pop = ease((F_ - E0) / 4.0)                                                             # golpe inicial: salta 12% en 4 cuadros
+    s_ = (1.0 + 0.012 * math.sin(tt * 3.1) * (1 - pop)) * (1 - 0.09 * ant) + 0.12 * pop + 3.0 * k
+    jit = 0.012 * ant * math.sin(F_ * 2.6)
+    GLOBO.location = base_.lerp(tgt, k) + Vector((0, 0, -0.012 * ant)); GLOBO.scale = (s_ * (1 + jit), s_, s_ * (1 - jit))
+    GLOBO.rotation_euler = (0, math.radians(3.0) * ant * math.sin(F_ * 1.9), 0)
+    GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('rotation_euler', frame=F_)
     _mw.default_value = 0.5 + 3.0 * ease((F_ - E0 - 12) / (E1 - E0 - 12)); _mw.keyframe_insert('default_value', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
