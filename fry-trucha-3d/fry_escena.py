@@ -609,11 +609,11 @@ tc = n.nodes.new('ShaderNodeTexCoord'); nb = n.nodes.new('ShaderNodeTexNoise'); 
 cb = n.nodes.new('ShaderNodeValToRGB'); cb.color_ramp.elements[0].color = (*lin((150, 170, 168)), 1); cb.color_ramp.elements[1].color = (*lin((186, 196, 182)), 1)   # arena clara (look Nemo)
 n.links.new(nb.outputs['Fac'], cb.inputs['Fac']); n.links.new(cb.outputs['Color'], bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.85
 bs.inputs['Emission Color'].default_value = (*lin((230, 248, 255)), 1); n.links.new(caustic(n, 0.16), bs.inputs['Emission Strength'])
-bot.data.materials.append(mb)
+bot.data.materials.append(mb); bot.hide_render = True                       # sin fondo: solo agua (pedido)
 import random; R = random.Random(4)
 for i, (x, y, sx, sz, c) in enumerate(((-3.2, 6.8, 4.5, 0.55, None), (3.4, 7.8, 4.0, 0.7, None))):   # dunas lejanas muy suaves
     bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=48, ring_count=24, location=(x, y, FZ - 0.05)); o = bpy.context.object; o.name = f'FONDO_loma_{i}'
-    o.scale = (sx, sx * 0.6, sz); o.data.materials.append(mb)                       # lomas redondeadas en capas, como en la ilustracion
+    o.scale = (sx, sx * 0.6, sz); o.data.materials.append(mb); o.hide_render = True                       # lomas redondeadas en capas, como en la ilustracion
     for p in o.data.polygons: p.use_smooth = True
 m_alga = bpy.data.materials.new('alga'); m_alga.use_nodes = True; nn = m_alga.node_tree; b_ = nn.nodes['Principled BSDF']
 b_.inputs['Base Color'].default_value = (*lin((22, 62, 118)), 1); b_.inputs['Subsurface Weight'].default_value = 0.3; b_.inputs['Roughness'].default_value = 0.5
@@ -644,21 +644,23 @@ for i in range(5):
     gx2 = nn.nodes.new('ShaderNodeMath'); gx2.operation = 'POWER'; gx2.inputs[1].default_value = 3.0; nn.links.new(gx.outputs[0], gx2.inputs[0])   # bordes muy difusos
     gy = nn.nodes.new('ShaderNodeMath'); gy.operation = 'POWER'; gy.inputs[1].default_value = 2.2; nn.links.new(spn.outputs['Y'], gy.inputs[0])     # se apaga hacia abajo
     mm1 = nn.nodes.new('ShaderNodeMath'); mm1.operation = 'MULTIPLY'; nn.links.new(gx2.outputs[0], mm1.inputs[0]); nn.links.new(gy.outputs[0], mm1.inputs[1])
-    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.35, 0.6); nn.links.new(mm1.outputs[0], mm2.inputs[0])
+    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.7, 1.1); mm2.name = 'RAYO_K'; nn.links.new(mm1.outputs[0], mm2.inputs[0])
     nn.links.new(mm2.outputs[0], em.inputs['Strength']); nn.links.new(ad.outputs[0], out.inputs[0]); m.surface_render_method = 'BLENDED'
     o.data.materials.append(m); o.visible_shadow = False
-    for f in (1, NF):
-        o.location.x = x_ + 0.12 * math.sin(i * 1.7 + f / FPS * 0.35); o.keyframe_insert('location', index=0, frame=f)
+    k0 = mm2.inputs[1].default_value
+    for f in range(1, NF + 1, 5):
+        o.location.x = x_ + 0.15 * math.sin(i * 1.7 + f / FPS * 0.35); o.keyframe_insert('location', index=0, frame=f)
+        mm2.inputs[1].default_value = k0 * (0.7 + 0.3 * math.sin(f / FPS * 0.8 + i * 2.1)); mm2.inputs[1].keyframe_insert('default_value', frame=f)
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.nodes['Background'].inputs[0].default_value = (*TEAL, 1)
 w.node_tree.nodes['Background'].inputs[1].default_value = 0.85
 _wn = w.node_tree; _tc = _wn.nodes.new('ShaderNodeTexCoord'); _sp = _wn.nodes.new('ShaderNodeSeparateXYZ'); _wn.links.new(_tc.outputs['Generated'], _sp.inputs[0])
-_rp = _wn.nodes.new('ShaderNodeValToRGB'); _rp.color_ramp.elements[0].position = 0.35; _rp.color_ramp.elements[0].color = (*lin((14, 70, 118)), 1)
-_rp.color_ramp.elements[1].position = 0.75; _rp.color_ramp.elements[1].color = (*lin((120, 210, 232)), 1)   # agua: oscura abajo, clara arriba (modela al pez)
+_rp = _wn.nodes.new('ShaderNodeValToRGB'); _rp.color_ramp.elements[0].position = 0.35; _rp.color_ramp.elements[0].color = (*lin((10, 62, 92)), 1)
+_rp.color_ramp.elements[1].position = 0.75; _rp.color_ramp.elements[1].color = (*lin((150, 225, 222)), 1)   # agua: oscura abajo, clara arriba (modela al pez)
 _mr = _wn.nodes.new('ShaderNodeMapRange'); _mr.inputs['From Min'].default_value = -1.0; _wn.links.new(_sp.outputs['Z'], _mr.inputs['Value']); _wn.links.new(_mr.outputs[0], _rp.inputs['Fac'])
 _wn.links.new(_rp.outputs['Color'], _wn.nodes['Background'].inputs[0])
 # 6) particulas en suspension (como MOTES): puntitos finos que derivan
 R = random.Random(9)
-m_part = emit_mat('particula', lin((225, 248, 250)), 0.3)
+m_part = emit_mat('particula', lin((235, 252, 248)), 0.55)
 pm_ = bpy.data.meshes.new('motas'); pb = bmesh.new()
 for i in range(260):
     c = Vector((R.uniform(-2.4, 2.4), R.uniform(-1.6, 2.6), R.uniform(-1.3, 1.4))); r = R.uniform(0.0012, 0.0035)
@@ -883,9 +885,9 @@ if not VOLUMEN:
     rl = cn.nodes.new('CompositorNodeRLayers'); rl.layer = 'escena'; rb = cn.nodes.new('CompositorNodeRLayers'); rb.layer = 'burbujas'
     co = cn.nodes.new('CompositorNodeComposite')
     gi = bpy.data.images.new('agua_gradiente', 256, 256, float_buffer=True)  # grande: al estirar, el borde no se mezcla con negro       # color de agua: azul profundo abajo -> turquesa claro arriba
-    lo_, hi_ = lin((18, 92, 140)), lin((128, 214, 232)); px = []                 # azul profundo -> celeste (como el brief)
+    lo_, hi_ = lin((8, 58, 88)), lin((150, 226, 220)); px = []                 # azul profundo -> celeste (como el brief)
     for yy in range(256):
-        t_ = (yy / 255) ** 1.3; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 256
+        t_ = (yy / 255) ** 1.6; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 256
     gi.pixels = px
     gn_ = cn.nodes.new('CompositorNodeImage'); gn_.image = gi
     gsz = cn.nodes.new('CompositorNodeScale'); gsz.space = 'RENDER_SIZE'; gsz.frame_method = 'STRETCH'; cn.links.new(gn_.outputs['Image'], gsz.inputs[0])
@@ -897,7 +899,7 @@ if not VOLUMEN:
     bl = cn.nodes.new('CompositorNodeBlur'); bl.size_x = bl.size_y = int(RW * 0.12); bl.use_relative = False
     cn.links.new(bx.outputs[0], bl.inputs[0])
     sk = cn.nodes.new('CompositorNodeMixRGB'); sk.blend_type = 'SCREEN'; sk.inputs[2].default_value = (*lin((190, 240, 245)), 1)
-    mk = cn.nodes.new('CompositorNodeMath'); mk.operation = 'MULTIPLY'; mk.inputs[1].default_value = 0.55
+    mk = cn.nodes.new('CompositorNodeMath'); mk.operation = 'MULTIPLY'; mk.inputs[1].default_value = 0.8
     cn.links.new(bl.outputs[0], mk.inputs[0]); cn.links.new(mk.outputs[0], sk.inputs[0]); cn.links.new(mx.outputs[0], sk.inputs[1])
     ao = cn.nodes.new('CompositorNodeAlphaOver'); cn.links.new(sk.outputs[0], ao.inputs[1]); cn.links.new(rb.outputs['Image'], ao.inputs[2])
     gl = cn.nodes.new('CompositorNodeGlare'); gl.glare_type = 'FOG_GLOW'; gl.threshold = 1.4; gl.size = 7; gl.mix = -0.75   # brillo suave
