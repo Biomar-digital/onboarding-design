@@ -42,7 +42,7 @@ def _smooth(a, k=4):
     return [sum(a[max(0, i - k):i + k + 1]) / len(a[max(0, i - k):i + k + 1]) for i in range(len(a))]
 _zcs = _smooth(_smooth(_zc, 10), 10); _hs = _smooth(_h, 4)                             # linea media muy suave
 # perfil de alto disenado (media altura, unidades de modelo): pedunculo fino -> cuerpo lleno -> cabeza redondeada integrada
-_HCP = [(0.0, 0.030), (0.10, 0.030), (0.16, 0.034), (0.30, 0.056), (0.48, 0.074), (0.64, 0.090), (0.78, 0.104), (0.88, 0.106), (0.94, 0.095), (0.985, 0.060), (1.0, 0.03)]
+_HCP = [(0.0, 0.026), (0.10, 0.026), (0.17, 0.030), (0.30, 0.062), (0.44, 0.098), (0.57, 0.117), (0.68, 0.119), (0.78, 0.111), (0.87, 0.094), (0.94, 0.070), (0.985, 0.042), (1.0, 0.022)]   # como la referencia cartoon
 def _hprof(u):                                                                   # Catmull-Rom por los puntos de control: curva continua y suave
     P_ = [_HCP[0]] + _HCP + [_HCP[-1]]
     for i in range(1, len(P_) - 2):
@@ -136,7 +136,7 @@ def top(X): zm, hh = z_mid(X); return zm + hh
 def bot(X): zm, hh = z_mid(X); return zm - hh
 # dorsal: vela alta adelante y baja atras, en la mitad del lomo
 dorsal = fan_fin('FRY_aleta_dorsal', (0.135, top(0.135) - 0.014), (-0.035, top(-0.035) - 0.012),
-                 [(0.12, top(0.12) + 0.04), (0.095, top(0.095) + 0.085), (0.06, top(0.06) + 0.098), (0.02, top(0.02) + 0.075), (-0.025, top(-0.025) + 0.03)], 12)
+                 [(0.125, top(0.125) + 0.05), (0.10, top(0.10) + 0.105), (0.065, top(0.065) + 0.125), (0.02, top(0.02) + 0.098), (-0.025, top(-0.025) + 0.038)], 13)
 adipose = fan_fin('FRY_aleta_adiposa', (-0.205, top(-0.205) - 0.010), (-0.275, top(-0.275) - 0.008),
                   [(-0.215, top(-0.215) + 0.022), (-0.24, top(-0.24) + 0.032), (-0.265, top(-0.265) + 0.02)], 0)
 anal = fan_fin('FRY_aleta_anal', (-0.075, bot(-0.075) + 0.012), (-0.17, bot(-0.17) + 0.010),
@@ -148,19 +148,19 @@ for sgn in (-1, 1):                                                             
     def xf(co, u, yb_=yb_, zb2=zb2, th_=th_):
         x, z = co.x, co.z - zb2; return Vector((x, yb_ - z * math.sin(th_), zb2 + z * math.cos(th_)))
     fins.append(fan_fin(f'FRY_aleta_ventral_{sgn}', (0.0, zb2 + 0.006), (0.065, zb2 + 0.006),
-                        [(-0.025, zb2 - 0.042), (-0.012, zb2 - 0.068), (0.03, zb2 - 0.058), (0.058, zb2 - 0.01)], 9, xf))
+                        [(-0.03, zb2 - 0.05), (-0.015, zb2 - 0.08), (0.03, zb2 - 0.068), (0.058, zb2 - 0.012)], 9, xf))
 # caudal en horquilla (dos lobulos redondeados), la base entra en el pedunculo
 cx_ = -0.352; zb_ = z_mid(-0.39)[0]
 caudal = fan_fin('FRY_aleta_caudal', (cx_, zb_ - 0.024), (cx_, zb_ + 0.024),
-                 [(-0.40, zb_ - 0.05), (-0.47, zb_ - 0.098), (-0.525, zb_ - 0.118), (-0.548, zb_ - 0.10), (-0.53, zb_ - 0.055), (-0.505, zb_ - 0.012),
-                  (-0.50, zb_), (-0.505, zb_ + 0.012), (-0.53, zb_ + 0.055), (-0.548, zb_ + 0.10), (-0.525, zb_ + 0.118), (-0.47, zb_ + 0.098), (-0.40, zb_ + 0.05)], 20, th=0.0036, NV=80)
+                 [(-0.40, zb_ - 0.055), (-0.48, zb_ - 0.115), (-0.55, zb_ - 0.145), (-0.578, zb_ - 0.13), (-0.55, zb_ - 0.07), (-0.505, zb_ - 0.014),
+                  (-0.497, zb_), (-0.505, zb_ + 0.014), (-0.55, zb_ + 0.07), (-0.578, zb_ + 0.13), (-0.55, zb_ + 0.145), (-0.48, zb_ + 0.115), (-0.40, zb_ + 0.055)], 20, th=0.0036, NV=80)
 # pectorales: abanico redondeado detras del operculo; pivote en la base (eje vertical local), aletean siempre hacia afuera
 GX = P(1238, 560)[0]; PX = GX - 0.02
 pects = []
 for sgn in (-1, 1):
     zm_, hh_ = z_mid(PX); pz = zm_ - hh_ * 0.38; py = sgn * half_w(PX) * 0.86
     pe = fan_fin(f'FRY_aleta_pect_{sgn}', (0.0, -0.024), (0.0, 0.024),
-                 [(-0.03, -0.032), (-0.08, -0.036), (-0.13, -0.022), (-0.14, 0.008), (-0.105, 0.034), (-0.045, 0.036)], 13, th=0.003)
+                 [(-0.035, -0.04), (-0.1, -0.048), (-0.16, -0.03), (-0.175, 0.008), (-0.135, 0.044), (-0.055, 0.046)], 13, th=0.003)
     pe.location = (PX, py, pz); pe.rotation_mode = 'XYZ'; pects.append(pe)
 # ------------------------------------------------------------------ materiales
 def mat(name, col, rough=0.4, alpha=1.0, emit=0.0, sss=0.0, rim=None):
@@ -221,9 +221,9 @@ def mixc(nt, fac, a, b):
 m_body = bpy.data.materials.new('piel_fry'); m_body.use_nodes = True; nt = m_body.node_tree; bs = nt.nodes['Principled BSDF']
 at = nt.nodes.new('ShaderNodeAttribute'); at.attribute_name = 'pez'; sp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(at.outputs['Vector'], sp.inputs[0])
 U, C, SD = sp.outputs[0], sp.outputs[1], sp.outputs[2]
-rmp = nt.nodes.new('ShaderNodeValToRGB'); rmp.color_ramp.interpolation = 'B_SPLINE'
-el = rmp.color_ramp.elements; el[0].position = 0.0; el[0].color = (*lin((228, 236, 238)), 1); el[1].position = 1.0; el[1].color = (*lin((60, 132, 178)), 1)
-for pos, c in ((0.45, (206, 224, 232)), (0.72, (138, 192, 222))): e = el.new(pos); e.color = (*lin(c), 1)
+rmp = nt.nodes.new('ShaderNodeValToRGB'); rmp.color_ramp.interpolation = 'EASE'
+el = rmp.color_ramp.elements; el[0].position = 0.0; el[0].color = (*lin((240, 246, 248)), 1); el[1].position = 1.0; el[1].color = (*lin((34, 76, 122)), 1)
+for pos, c in ((0.40, (230, 240, 244)), (0.52, (176, 208, 228)), (0.66, (98, 150, 192)), (0.84, (52, 102, 150))): e = el.new(pos); e.color = (*lin(c), 1)
 nt.links.new(smooth(nt, C, -1.0, 1.0), rmp.inputs['Fac'])
 col = rmp.outputs['Color']
 noi = N(nt, 'ShaderNodeTexNoise', Scale=6.0, Detail=3.0); nt.links.new(at.outputs['Vector'], noi.inputs['Vector'])
@@ -234,13 +234,13 @@ lat = M(nt, 'ABSOLUTE', M(nt, 'SUBTRACT', C, 0.08))
 ell = M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'POWER', M(nt, 'DIVIDE', M(nt, 'SUBTRACT', 1.0, wav), 0.42), 2.0), M(nt, 'POWER', M(nt, 'DIVIDE', lat, 0.36), 2.0)))
 parr = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, ell, 0.55, 1.0)),
          M(nt, 'MULTIPLY', smooth(nt, U, 0.16, 0.24), M(nt, 'SUBTRACT', 1.0, smooth(nt, U, 0.74, 0.82))))
-col = mixc(nt, M(nt, 'MULTIPLY', parr, 0.8), col, lin((70, 112, 150)))
+col = mixc(nt, M(nt, 'MULTIPLY', parr, 0.78), col, lin((40, 98, 120)))   # azul petroleo (entre el real y la cartoon)
 # pintitas oscuras en el lomo y la parte alta del flanco
 vor = nt.nodes.new('ShaderNodeTexVoronoi'); vor.inputs['Scale'].default_value = 1.0; vor.inputs['Randomness'].default_value = 0.9
-vm = nt.nodes.new('ShaderNodeVectorMath'); vm.operation = 'MULTIPLY'; vm.inputs[1].default_value = (55.0, 9.0, 9.0)
+vm = nt.nodes.new('ShaderNodeVectorMath'); vm.operation = 'MULTIPLY'; vm.inputs[1].default_value = (36.0, 6.0, 6.0)
 nt.links.new(at.outputs['Vector'], vm.inputs[0]); nt.links.new(vm.outputs[0], vor.inputs['Vector'])
-spots = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, vor.outputs['Distance'], 0.14, 0.2)),
-          M(nt, 'MULTIPLY', smooth(nt, C, 0.0, 0.3), M(nt, 'MULTIPLY', smooth(nt, U, 0.12, 0.2), M(nt, 'SUBTRACT', 1.0, smooth(nt, U, 0.86, 0.93)))))
+spots = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, vor.outputs['Distance'], 0.15, 0.22)),
+          M(nt, 'MULTIPLY', smooth(nt, C, -0.25, 0.1), M(nt, 'MULTIPLY', smooth(nt, U, 0.12, 0.2), M(nt, 'SUBTRACT', 1.0, smooth(nt, U, 0.86, 0.93)))))
 col = mixc(nt, M(nt, 'MULTIPLY', spots, 0.85), col, lin((38, 48, 54)))
 # rosado suave en el flanco (mas hacia la cola) y borde del operculo
 pink = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, lat, 0.1, 0.4)), M(nt, 'SUBTRACT', 1.0, smooth(nt, U, 0.35, 0.8)))
@@ -259,7 +259,7 @@ vsc = nt.nodes.new('ShaderNodeTexVoronoi'); vsc.inputs['Scale'].default_value = 
 vmul.inputs[1].default_value = (140.0, 22.0, 22.0); nt.links.new(at.outputs['Vector'], vmul.inputs[0]); nt.links.new(vmul.outputs[0], vsc.inputs['Vector'])
 bsc = nt.nodes.new('ShaderNodeBump'); bsc.inputs['Strength'].default_value = 0.12; bsc.inputs['Distance'].default_value = 0.002
 nt.links.new(vsc.outputs['Distance'], bsc.inputs['Height']); nt.links.new(bsc.outputs['Normal'], bs.inputs['Normal'])
-nt.links.new(M(nt, 'MULTIPLY_ADD', M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', C), 0.3, 0.75)), 0.3), bs.inputs['Metallic']); nt.nodes[-1].inputs[2].default_value = 0.08
+nt.links.new(M(nt, 'MULTIPLY_ADD', M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', C), 0.3, 0.75)), 0.18), bs.inputs['Metallic']); nt.nodes[-1].inputs[2].default_value = 0.08
 body.data.materials.append(m_body)
 # aletas: abanico opaco (no parpadea) con radios marcados, de plateado en la base a ambar calido en el borde, borde claro;
 #          algo de luz que las atraviesa (translucido) para que brillen a contraluz
@@ -267,31 +267,35 @@ m_fin = bpy.data.materials.new('aletas_fry'); m_fin.use_nodes = True; nt = m_fin
 afa = nt.nodes.new('ShaderNodeAttribute'); afa.attribute_name = 'aleta'; asp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(afa.outputs['Vector'], asp.inputs[0])
 FU, FW = asp.outputs[0], asp.outputs[2]
 line = M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', M(nt, 'SINE', M(nt, 'MULTIPLY', FW, math.pi))), 0.06, 0.4))
-fcol = mixc(nt, smooth(nt, FU, 0.05, 0.9), lin((196, 214, 224)), lin((244, 186, 126)))
-fcol = mixc(nt, M(nt, 'MULTIPLY', line, M(nt, 'MULTIPLY', smooth(nt, FU, 0.06, 0.3), 0.55)), fcol, lin((206, 124, 78)))
-fcol = mixc(nt, M(nt, 'MULTIPLY', smooth(nt, FU, 0.86, 1.0), 0.7), fcol, lin((252, 242, 226)))
+fcol = mixc(nt, smooth(nt, FU, 0.05, 0.9), lin((170, 206, 230)), lin((214, 234, 246)))   # celeste translucido (cartoon / real)
+fcol = mixc(nt, M(nt, 'MULTIPLY', line, M(nt, 'MULTIPLY', smooth(nt, FU, 0.06, 0.3), 0.6)), fcol, lin((96, 150, 194)))   # radios
+fcol = mixc(nt, M(nt, 'MULTIPLY', smooth(nt, FU, 0.86, 1.0), 0.7), fcol, lin((246, 251, 255)))
 nt.links.new(fcol, bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.42
 bs.inputs['Subsurface Weight'].default_value = 0.25; bs.inputs['Subsurface Radius'].default_value = (0.01, 0.006, 0.004)
 bs.inputs['Coat Weight'].default_value = 0.3; bs.inputs['Coat Roughness'].default_value = 0.2
 fb = nt.nodes.new('ShaderNodeBump'); fb.inputs['Strength'].default_value = 0.25; fb.inputs['Distance'].default_value = 0.001
 nt.links.new(line, fb.inputs['Height']); nt.links.new(fb.outputs['Normal'], bs.inputs['Normal'])
 trl = nt.nodes.new('ShaderNodeBsdfTranslucent'); nt.links.new(fcol, trl.inputs['Color'])
-fmx = nt.nodes.new('ShaderNodeMixShader'); fmx.inputs['Fac'].default_value = 0.3
+fmx = nt.nodes.new('ShaderNodeMixShader'); fmx.inputs['Fac'].default_value = 0.45
 nt.links.new(bs.outputs[0], fmx.inputs[1]); nt.links.new(trl.outputs[0], fmx.inputs[2])
-nt.links.new(fmx.outputs[0], nt.nodes['Material Output'].inputs['Surface'])
+fal = M(nt, 'MAXIMUM', M(nt, 'SUBTRACT', 0.88, M(nt, 'MULTIPLY', smooth(nt, FU, 0.1, 0.95), 0.3)), M(nt, 'MULTIPLY', line, 0.92))   # translucida: 0.88 base -> 0.58 borde, radios mas solidos
+ftr = nt.nodes.new('ShaderNodeBsdfTransparent'); fm2 = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(fal, fm2.inputs['Fac'])
+nt.links.new(ftr.outputs[0], fm2.inputs[1]); nt.links.new(fmx.outputs[0], fm2.inputs[2])
+nt.links.new(fm2.outputs[0], nt.nodes['Material Output'].inputs['Surface']); m_fin.surface_render_method = 'DITHERED'
 for f in fins + [caudal] + pects: f.data.materials.append(m_fin)
 # ojo real: iris plateado-dorado con estrias, pupila negra grande y brillante, brillo puntual
 m_white = bpy.data.materials.new('iris'); m_white.use_nodes = True; nt = m_white.node_tree; bs = nt.nodes['Principled BSDF']
 noi = N(nt, 'ShaderNodeTexNoise', Scale=40.0, Detail=2.0)
 bs.inputs['Metallic'].default_value = 0.25; bs.inputs['Roughness'].default_value = 0.3
-nt.links.new(mixc(nt, noi.outputs['Fac'], lin((150, 170, 180)), lin((225, 232, 236))), bs.inputs['Base Color'])   # iris plateado como el fry real
+nt.links.new(mixc(nt, noi.outputs['Fac'], lin((236, 240, 244)), lin((252, 253, 255))), bs.inputs['Base Color'])   # blanco del ojo (cartoon)
 bs.inputs['Coat Weight'].default_value = 1.0; bs.inputs['Coat Roughness'].default_value = 0.02
 m_navy = mat('pupila', (0.004, 0.005, 0.006), 0.05); m_navy.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value = 1.0
 m_hl = mat('brillo', (1, 1, 1), 0.1, emit=6)
+m_iris = mat('iris_azul', lin((26, 58, 112)), 0.15); m_iris.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value = 1.0
 m_brow = mat('ceja', lin((44, 58, 62)), 0.4)
 m_lid = mat('parpado', lin((150, 200, 225)), 0.35, rim=lin((70, 120, 150)))   # opaco: sin SSS (una cascara fina con SSS se ve de vidrio)
 # ------------------------------------------------------------------ cara: ojos, ceja, boca (sobre el ojo y la boca del icono)
-EX, EZ = P(1292, 552); ER = 0.05
+EX, EZ = P(1292, 552); ER = 0.054
 eyes = []
 for sgn in (-1, 1):
     yb = sgn * half_w(EX) * 0.58                                                  # ojo mas metido en la cabeza (no de insecto)
@@ -299,11 +303,14 @@ for sgn in (-1, 1):
     ctl = bpy.data.objects.new(f'FRY_ojo_ctl_{sgn}', None); sc.collection.objects.link(ctl); ctl.parent = piv   # mirada + parpadeo
     bpy.ops.mesh.primitive_uv_sphere_add(radius=ER, location=(0, 0, 0), segments=64, ring_count=32); ball = bpy.context.object
     ball.name = f'FRY_ojo_{sgn}'; ball.data.materials.append(m_white); ball.parent = ctl
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.5, location=(0.004, sgn * ER * 0.84, 0.004), segments=24, ring_count=12); pup = bpy.context.object
-    pup.scale.y = 0.55; pup.data.materials.append(m_navy); pup.parent = ctl; pup.name = f'FRY_pupila_{sgn}'
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.13, location=(0.016, sgn * ER * 1.0, 0.02)); hl = bpy.context.object
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.6, location=(0.004, sgn * ER * 0.74, 0.004), segments=48, ring_count=24); iri = bpy.context.object
+    iri.scale.y = 0.5; iri.data.materials.append(m_iris); iri.parent = ctl; iri.name = f'FRY_iris_{sgn}'                # iris azul marino grande
+    for p in iri.data.polygons: p.use_smooth = True
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.33, location=(0.004, sgn * ER * 0.89, 0.004), segments=32, ring_count=16); pup = bpy.context.object
+    pup.scale.y = 0.5; pup.data.materials.append(m_navy); pup.parent = ctl; pup.name = f'FRY_pupila_{sgn}'
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.14, location=(0.016, sgn * ER * 1.06, 0.022)); hl = bpy.context.object
     hl.data.materials.append(m_hl); hl.parent = ctl; hl.name = f'FRY_brillo_{sgn}'
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.06, location=(-0.012, sgn * ER * 1.0, -0.014)); hl2 = bpy.context.object
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=ER * 0.065, location=(-0.012, sgn * ER * 1.05, -0.014)); hl2 = bpy.context.object
     hl2.data.materials.append(m_hl); hl2.parent = ctl; hl2.name = f'FRY_brillo2_{sgn}'
     # parpado superior: media cascara del color del cuerpo; girando en X baja/sube (expresion)
     lm = bpy.data.meshes.new(f'parpado_{sgn}'); lb = bmesh.new()
@@ -333,7 +340,7 @@ for sgn in (-1, 1):
 # ---- boca 3D: labios con volumen (dos tubos que se separan) y el interior oscuro con lengua, apoyados sobre la punta del hocico.
 #      Formas (shape keys): 'abre' (habla), 'o' (redonda: sopla burbujas), 'sonrie' (comisuras arriba), 'duda' (torcida a un lado).
 from mathutils.bvhtree import BVHTree
-MX, MZ = P(1371, 604)
+_xn = rings[-1][0][0]; MX = _xn - 0.03; _zm, _hm = z_mid(MX - 0.02); MZ = _zm - 0.42 * _hm   # boca adelante y abajo del hocico
 bpy.context.view_layer.update(); _dg = bpy.context.evaluated_depsgraph_get(); _bvh = BVHTree.FromObject(body, _dg)
 def on_skin(phi, z):                                                             # la boca envuelve la punta del hocico: rayo radial hacia el eje
     d_ = Vector((math.cos(phi), math.sin(phi), 0.0)); o_ = Vector((MX - 0.06, 0.0, z)) + d_ * 1.0
@@ -479,7 +486,7 @@ for F_ in range(1, NF + 1):
         swing = math.radians(28 + 10 * (0.5 + 0.5 * flap) * (0.4 + 0.6 * hover) + 34 * brake)   # siempre hacia afuera: 28..72 grados
         o.rotation_euler = (sg * math.radians(8) * flap, math.radians(-14 - 8 * brake), -sg * swing)
         o.keyframe_insert('rotation_euler', frame=F_)
-        bd = o.modifiers[o['bend']]; bd.angle = -sg * math.radians(28) * math.sin(t * 2 * math.pi * fq + k * 0.5 - 1.3)
+        bd = o.modifiers[o['bend']]; bd.angle = -sg * math.radians(40) * math.sin(t * 2 * math.pi * fq + k * 0.5 - 1.3)
         bd.keyframe_insert('angle', frame=F_)
     # ojos: miradas rapidas a los costados (busca), mira a camara, mira hacia arriba; parpados: duda (entrecierra) y curiosidad
     sacc = 0.22 * (1 if (f // 4) % 2 else -1) * bump(f, 46, 56)
