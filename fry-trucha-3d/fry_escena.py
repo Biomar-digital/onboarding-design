@@ -294,7 +294,12 @@ m_navy = mat('pupila', (0.004, 0.005, 0.006), 0.05); m_navy.node_tree.nodes['Pri
 m_hl = mat('brillo', (1, 1, 1), 0.1, emit=6)
 m_iris = mat('iris_azul', lin((26, 58, 112)), 0.15); m_iris.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value = 1.0
 m_brow = mat('ceja', lin((44, 58, 62)), 0.4)
-m_lid = mat('parpado', lin((150, 200, 225)), 0.35, rim=lin((70, 120, 150)))   # opaco: sin SSS (una cascara fina con SSS se ve de vidrio)
+m_lid = bpy.data.materials.new('parpado'); m_lid.use_nodes = True; nt = m_lid.node_tree; bs = nt.nodes['Principled BSDF']   # piel mate (no vidrio)
+ltc = nt.nodes.new('ShaderNodeTexCoord'); lsp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(ltc.outputs['Object'], lsp.inputs[0])
+lz = M(nt, 'ABSOLUTE', lsp.outputs['Z'])                                        # borde del parpado (z local ~ 0): linea de pestanas oscura
+cl2 = nt.nodes.new('ShaderNodeMix'); cl2.data_type = 'RGBA'; nt.links.new(smooth(nt, lz, 0.004, 0.012), cl2.inputs[0])
+cl2.inputs[6].default_value = (*lin((22, 40, 70)), 1); cl2.inputs[7].default_value = (*lin((150, 186, 210)), 1); nt.links.new(cl2.outputs[2], bs.inputs['Base Color'])
+bs.inputs['Roughness'].default_value = 0.62; bs.inputs['Specular IOR Level'].default_value = 0.25
 # ------------------------------------------------------------------ cara: ojos, ceja, boca (sobre el ojo y la boca del icono)
 EX, EZ = P(1292, 552); ER = 0.054
 eyes = []
@@ -498,12 +503,15 @@ for F_ in range(1, NF + 1):
     look_cam = max(look_cam, ease((f - 132) / 5) * (1 - ease((f - 160) / 6))); look_up = look_up * (1 - 0.8 * ease((f - 132) / 5) * (1 - ease((f - 160) / 6)))
     for (piv, brow, ctl, lid, lid2), sgn in zip(eyes, (-1, 1)):
         cover = 0.16 + 0.24 * squint * (1 if sgn == -1 else 0.35) - 0.12 * wide
-        cover = cover + (0.98 - cover) * blink
+        cover = cover + (0.62 - cover) * blink                                   # parpadeo: los dos parpados se juntan en el medio
         cover2 = 0.06 + 0.2 * squint * (1 if sgn == -1 else 0.4) + 0.1 * wide * (1 - ease((f - 112) / 10))   # el de abajo sube: duda / sonrisa con los ojos
+        cover2 = cover2 + (0.58 - cover2) * blink
         lid.rotation_euler = (sgn * math.radians(90 - 180 * cover), 0, 0); lid.keyframe_insert('rotation_euler', frame=F_)
         lid2.rotation_euler = (-sgn * math.radians(90 - 180 * cover2), 0, 0); lid2.keyframe_insert('rotation_euler', frame=F_)
         ctl.rotation_euler = (sgn * 0.28 * look_up, 0, -sgn * (0.22 * look_up - 0.35 * look_cam + sacc)); ctl.keyframe_insert('rotation_euler', frame=F_)
         s_ = 1 + 0.06 * wide; ctl.scale = (s_, s_, s_); ctl.keyframe_insert('scale', frame=F_)
+        for hn in (f'FRY_brillo_{sgn}', f'FRY_brillo2_{sgn}'):                   # el brillo se apaga con el ojo cerrado (no atraviesa el parpado)
+            h_ = bpy.data.objects[hn]; hs = 1 - ease((blink - 0.45) / 0.3); h_.scale = (hs, hs, hs); h_.keyframe_insert('scale', frame=F_)
     # boca 3D: "o" al soplar burbujitas, torcida en la duda, habla en silabas mientras aparece el globo, media sonrisa al final
     puff = max([bump(f, p_ - 2, p_ + 3) for p_ in PUFF] + [0])
     hmm = squint * (1 - wide)
