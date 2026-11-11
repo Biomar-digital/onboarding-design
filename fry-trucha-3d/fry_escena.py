@@ -601,7 +601,7 @@ bs.inputs['Emission Color'].default_value = (*lin((215, 245, 250)), 1); bs.input
 tc = n.nodes.new('ShaderNodeTexCoord'); mp = n.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (24, 18, 1); n.links.new(tc.outputs['Object'], mp.inputs['Vector'])
 wz = n.nodes.new('ShaderNodeTexNoise'); wz.noise_dimensions = '4D'; wz.inputs['Scale'].default_value = 1.4; wz.inputs['Detail'].default_value = 6
 n.links.new(mp.outputs['Vector'], wz.inputs['Vector'])
-bump = n.nodes.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.6; n.links.new(wz.outputs['Fac'], bump.inputs['Height']); n.links.new(bump.outputs['Normal'], bs.inputs['Normal'])
+bmp_ = n.nodes.new('ShaderNodeBump'); bmp_.inputs['Strength'].default_value = 0.6; n.links.new(wz.outputs['Fac'], bmp_.inputs['Height']); n.links.new(bmp_.outputs['Normal'], bs.inputs['Normal'])
 cr = n.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].position = 0.45; cr.color_ramp.elements[1].position = 0.7
 n.links.new(wz.outputs['Fac'], cr.inputs['Fac']); em = n.nodes.new('ShaderNodeMath'); em.operation = 'MULTIPLY_ADD'
 n.links.new(cr.outputs['Color'], em.inputs[0]); em.inputs[1].default_value = 2.2; em.inputs[2].default_value = 0.6; n.links.new(em.outputs[0], bs.inputs['Emission Strength'])
