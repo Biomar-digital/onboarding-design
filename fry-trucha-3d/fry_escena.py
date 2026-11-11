@@ -794,14 +794,15 @@ def speech(name, C, A, B, tip, f0, f1):
     mw_ = bpy.data.materials.new(f'{name}_blanco'); mw_.use_nodes = True; bs_ = mw_.node_tree.nodes['Principled BSDF']
     bs_.inputs['Base Color'].default_value = (0.97, 0.975, 0.98, 1); bs_.inputs['Roughness'].default_value = 0.42
     bs_.inputs['Subsurface Weight'].default_value = 0.2; bs_.inputs['Subsurface Radius'].default_value = (0.03, 0.03, 0.035)
-    bs_.inputs['Coat Weight'].default_value = 0.12; bs_.inputs['Coat Roughness'].default_value = 0.35
+    bs_.inputs['Coat Weight'].default_value = 0.35; bs_.inputs['Coat Roughness'].default_value = 0.12   # globo 3D brillante (version aprobada)
     bs_.inputs['Emission Color'].default_value = (1, 1, 1, 1); bs_.inputs['Emission Strength'].default_value = 0.5   # que lea blanco bajo el agua
     mo_ = bpy.data.materials.new(f'{name}_contorno'); mo_.use_nodes = True; nn_ = mo_.node_tree; nn_.nodes.clear()
     oo_ = nn_.nodes.new('ShaderNodeOutputMaterial'); eo_ = nn_.nodes.new('ShaderNodeEmission'); eo_.inputs['Color'].default_value = (*lin((16, 44, 92)), 1)
     nn_.links.new(eo_.outputs[0], oo_.inputs[0]); mo_.use_backface_culling = True
     o_.data.materials.append(mw_); o_.data.materials.append(mo_)
     sb_ = o_.modifiers.new('sub', 'SUBSURF'); sb_.levels = sb_.render_levels = 1
-    so_ = o_.modifiers.new('contorno', 'SOLIDIFY'); so_.thickness = 0.009; so_.offset = 1; so_.use_flip_normals = True; so_.material_offset = 1; so_.use_rim = False
+    so_ = o_.modifiers.new('contorno', 'SOLIDIFY'); so_.show_render = False;   # sin contorno: el globo 3D aprobado no lo tenia
+    so_.thickness = 0.009; so_.offset = 1; so_.use_flip_normals = True; so_.material_offset = 1; so_.use_rim = False
     for F_ in range(f0 - 1, NF + 1):
         t = (F_ - f0) / max(1, f1 - f0); tt = (F_ - f0) / FPS
         if F_ < f0: s_ = 0.0
