@@ -279,7 +279,7 @@ nt.links.new(line, fb.inputs['Height']); nt.links.new(fb.outputs['Normal'], bs.i
 trl = nt.nodes.new('ShaderNodeBsdfTranslucent'); nt.links.new(fcol, trl.inputs['Color'])
 fmx = nt.nodes.new('ShaderNodeMixShader'); fmx.inputs['Fac'].default_value = 0.45
 nt.links.new(bs.outputs[0], fmx.inputs[1]); nt.links.new(trl.outputs[0], fmx.inputs[2])
-fal = M(nt, 'MAXIMUM', M(nt, 'SUBTRACT', 0.88, M(nt, 'MULTIPLY', smooth(nt, FU, 0.1, 0.95), 0.3)), M(nt, 'MULTIPLY', line, 0.92))   # translucida: 0.88 base -> 0.58 borde, radios mas solidos
+fal = M(nt, 'MAXIMUM', M(nt, 'SUBTRACT', 0.96, M(nt, 'MULTIPLY', smooth(nt, FU, 0.1, 0.95), 0.2)), M(nt, 'MULTIPLY', line, 0.92))   # translucida: 0.88 base -> 0.58 borde, radios mas solidos
 ftr = nt.nodes.new('ShaderNodeBsdfTransparent'); fm2 = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(fal, fm2.inputs['Fac'])
 nt.links.new(ftr.outputs[0], fm2.inputs[1]); nt.links.new(fmx.outputs[0], fm2.inputs[2])
 nt.links.new(fm2.outputs[0], nt.nodes['Material Output'].inputs['Surface']); m_fin.surface_render_method = 'DITHERED'
@@ -644,7 +644,7 @@ for i in range(8):
     gx2 = nn.nodes.new('ShaderNodeMath'); gx2.operation = 'POWER'; gx2.inputs[1].default_value = 3.0; nn.links.new(gx.outputs[0], gx2.inputs[0])   # bordes muy difusos
     gy = nn.nodes.new('ShaderNodeMath'); gy.operation = 'POWER'; gy.inputs[1].default_value = 2.2; nn.links.new(spn.outputs['Y'], gy.inputs[0])     # se apaga hacia abajo
     mm1 = nn.nodes.new('ShaderNodeMath'); mm1.operation = 'MULTIPLY'; nn.links.new(gx2.outputs[0], mm1.inputs[0]); nn.links.new(gy.outputs[0], mm1.inputs[1])
-    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.10, 0.22); mm2.name = 'RAYO_K'; nn.links.new(mm1.outputs[0], mm2.inputs[0])
+    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.18, 0.34); mm2.name = 'RAYO_K'; nn.links.new(mm1.outputs[0], mm2.inputs[0])
     nn.links.new(mm2.outputs[0], em.inputs['Strength']); nn.links.new(ad.outputs[0], out.inputs[0]); m.surface_render_method = 'BLENDED'
     o.data.materials.append(m); o.visible_shadow = False
     k0 = mm2.inputs[1].default_value
@@ -678,7 +678,7 @@ _mr = _wn.nodes.new('ShaderNodeMapRange'); _mr.inputs['From Min'].default_value 
 _wn.links.new(_rp.outputs['Color'], _wn.nodes['Background'].inputs[0])
 # 6) particulas en suspension (como MOTES): puntitos finos que derivan
 R = random.Random(9)
-m_part = emit_mat('particula', lin((235, 252, 248)), 0.55)
+m_part = emit_mat('particula', lin((235, 252, 248)), 1.6)
 pm_ = bpy.data.meshes.new('motas'); pb = bmesh.new()
 for i in range(260):
     c = Vector((R.uniform(-2.4, 2.4), R.uniform(-1.6, 2.6), R.uniform(-1.3, 1.4))); r = R.uniform(0.0012, 0.0035)
@@ -845,7 +845,7 @@ TIP = MOUTH + Vector((0.035, -0.04, 0.02)) - SPC                                
 GLOBO = speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100))
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
-sun.data.energy = 4.2; sun.data.color = (1.0, 0.97, 0.9); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
+sun.data.energy = 4.4; sun.data.color = (1.0, 0.93, 0.8); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
 sun.rotation_euler = (math.radians(22), math.radians(-16), 0)
 rim = bpy.data.objects.new('CONTRALUZ', bpy.data.lights.new('CONTRALUZ', 'SUN')); sc.collection.objects.link(rim)   # luz de contorno desde atras
 rim.data.energy = 4.4; rim.data.color = (0.82, 0.93, 1.0)                         # contraluz calido: separa al fry del fondo
