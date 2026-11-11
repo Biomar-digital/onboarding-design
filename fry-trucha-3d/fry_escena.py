@@ -481,9 +481,9 @@ for F_ in range(1, NF + 1):
     zs = -0.07 + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
     panic = ease((F_ - (E0 - 7)) / 4.0)                                           # ve que el globo se hincha: ojos grandes, boca en "o"
     hit = bump(F_, E0, E0 + 7)                                                    # golpe del globo: se aplasta
-    uf = min(1.0, max(0.0, (F_ - E0 - 1) / 17.0)); fl = uf ** 2.6                  # sale despedido: acelera con el globo
+    uf = min(1.0, max(0.0, (F_ - E0 - 3) / 16.0)); fl = uf ** 2.2                  # sale despedido: acelera con el globo
     if F_ >= 106: xs -= 0.02 * bump(f, 90.5, 96)                                 # retrocede apenas cuando el globo le sale de la boca
-    xs -= 0.035 * hit + 2.3 * fl; zs -= 0.02 * hit + 1.0 * fl
+    xs -= 0.03 * hit; zs -= 0.015 * hit
     rig.location = (xs, 0, zs); rig.keyframe_insert('location', frame=F_)
     st = ease((F_ - E0 - 5) / 6.0)                                                # aplastado en el golpe -> estirado en el vuelo
     rig.scale = (1 - 0.10 * hit + 0.10 * st, 1 + 0.06 * hit - 0.04 * st, 1 + 0.10 * hit - 0.06 * st); rig.keyframe_insert('scale', frame=F_)
@@ -844,8 +844,8 @@ def speech(name, C, A, B, tip, f0, f1):
         tt = max(0.0, (F_ - f0) / FPS)
         if F_ < f0: s_ = 0.0; q = 0.0; th = 0.0
         else:
-            s_ = (1 - math.exp(-5.0 * tt) * math.cos(2 * math.pi * 1.3 * tt)) * ease(tt / 0.12)        # resorte: llega en ~5 cuadros, se pasa 15% y asienta
-            q = 0.11 * math.exp(-4.5 * tt) * math.sin(2 * math.pi * 1.3 * tt + 0.4)                    # gelatina: se estira y se aplasta mientras asienta
+            s_ = (1 - math.exp(-6.5 * tt) * math.cos(2 * math.pi * 1.3 * tt)) * ease(tt / 0.12)        # resorte: llega en ~5 cuadros, se pasa 15% y asienta
+            q = 0.07 * math.exp(-4.5 * tt) * math.sin(2 * math.pi * 1.3 * tt + 0.4)                    # gelatina: se estira y se aplasta mientras asienta
             th = math.radians(-13) * math.exp(-3.5 * tt) * math.cos(2 * math.pi * 1.05 * tt)           # balanceo que se va apagando
         idle = 1 - math.exp(-3.0 * tt); wb = 1.0 + 0.012 * math.sin(tt * 3.1) * idle
         sx, sz = s_ * (1 + q), s_ * (1 - q)
@@ -882,7 +882,7 @@ for F_ in range(1, NF + 1):
 _mw = bpy.data.materials['PENSAMIENTO_globo_blanco'].node_tree.nodes['Principled BSDF'].inputs['Emission Strength']
 _mw.keyframe_insert('default_value', frame=E0 - 10)
 for F_ in range(E0 - 9, NF + 1):
-    sc.frame_set(F_); u = min(1.0, max(0.0, (F_ - E0) / (E1 - E0))); k = u ** 2.4          # acelera siempre (ease-in): arranca contenido y termina explotando
+    sc.frame_set(F_); u = min(1.0, max(0.0, (F_ - E0) / (E1 - E0))); k = u ** 1.9          # acelera siempre (ease-in): arranca contenido y termina explotando
     cpos = cam.matrix_world.translation; fwd = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
     tgt = cpos + fwd * 1.05 + Vector((0.0, 0, -0.02)); tt = (F_ - FT(90)) / FPS
     base_ = SPC + Vector((0, 0, 0.006 * math.sin(tt * 2.0)))
@@ -894,6 +894,12 @@ for F_ in range(E0 - 9, NF + 1):
     GLOBO.rotation_euler = (0, math.radians(3.0) * ant * math.sin(F_ * 1.9), 0)
     GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('rotation_euler', frame=F_)
     _mw.default_value = 0.5 + 3.0 * ease((F_ - E0 - 12) / (E1 - E0 - 12)); _mw.keyframe_insert('default_value', frame=F_)
+    # el pez va pegado a la punta del globo: la punta lo empuja (proyectada desde la camara al plano del pez) y despues sale despedido
+    T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z)); lam_ = (0.0 - cpos.y) / (T_.y - cpos.y); P_ = cpos + (T_ - cpos) * lam_
+    if F_ == E0: P0_ = P_.copy()
+    if F_ >= E0:
+        d_ = P_ - P0_; uf_ = min(1.0, max(0.0, (F_ - E0 - 5) / 14.0)) ** 2.4
+        rig.location = Vector(rig.location) + Vector((d_.x - 1.5 * uf_, 0, d_.z - 0.65 * uf_)); rig.keyframe_insert('location', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
