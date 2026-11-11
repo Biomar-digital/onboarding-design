@@ -606,12 +606,12 @@ dp_ = bot.modifiers.new('lomas', 'DISPLACE'); dp_.texture = tx_; dp_.strength = 
 for p in bot.data.polygons: p.use_smooth = True
 mb = bpy.data.materials.new('lecho'); mb.use_nodes = True; n = mb.node_tree; bs = n.nodes['Principled BSDF']
 tc = n.nodes.new('ShaderNodeTexCoord'); nb = n.nodes.new('ShaderNodeTexNoise'); nb.inputs['Scale'].default_value = 25.0; n.links.new(tc.outputs['Generated'], nb.inputs['Vector'])
-cb = n.nodes.new('ShaderNodeValToRGB'); cb.color_ramp.elements[0].color = (*lin((30, 72, 132)), 1); cb.color_ramp.elements[1].color = (*lin((52, 104, 164)), 1)
+cb = n.nodes.new('ShaderNodeValToRGB'); cb.color_ramp.elements[0].color = (*lin((150, 170, 168)), 1); cb.color_ramp.elements[1].color = (*lin((186, 196, 182)), 1)   # arena clara (look Nemo)
 n.links.new(nb.outputs['Fac'], cb.inputs['Fac']); n.links.new(cb.outputs['Color'], bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.85
-bs.inputs['Emission Color'].default_value = (*lin((200, 230, 255)), 1); n.links.new(caustic(n, 0.22), bs.inputs['Emission Strength'])
+bs.inputs['Emission Color'].default_value = (*lin((230, 248, 255)), 1); n.links.new(caustic(n, 0.16), bs.inputs['Emission Strength'])
 bot.data.materials.append(mb)
 import random; R = random.Random(4)
-for i, (x, y, sx, sz, c) in enumerate(((-2.6, 3.4, 2.6, 0.55, (40, 92, 152)), (2.4, 4.2, 3.0, 0.7, (44, 98, 160)), (-0.6, 6.5, 4.0, 0.9, (52, 110, 172)), (3.6, 7.5, 3.2, 1.0, (58, 118, 180)))):
+for i, (x, y, sx, sz, c) in enumerate(((-3.2, 6.8, 4.5, 0.55, None), (3.4, 7.8, 4.0, 0.7, None))):   # dunas lejanas muy suaves
     bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=48, ring_count=24, location=(x, y, FZ - 0.05)); o = bpy.context.object; o.name = f'FONDO_loma_{i}'
     o.scale = (sx, sx * 0.6, sz); o.data.materials.append(mb)                       # lomas redondeadas en capas, como en la ilustracion
     for p in o.data.polygons: p.use_smooth = True
@@ -629,41 +629,40 @@ def alga(name, x, y, hgt, wid, ph_, lean):
     for f in range(1, NF + 1, 3):
         o.rotation_euler.y = 0.1 * math.sin(f / FPS * 1.3 + ph_) + 0.04 * math.sin(f / FPS * 2.9 + ph_); o.keyframe_insert('rotation_euler', index=1, frame=f)
     return o
-k_ = 0
-for cx, cy, nb_, hmin, hmax, lean in ((-1.25, 1.0, 5, 0.6, 1.05, 0.25), (1.35, 1.4, 5, 0.55, 1.0, -0.25), (-2.4, 3.6, 4, 0.8, 1.4, 0.2), (2.7, 4.4, 4, 0.8, 1.5, -0.2), (0.4, 6.0, 3, 1.0, 1.6, 0.1)):
-    for i in range(nb_):
-        alga(f'FONDO_alga_{k_}', cx + R.uniform(-0.18, 0.18), cy + R.uniform(-0.15, 0.15), R.uniform(hmin, hmax), R.uniform(0.012, 0.018) * (1 + 0.15 * cy), R.uniform(0, 6.3), lean + R.uniform(-0.15, 0.15)); k_ += 1
-# rayos de sol suaves desde la superficie (cintas de luz que se mueven lento)
-for i in range(7):
-    bpy.ops.mesh.primitive_plane_add(size=1, location=(-1.4 + i * 0.75 + R.uniform(-0.2, 0.2), 1.2 + i * 0.55, 0.9), rotation=(math.radians(90), math.radians(-18 + R.uniform(-4, 4)), 0))
-    o = bpy.context.object; o.name = f'RAYO_{i}'; o.scale = (R.uniform(0.35, 0.8), 5.0, 1)
+# (sin algas: fondo limpio de agua abierta, como Nemo)
+# rayos de sol: pocos, anchos y muy suaves, todos con la misma inclinacion que el sol, lejos detras del pez (se funden con la niebla)
+for i in range(5):
+    x_ = -2.2 + i * 1.15 + R.uniform(-0.25, 0.25); y_ = 2.6 + R.uniform(-0.3, 0.6)
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(x_, y_, 0.6), rotation=(math.radians(90), math.radians(-16), 0))
+    o = bpy.context.object; o.name = f'RAYO_{i}'; o.scale = (R.uniform(0.6, 1.2), 5.0, 1)
     m = bpy.data.materials.new(f'rayo_{i}'); m.use_nodes = True; nn = m.node_tree; nn.nodes.clear()
-    out = nn.nodes.new('ShaderNodeOutputMaterial'); em = nn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((220, 238, 255)), 1)
+    out = nn.nodes.new('ShaderNodeOutputMaterial'); em = nn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((215, 245, 250)), 1)
     tr = nn.nodes.new('ShaderNodeBsdfTransparent'); ad = nn.nodes.new('ShaderNodeAddShader'); nn.links.new(tr.outputs[0], ad.inputs[0]); nn.links.new(em.outputs[0], ad.inputs[1])
     tcn = nn.nodes.new('ShaderNodeTexCoord'); spn = nn.nodes.new('ShaderNodeSeparateXYZ'); nn.links.new(tcn.outputs['UV'], spn.inputs[0])
     gx = nn.nodes.new('ShaderNodeMath'); gx.operation = 'SINE'; mxx = nn.nodes.new('ShaderNodeMath'); mxx.operation = 'MULTIPLY'; mxx.inputs[1].default_value = math.pi
     nn.links.new(spn.outputs['X'], mxx.inputs[0]); nn.links.new(mxx.outputs[0], gx.inputs[0])
-    gy = nn.nodes.new('ShaderNodeMath'); gy.operation = 'POWER'; gy.inputs[1].default_value = 1.6; nn.links.new(spn.outputs['Y'], gy.inputs[0])
-    mm1 = nn.nodes.new('ShaderNodeMath'); mm1.operation = 'MULTIPLY'; nn.links.new(gx.outputs[0], mm1.inputs[0]); nn.links.new(gy.outputs[0], mm1.inputs[1])
-    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.9, 1.5); nn.links.new(mm1.outputs[0], mm2.inputs[0])
+    gx2 = nn.nodes.new('ShaderNodeMath'); gx2.operation = 'POWER'; gx2.inputs[1].default_value = 3.0; nn.links.new(gx.outputs[0], gx2.inputs[0])   # bordes muy difusos
+    gy = nn.nodes.new('ShaderNodeMath'); gy.operation = 'POWER'; gy.inputs[1].default_value = 2.2; nn.links.new(spn.outputs['Y'], gy.inputs[0])     # se apaga hacia abajo
+    mm1 = nn.nodes.new('ShaderNodeMath'); mm1.operation = 'MULTIPLY'; nn.links.new(gx2.outputs[0], mm1.inputs[0]); nn.links.new(gy.outputs[0], mm1.inputs[1])
+    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.35, 0.6); nn.links.new(mm1.outputs[0], mm2.inputs[0])
     nn.links.new(mm2.outputs[0], em.inputs['Strength']); nn.links.new(ad.outputs[0], out.inputs[0]); m.surface_render_method = 'BLENDED'
     o.data.materials.append(m); o.visible_shadow = False
     for f in (1, NF):
-        o.location.x = -1.4 + i * 0.75 + 0.15 * math.sin(i + f / FPS * 0.5); o.keyframe_insert('location', index=0, frame=f)
+        o.location.x = x_ + 0.12 * math.sin(i * 1.7 + f / FPS * 0.35); o.keyframe_insert('location', index=0, frame=f)
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.nodes['Background'].inputs[0].default_value = (*TEAL, 1)
 w.node_tree.nodes['Background'].inputs[1].default_value = 0.85
 _wn = w.node_tree; _tc = _wn.nodes.new('ShaderNodeTexCoord'); _sp = _wn.nodes.new('ShaderNodeSeparateXYZ'); _wn.links.new(_tc.outputs['Generated'], _sp.inputs[0])
-_rp = _wn.nodes.new('ShaderNodeValToRGB'); _rp.color_ramp.elements[0].position = 0.35; _rp.color_ramp.elements[0].color = (*lin((12, 40, 92)), 1)
-_rp.color_ramp.elements[1].position = 0.75; _rp.color_ramp.elements[1].color = (*lin((96, 168, 222)), 1)   # agua: oscura abajo, clara arriba (modela al pez)
+_rp = _wn.nodes.new('ShaderNodeValToRGB'); _rp.color_ramp.elements[0].position = 0.35; _rp.color_ramp.elements[0].color = (*lin((14, 70, 118)), 1)
+_rp.color_ramp.elements[1].position = 0.75; _rp.color_ramp.elements[1].color = (*lin((120, 210, 232)), 1)   # agua: oscura abajo, clara arriba (modela al pez)
 _mr = _wn.nodes.new('ShaderNodeMapRange'); _mr.inputs['From Min'].default_value = -1.0; _wn.links.new(_sp.outputs['Z'], _mr.inputs['Value']); _wn.links.new(_mr.outputs[0], _rp.inputs['Fac'])
 _wn.links.new(_rp.outputs['Color'], _wn.nodes['Background'].inputs[0])
 # 6) particulas en suspension (como MOTES): puntitos finos que derivan
 R = random.Random(9)
-m_part = emit_mat('particula', lin((235, 248, 250)), 0.6)
+m_part = emit_mat('particula', lin((225, 248, 250)), 0.3)
 pm_ = bpy.data.meshes.new('motas'); pb = bmesh.new()
-for i in range(900):
-    c = Vector((R.uniform(-2.4, 2.4), R.uniform(-1.6, 2.6), R.uniform(-1.3, 1.4))); r = R.uniform(0.0015, 0.005)
-    bmesh.ops.create_icosphere(pb, subdivisions=1, radius=r, matrix=Matrix.Translation(c))
+for i in range(260):
+    c = Vector((R.uniform(-2.4, 2.4), R.uniform(-1.6, 2.6), R.uniform(-1.3, 1.4))); r = R.uniform(0.0012, 0.0035)
+    bmesh.ops.create_icosphere(pb, subdivisions=2, radius=r, matrix=Matrix.Translation(c))
 pb.to_mesh(pm_); motes = bpy.data.objects.new('MOTAS', pm_); sc.collection.objects.link(motes); motes.data.materials.append(m_part)
 motes.keyframe_insert('location', frame=1); motes.location = (0.08, 0.0, 0.10); motes.keyframe_insert('location', frame=NF)
 # ------------------------------------------------------------------ burbujas de aire reales + burbuja de dialogo (aire que se infla, lista para texto)
@@ -704,7 +703,7 @@ for i, (f0, r) in enumerate(((FT(60), 0.014), (FT(64), 0.009), (FT(67), 0.017), 
         t = (f - f0) / FPS; o.location = p0 + Vector((0.025 * math.sin(t * 9 + i) + 0.05 * t, -0.02, 0.2 * t + 0.1 * t * t))
         s = min(1.0, (f - f0) / 3.0); w_ = 0.07 * math.sin(t * 22 + i); o.scale = (s * (1 + w_), s, s * (1 - w_))
         o.keyframe_insert('location', frame=f); o.keyframe_insert('scale', frame=f)
-for i in range(14):                                                             # hilo de burbujas lejano (queda en la capa con niebla)
+for i in range(0):                                                              # (sin hilo de burbujas lejano) (queda en la capa con niebla)
     o = bubble(f'AIREFONDO_{i}', R.uniform(0.006, 0.016), m_air_far); x0 = 1.15 + R.uniform(-0.05, 0.05); y0 = 1.4; ph_ = R.uniform(0, 10)
     for f in range(1, NF + 1, 3):
         z = -1.3 + ((f / FPS * 0.45 + i / 14 * 2.6) % 2.6); o.location = (x0 + 0.02 * math.sin(f / FPS * 7 + ph_), y0, z); o.keyframe_insert('location', frame=f)
@@ -826,17 +825,17 @@ TIP = MOUTH + Vector((0.035, -0.04, 0.02)) - SPC                                
 GLOBO = speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100))
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
-sun.data.energy = 3.4; sun.data.color = (1.0, 0.97, 0.92); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
+sun.data.energy = 4.2; sun.data.color = (1.0, 0.97, 0.9); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
 sun.rotation_euler = (math.radians(22), math.radians(-16), 0)
 rim = bpy.data.objects.new('CONTRALUZ', bpy.data.lights.new('CONTRALUZ', 'SUN')); sc.collection.objects.link(rim)   # luz de contorno desde atras
 rim.data.energy = 3.2; rim.data.color = (0.82, 0.93, 1.0)                         # contraluz calido: separa al fry del fondo
 bnc = bpy.data.objects.new('REBOTE_ARENA', bpy.data.lights.new('REBOTE_ARENA', 'AREA')); sc.collection.objects.link(bnc)   # rebote calido de la arena en la panza
-bnc.data.energy = 22; bnc.data.size = 5; bnc.data.color = (0.62, 0.8, 1.0); bnc.location = (0, 0.2, -0.55); bnc.rotation_euler = (math.radians(180), 0, 0)
+bnc.data.energy = 26; bnc.data.size = 5; bnc.data.color = (0.85, 0.93, 0.95); bnc.location = (0, 0.2, -0.55); bnc.rotation_euler = (math.radians(180), 0, 0)
 rim.rotation_euler = (math.radians(-60), 0, math.radians(15)); rim.data.volume_factor = 0.0
 try: sun.data.volume_factor = 1.0
 except Exception: pass
 fill = bpy.data.objects.new('UW_FILL', bpy.data.lights.new('UW_FILL', 'SUN')); sc.collection.objects.link(fill)
-fill.data.energy = 0.5; fill.data.color = (0.75, 0.95, 0.95); fill.rotation_euler = (math.radians(110), 0, math.radians(-20)); fill.data.volume_factor = 0.0
+fill.data.energy = 0.9; fill.data.color = (0.75, 0.95, 0.95); fill.rotation_euler = (math.radians(110), 0, math.radians(-20)); fill.data.volume_factor = 0.0
 cam = bpy.data.objects.new('CAM', bpy.data.cameras.new('CAM')); sc.collection.objects.link(cam); sc.camera = cam
 cam.data.lens = 50; cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 2.8
 for F_ in range(1, NF + 1):
@@ -884,7 +883,7 @@ if not VOLUMEN:
     rl = cn.nodes.new('CompositorNodeRLayers'); rl.layer = 'escena'; rb = cn.nodes.new('CompositorNodeRLayers'); rb.layer = 'burbujas'
     co = cn.nodes.new('CompositorNodeComposite')
     gi = bpy.data.images.new('agua_gradiente', 256, 256, float_buffer=True)  # grande: al estirar, el borde no se mezcla con negro       # color de agua: azul profundo abajo -> turquesa claro arriba
-    lo_, hi_ = lin((14, 52, 112)), lin((112, 182, 230)); px = []                 # azul profundo -> celeste (como el brief)
+    lo_, hi_ = lin((18, 92, 140)), lin((128, 214, 232)); px = []                 # azul profundo -> celeste (como el brief)
     for yy in range(256):
         t_ = (yy / 255) ** 1.3; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 256
     gi.pixels = px
