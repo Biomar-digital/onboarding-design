@@ -908,7 +908,7 @@ if not VOLUMEN:
     vgs = cn.nodes.new('CompositorNodeScale'); vgs.space = 'RENDER_SIZE'; vgs.frame_method = 'STRETCH'; cn.links.new(vgn.outputs['Image'], vgs.inputs[0])
     vm = cn.nodes.new('CompositorNodeMixRGB'); vm.blend_type = 'MULTIPLY'; vm.inputs[0].default_value = 1.0
     cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vgs.outputs[0], vm.inputs[2])
-    wh = cn.nodes.new('CompositorNodeMixRGB'); wh.blend_type = 'MIX'; wh.inputs[2].default_value = (1, 1, 1, 1)   # placa blanca final (para el titulo)
+    wh = cn.nodes.new('CompositorNodeMixRGB'); wh.blend_type = 'MIX'; wh.inputs[2].default_value = (40, 40, 40, 1)   # AgX lleva 1.0 a gris: hace falta un valor alto para blanco puro   # placa blanca final (para el titulo)
     cn.links.new(vm.outputs[0], wh.inputs[1]); cn.links.new(wh.outputs[0], co.inputs[0])
     for F_, v_ in ((1, 0.0), (E1 - 8, 0.0), (E1 + 2, 1.0), (NF, 1.0)):
         wh.inputs[0].default_value = v_; wh.inputs[0].keyframe_insert('default_value', frame=F_)
