@@ -631,12 +631,12 @@ def alga(name, x, y, hgt, wid, ph_, lean):
     return o
 # (sin algas: fondo limpio de agua abierta, como Nemo)
 # rayos de sol: pocos, anchos y muy suaves, todos con la misma inclinacion que el sol, lejos detras del pez (se funden con la niebla)
-for i in range(5):
-    x_ = -2.2 + i * 1.15 + R.uniform(-0.25, 0.25); y_ = 2.6 + R.uniform(-0.3, 0.6)
+for i in range(8):
+    x_ = -2.6 + i * 0.75 + R.uniform(-0.25, 0.25); y_ = 1.6 + R.uniform(-0.4, 1.2)
     bpy.ops.mesh.primitive_plane_add(size=1, location=(x_, y_, 0.6), rotation=(math.radians(90), math.radians(-16), 0))
-    o = bpy.context.object; o.name = f'RAYO_{i}'; o.scale = (R.uniform(0.6, 1.2), 5.0, 1)
+    o = bpy.context.object; o.name = f'AIRE_rayo_{i}'; o.scale = (R.choice((0.22, 0.35, 0.6, 0.9, 1.3)), 5.0, 1)
     m = bpy.data.materials.new(f'rayo_{i}'); m.use_nodes = True; nn = m.node_tree; nn.nodes.clear()
-    out = nn.nodes.new('ShaderNodeOutputMaterial'); em = nn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((215, 245, 250)), 1)
+    out = nn.nodes.new('ShaderNodeOutputMaterial'); em = nn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((190, 245, 235)), 1)
     tr = nn.nodes.new('ShaderNodeBsdfTransparent'); ad = nn.nodes.new('ShaderNodeAddShader'); nn.links.new(tr.outputs[0], ad.inputs[0]); nn.links.new(em.outputs[0], ad.inputs[1])
     tcn = nn.nodes.new('ShaderNodeTexCoord'); spn = nn.nodes.new('ShaderNodeSeparateXYZ'); nn.links.new(tcn.outputs['UV'], spn.inputs[0])
     gx = nn.nodes.new('ShaderNodeMath'); gx.operation = 'SINE'; mxx = nn.nodes.new('ShaderNodeMath'); mxx.operation = 'MULTIPLY'; mxx.inputs[1].default_value = math.pi
@@ -644,17 +644,35 @@ for i in range(5):
     gx2 = nn.nodes.new('ShaderNodeMath'); gx2.operation = 'POWER'; gx2.inputs[1].default_value = 3.0; nn.links.new(gx.outputs[0], gx2.inputs[0])   # bordes muy difusos
     gy = nn.nodes.new('ShaderNodeMath'); gy.operation = 'POWER'; gy.inputs[1].default_value = 2.2; nn.links.new(spn.outputs['Y'], gy.inputs[0])     # se apaga hacia abajo
     mm1 = nn.nodes.new('ShaderNodeMath'); mm1.operation = 'MULTIPLY'; nn.links.new(gx2.outputs[0], mm1.inputs[0]); nn.links.new(gy.outputs[0], mm1.inputs[1])
-    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.7, 1.1); mm2.name = 'RAYO_K'; nn.links.new(mm1.outputs[0], mm2.inputs[0])
+    mm2 = nn.nodes.new('ShaderNodeMath'); mm2.operation = 'MULTIPLY'; mm2.inputs[1].default_value = R.uniform(0.10, 0.22); mm2.name = 'RAYO_K'; nn.links.new(mm1.outputs[0], mm2.inputs[0])
     nn.links.new(mm2.outputs[0], em.inputs['Strength']); nn.links.new(ad.outputs[0], out.inputs[0]); m.surface_render_method = 'BLENDED'
     o.data.materials.append(m); o.visible_shadow = False
     k0 = mm2.inputs[1].default_value
     for f in range(1, NF + 1, 5):
         o.location.x = x_ + 0.15 * math.sin(i * 1.7 + f / FPS * 0.35); o.keyframe_insert('location', index=0, frame=f)
         mm2.inputs[1].default_value = k0 * (0.7 + 0.3 * math.sin(f / FPS * 0.8 + i * 2.1)); mm2.inputs[1].keyframe_insert('default_value', frame=f)
+m_bok = bpy.data.materials.new('bokeh'); m_bok.use_nodes = True; nn = m_bok.node_tree; nn.nodes.clear()
+out = nn.nodes.new('ShaderNodeOutputMaterial'); em = nn.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*lin((200, 250, 240)), 1)
+tr = nn.nodes.new('ShaderNodeBsdfTransparent'); ad = nn.nodes.new('ShaderNodeAddShader'); nn.links.new(tr.outputs[0], ad.inputs[0]); nn.links.new(em.outputs[0], ad.inputs[1])
+tcn = nn.nodes.new('ShaderNodeTexCoord'); vm_ = nn.nodes.new('ShaderNodeVectorMath'); vm_.operation = 'DISTANCE'; vm_.inputs[1].default_value = (0.5, 0.5, 0)
+nn.links.new(tcn.outputs['UV'], vm_.inputs[0])
+mr_ = nn.nodes.new('ShaderNodeMapRange'); mr_.interpolation_type = 'SMOOTHSTEP'; mr_.inputs['From Min'].default_value = 0.5; mr_.inputs['From Max'].default_value = 0.30
+mr_.inputs['To Min'].default_value = 0.0; mr_.inputs['To Max'].default_value = 1.0; nn.links.new(vm_.outputs['Value'], mr_.inputs['Value'])
+oi_ = nn.nodes.new('ShaderNodeObjectInfo'); mb_ = nn.nodes.new('ShaderNodeMath'); mb_.operation = 'MULTIPLY_ADD'; mb_.inputs[1].default_value = 0.10; mb_.inputs[2].default_value = 0.03
+nn.links.new(oi_.outputs['Random'], mb_.inputs[0]); mk_ = nn.nodes.new('ShaderNodeMath'); mk_.operation = 'MULTIPLY'
+nn.links.new(mr_.outputs[0], mk_.inputs[0]); nn.links.new(mb_.outputs[0], mk_.inputs[1]); nn.links.new(mk_.outputs[0], em.inputs['Strength'])
+nn.links.new(ad.outputs[0], out.inputs[0]); m_bok.surface_render_method = 'BLENDED'
+for i in range(22):
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(R.uniform(-2.6, 2.6), R.uniform(0.9, 2.6), R.uniform(-1.0, 1.3)), rotation=(math.radians(90), 0, 0))
+    o = bpy.context.object; o.name = f'AIRE_bokeh_{i}'; r_ = R.uniform(0.05, 0.16); o.scale = (r_, r_, 1); o.data.materials.append(m_bok); o.visible_shadow = False
+    x0_, z0_, ph_ = o.location.x, o.location.z, R.uniform(0, 6.3)
+    for f in range(1, NF + 1, 10):
+        t_ = f / FPS; o.location.x = x0_ + 0.05 * math.sin(t_ * 0.5 + ph_); o.location.z = z0_ + 0.012 * t_ + 0.03 * math.sin(t_ * 0.7 + ph_)
+        o.keyframe_insert('location', frame=f)
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.nodes['Background'].inputs[0].default_value = (*TEAL, 1)
 w.node_tree.nodes['Background'].inputs[1].default_value = 0.85
 _wn = w.node_tree; _tc = _wn.nodes.new('ShaderNodeTexCoord'); _sp = _wn.nodes.new('ShaderNodeSeparateXYZ'); _wn.links.new(_tc.outputs['Generated'], _sp.inputs[0])
-_rp = _wn.nodes.new('ShaderNodeValToRGB'); _rp.color_ramp.elements[0].position = 0.35; _rp.color_ramp.elements[0].color = (*lin((10, 62, 92)), 1)
+_rp = _wn.nodes.new('ShaderNodeValToRGB'); _rp.color_ramp.elements[0].position = 0.35; _rp.color_ramp.elements[0].color = (*lin((14, 84, 110)), 1)
 _rp.color_ramp.elements[1].position = 0.75; _rp.color_ramp.elements[1].color = (*lin((150, 225, 222)), 1)   # agua: oscura abajo, clara arriba (modela al pez)
 _mr = _wn.nodes.new('ShaderNodeMapRange'); _mr.inputs['From Min'].default_value = -1.0; _wn.links.new(_sp.outputs['Z'], _mr.inputs['Value']); _wn.links.new(_mr.outputs[0], _rp.inputs['Fac'])
 _wn.links.new(_rp.outputs['Color'], _wn.nodes['Background'].inputs[0])
@@ -682,7 +700,7 @@ def air_mat(name, rim_em=1.1, method='BLENDED'):
     fac = n.nodes.new('ShaderNodeMath'); fac.operation = 'MULTIPLY_ADD'; n.links.new(pw.outputs[0], fac.inputs[0]); fac.inputs[1].default_value = 0.9; fac.inputs[2].default_value = 0.05
     n.links.new(fac.outputs[0], mx.inputs['Fac']); n.links.new(tr.outputs[0], mx.inputs[1]); n.links.new(ad.outputs[0], mx.inputs[2]); n.links.new(mx.outputs[0], out.inputs[0])
     m.surface_render_method = method; m.use_backface_culling = True; return m
-m_air = air_mat('aire', 1.6); m_air_far = air_mat('aire_lejos', 0.6, 'DITHERED')
+m_air = air_mat('aire', 2.4); m_air_far = air_mat('aire_lejos', 0.6, 'DITHERED')
 m_hlb = bpy.data.materials.new('brillo_burbuja'); m_hlb.use_nodes = True; n = m_hlb.node_tree; n.nodes.clear()
 out = n.nodes.new('ShaderNodeOutputMaterial'); em = n.nodes.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = 3.0
 n.links.new(em.outputs[0], out.inputs[0]); m_hlb.surface_render_method = 'BLENDED'
@@ -690,16 +708,16 @@ def bubble(name, r, mat_=None):
     bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=48, ring_count=24); o = bpy.context.object; o.name = name
     for p in o.data.polygons: p.use_smooth = True
     o.data.materials.append(mat_ or m_air); return o
-def highlights(parent, k=1.0):                                                   # reflejo de "ventana" arriba a la izquierda + puntito abajo
+def highlights(parent, k=1.0, u=1.0):                                                   # reflejo de "ventana" arriba a la izquierda + puntito abajo
     for nm, loc, sc_, rz in (('a', (-0.42, -0.86, 0.44), (0.2, 0.05, 0.07), 0.75), ('b', (0.47, -0.84, -0.42), (0.05, 0.03, 0.05), 0.0)):
         bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=24, ring_count=12); h = bpy.context.object; h.name = f'{parent.name}_brillo_{nm}'
-        h.parent = parent; h.location = loc; h.scale = tuple(v * k for v in sc_); h.rotation_euler = (0, -rz, 0); h.data.materials.append(m_hlb)
+        h.parent = parent; h.location = tuple(v * u for v in loc); h.scale = tuple(v * k * u for v in sc_); h.rotation_euler = (0, -rz, 0); h.data.materials.append(m_hlb)
         for p in h.data.polygons: p.use_smooth = True
 def mouth_world(f):                                                              # boca en el mundo en ese frame (la cabeza casi no ondula)
     sc.frame_set(f); return rig.matrix_world @ Vector((MX + 0.02, 0, MZ))
 def ez(t): t = min(max(t, 0.0), 1.0); return 1 - (1 - t) ** 3
-for i, (f0, r) in enumerate(((FT(60), 0.014), (FT(64), 0.009), (FT(67), 0.017), (FT(71), 0.008), (FT(74), 0.012))):   # burbujitas que suelta por la boca y suben
-    p0 = mouth_world(f0); o = bubble(f'AIRE_{i}', r)
+for i, (f0, r) in enumerate(((FT(60), 0.019), (FT(62), 0.009), (FT(64), 0.013), (FT(67), 0.023), (FT(69), 0.008), (FT(71), 0.012), (FT(74), 0.017))):   # burbujitas que suelta por la boca y suben
+    p0 = mouth_world(f0); o = bubble(f'AIRE_{i}', r); highlights(o, 1.0, r)
     o.scale = (0, 0, 0); o.location = p0; o.keyframe_insert('scale', frame=f0 - 1); o.keyframe_insert('location', frame=f0 - 1)
     for f in range(f0, NF + 1, 2):
         t = (f - f0) / FPS; o.location = p0 + Vector((0.025 * math.sin(t * 9 + i) + 0.05 * t, -0.02, 0.2 * t + 0.1 * t * t))
@@ -830,9 +848,9 @@ sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collect
 sun.data.energy = 4.2; sun.data.color = (1.0, 0.97, 0.9); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
 sun.rotation_euler = (math.radians(22), math.radians(-16), 0)
 rim = bpy.data.objects.new('CONTRALUZ', bpy.data.lights.new('CONTRALUZ', 'SUN')); sc.collection.objects.link(rim)   # luz de contorno desde atras
-rim.data.energy = 3.2; rim.data.color = (0.82, 0.93, 1.0)                         # contraluz calido: separa al fry del fondo
+rim.data.energy = 4.4; rim.data.color = (0.82, 0.93, 1.0)                         # contraluz calido: separa al fry del fondo
 bnc = bpy.data.objects.new('REBOTE_ARENA', bpy.data.lights.new('REBOTE_ARENA', 'AREA')); sc.collection.objects.link(bnc)   # rebote calido de la arena en la panza
-bnc.data.energy = 26; bnc.data.size = 5; bnc.data.color = (0.85, 0.93, 0.95); bnc.location = (0, 0.2, -0.55); bnc.rotation_euler = (math.radians(180), 0, 0)
+bnc.data.energy = 12; bnc.data.size = 5; bnc.data.color = (0.6, 0.92, 0.9); bnc.location = (0, 0.2, -0.55); bnc.rotation_euler = (math.radians(180), 0, 0)
 rim.rotation_euler = (math.radians(-60), 0, math.radians(15)); rim.data.volume_factor = 0.0
 try: sun.data.volume_factor = 1.0
 except Exception: pass
@@ -885,9 +903,9 @@ if not VOLUMEN:
     rl = cn.nodes.new('CompositorNodeRLayers'); rl.layer = 'escena'; rb = cn.nodes.new('CompositorNodeRLayers'); rb.layer = 'burbujas'
     co = cn.nodes.new('CompositorNodeComposite')
     gi = bpy.data.images.new('agua_gradiente', 256, 256, float_buffer=True)  # grande: al estirar, el borde no se mezcla con negro       # color de agua: azul profundo abajo -> turquesa claro arriba
-    lo_, hi_ = lin((8, 58, 88)), lin((150, 226, 220)); px = []                 # azul profundo -> celeste (como el brief)
+    lo_, hi_ = lin((16, 96, 122)), lin((158, 232, 224)); px = []                 # azul profundo -> celeste (como el brief)
     for yy in range(256):
-        t_ = (yy / 255) ** 1.6; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 256
+        t_ = (yy / 255) ** 1.25; c_ = [lo_[k] + (hi_[k] - lo_[k]) * t_ for k in range(3)]; px += (c_ + [1.0]) * 256
     gi.pixels = px
     gn_ = cn.nodes.new('CompositorNodeImage'); gn_.image = gi
     gsz = cn.nodes.new('CompositorNodeScale'); gsz.space = 'RENDER_SIZE'; gsz.frame_method = 'STRETCH'; cn.links.new(gn_.outputs['Image'], gsz.inputs[0])
