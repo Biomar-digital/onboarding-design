@@ -12,7 +12,8 @@ RW = int(argv[2]) if len(argv) > 2 else 1920
 SPP = int(argv[3]) if len(argv) > 3 else 32
 FR = argv[4] if len(argv) > 4 and not argv[4].startswith('--') else '1-125'
 SAVE = argv[argv.index('--save') + 1] if '--save' in argv else None
-FPS, NF = 25, 225                                                                # 9 s: el globo queda ~4,5 s quieto para leer la frase
+FPS, NF = 25, 250                                                                # 10 s: globo ~2,6 s para leer, se expande hasta llenar la pantalla de blanco (titulo)
+E0, E1 = 186, 214                                                               # expansion final del globo (frames reales); blanco total desde E1
 TS = 1.2                                                                         # la actuacion se estira x1.2 (mas tiempo para la duda)
 def FT(x): return int(round(1 + (x - 1) * TS))                                   # frame de diseno (5 s) -> frame real (6 s)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -42,7 +43,7 @@ def _smooth(a, k=4):
     return [sum(a[max(0, i - k):i + k + 1]) / len(a[max(0, i - k):i + k + 1]) for i in range(len(a))]
 _zcs = _smooth(_smooth(_zc, 10), 10); _hs = _smooth(_h, 4)                             # linea media muy suave
 # perfil de alto disenado (media altura, unidades de modelo): pedunculo fino -> cuerpo lleno -> cabeza redondeada integrada
-_HCP = [(0.0, 0.026), (0.10, 0.026), (0.17, 0.030), (0.30, 0.062), (0.44, 0.098), (0.57, 0.117), (0.68, 0.119), (0.78, 0.111), (0.87, 0.094), (0.94, 0.070), (0.985, 0.042), (1.0, 0.022)]   # como la referencia cartoon
+_HCP = [(0.0, 0.030), (0.10, 0.030), (0.16, 0.034), (0.30, 0.056), (0.48, 0.074), (0.64, 0.090), (0.78, 0.104), (0.88, 0.106), (0.94, 0.095), (0.985, 0.060), (1.0, 0.03)]
 def _hprof(u):                                                                   # Catmull-Rom por los puntos de control: curva continua y suave
     P_ = [_HCP[0]] + _HCP + [_HCP[-1]]
     for i in range(1, len(P_) - 2):
@@ -136,11 +137,11 @@ def top(X): zm, hh = z_mid(X); return zm + hh
 def bot(X): zm, hh = z_mid(X); return zm - hh
 # dorsal: vela alta adelante y baja atras, en la mitad del lomo
 dorsal = fan_fin('FRY_aleta_dorsal', (0.135, top(0.135) - 0.014), (-0.035, top(-0.035) - 0.012),
-                 [(0.125, top(0.125) + 0.05), (0.10, top(0.10) + 0.105), (0.065, top(0.065) + 0.125), (0.02, top(0.02) + 0.098), (-0.025, top(-0.025) + 0.038)], 13)
+                 [(0.12, top(0.12) + 0.032), (0.095, top(0.095) + 0.068), (0.062, top(0.062) + 0.08), (0.022, top(0.022) + 0.062), (-0.025, top(-0.025) + 0.025)], 11)
 adipose = fan_fin('FRY_aleta_adiposa', (-0.205, top(-0.205) - 0.010), (-0.275, top(-0.275) - 0.008),
                   [(-0.215, top(-0.215) + 0.022), (-0.24, top(-0.24) + 0.032), (-0.265, top(-0.265) + 0.02)], 0)
 anal = fan_fin('FRY_aleta_anal', (-0.075, bot(-0.075) + 0.012), (-0.17, bot(-0.17) + 0.010),
-               [(-0.085, bot(-0.085) - 0.045), (-0.105, bot(-0.105) - 0.07), (-0.14, bot(-0.14) - 0.06), (-0.175, bot(-0.175) - 0.022)], 10)
+               [(-0.085, bot(-0.085) - 0.035), (-0.105, bot(-0.105) - 0.055), (-0.14, bot(-0.14) - 0.047), (-0.172, bot(-0.172) - 0.017)], 9)
 fins = [dorsal, adipose, anal]
 for sgn in (-1, 1):                                                              # ventrales: pares, bajo la panza, abiertas hacia afuera
     X_ = 0.03; zm_, hh_ = z_mid(X_); hw_ = half_w(X_); yb_ = sgn * hw_ * 0.42; zb2 = zm_ - hh_ * 0.88
@@ -148,19 +149,19 @@ for sgn in (-1, 1):                                                             
     def xf(co, u, yb_=yb_, zb2=zb2, th_=th_):
         x, z = co.x, co.z - zb2; return Vector((x, yb_ - z * math.sin(th_), zb2 + z * math.cos(th_)))
     fins.append(fan_fin(f'FRY_aleta_ventral_{sgn}', (0.0, zb2 + 0.006), (0.065, zb2 + 0.006),
-                        [(-0.03, zb2 - 0.05), (-0.015, zb2 - 0.08), (0.03, zb2 - 0.068), (0.058, zb2 - 0.012)], 9, xf))
+                        [(-0.02, zb2 - 0.036), (-0.01, zb2 - 0.056), (0.026, zb2 - 0.048), (0.05, zb2 - 0.008)], 8, xf))
 # caudal en horquilla (dos lobulos redondeados), la base entra en el pedunculo
 cx_ = -0.352; zb_ = z_mid(-0.39)[0]
 caudal = fan_fin('FRY_aleta_caudal', (cx_, zb_ - 0.024), (cx_, zb_ + 0.024),
-                 [(-0.40, zb_ - 0.055), (-0.48, zb_ - 0.115), (-0.55, zb_ - 0.145), (-0.578, zb_ - 0.13), (-0.55, zb_ - 0.07), (-0.505, zb_ - 0.014),
-                  (-0.497, zb_), (-0.505, zb_ + 0.014), (-0.55, zb_ + 0.07), (-0.578, zb_ + 0.13), (-0.55, zb_ + 0.145), (-0.48, zb_ + 0.115), (-0.40, zb_ + 0.055)], 20, th=0.0036, NV=80)
+                 [(-0.395, zb_ - 0.045), (-0.455, zb_ - 0.085), (-0.505, zb_ - 0.102), (-0.525, zb_ - 0.088), (-0.51, zb_ - 0.048), (-0.49, zb_ - 0.011),
+                  (-0.485, zb_), (-0.49, zb_ + 0.011), (-0.51, zb_ + 0.048), (-0.525, zb_ + 0.088), (-0.505, zb_ + 0.102), (-0.455, zb_ + 0.085), (-0.395, zb_ + 0.045)], 20, th=0.0036, NV=80)
 # pectorales: abanico redondeado detras del operculo; pivote en la base (eje vertical local), aletean siempre hacia afuera
 GX = P(1238, 560)[0]; PX = GX - 0.02
 pects = []
 for sgn in (-1, 1):
     zm_, hh_ = z_mid(PX); pz = zm_ - hh_ * 0.38; py = sgn * half_w(PX) * 0.86
     pe = fan_fin(f'FRY_aleta_pect_{sgn}', (0.0, -0.024), (0.0, 0.024),
-                 [(-0.035, -0.04), (-0.1, -0.048), (-0.16, -0.03), (-0.175, 0.008), (-0.135, 0.044), (-0.055, 0.046)], 13, th=0.003)
+                 [(-0.025, -0.028), (-0.07, -0.032), (-0.11, -0.02), (-0.12, 0.006), (-0.09, 0.03), (-0.04, 0.032)], 13, th=0.003)
     pe.location = (PX, py, pz); pe.rotation_mode = 'XYZ'; pects.append(pe)
 # ------------------------------------------------------------------ materiales
 def mat(name, col, rough=0.4, alpha=1.0, emit=0.0, sss=0.0, rim=None):
@@ -249,9 +250,9 @@ oper = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', M(n
          M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', C), 0.6, 0.8)))
 col = mixc(nt, M(nt, 'MULTIPLY', oper, 0.55), col, lin((60, 80, 88)))
 nt.links.new(col, bs.inputs['Base Color'])
-bs.inputs['Metallic'].default_value = 0.12; bs.inputs['Roughness'].default_value = 0.38; bs.inputs['Specular IOR Level'].default_value = 0.4
-bs.inputs['Coat Weight'].default_value = 0.15; bs.inputs['Coat Roughness'].default_value = 0.15
-bs.inputs['Thin Film Thickness'].default_value = 260.0; bs.inputs['Thin Film IOR'].default_value = 1.5
+bs.inputs['Metallic'].default_value = 0.06; bs.inputs['Roughness'].default_value = 0.52; bs.inputs['Specular IOR Level'].default_value = 0.3
+bs.inputs['Coat Weight'].default_value = 0.08; bs.inputs['Coat Roughness'].default_value = 0.35
+bs.inputs['Thin Film Thickness'].default_value = 0.0; bs.inputs['Thin Film IOR'].default_value = 1.5
 bs.inputs['Subsurface Weight'].default_value = 0.15; bs.inputs['Subsurface Radius'].default_value = (0.04, 0.06, 0.07)
 bs.inputs['Emission Color'].default_value = (*lin((255, 236, 180)), 1); nt.links.new(caustic(nt, 0.28), bs.inputs['Emission Strength'])
 # escamas finas (relieve) y plateado que destella en el flanco cuando gira (como el salmon)
@@ -259,7 +260,7 @@ vsc = nt.nodes.new('ShaderNodeTexVoronoi'); vsc.inputs['Scale'].default_value = 
 vmul.inputs[1].default_value = (140.0, 22.0, 22.0); nt.links.new(at.outputs['Vector'], vmul.inputs[0]); nt.links.new(vmul.outputs[0], vsc.inputs['Vector'])
 bsc = nt.nodes.new('ShaderNodeBump'); bsc.inputs['Strength'].default_value = 0.12; bsc.inputs['Distance'].default_value = 0.002
 nt.links.new(vsc.outputs['Distance'], bsc.inputs['Height']); nt.links.new(bsc.outputs['Normal'], bs.inputs['Normal'])
-nt.links.new(M(nt, 'MULTIPLY_ADD', M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', C), 0.3, 0.75)), 0.18), bs.inputs['Metallic']); nt.nodes[-1].inputs[2].default_value = 0.08
+nt.links.new(M(nt, 'MULTIPLY_ADD', M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', C), 0.3, 0.75)), 0.12), bs.inputs['Metallic']); nt.nodes[-1].inputs[2].default_value = 0.08
 body.data.materials.append(m_body)
 # aletas: abanico opaco (no parpadea) con radios marcados, de plateado en la base a ambar calido en el borde, borde claro;
 #          algo de luz que las atraviesa (translucido) para que brillen a contraluz
@@ -360,7 +361,7 @@ def mouth_pts(op=0.0, sm=0.0, sk=0.0, rnd=0.0):
         inner.append(col_)
         pu, nu = on_skin(y, zc + h * 0.5); pl, nl = on_skin(y, zc - h * 0.5); up_.append((pu, nu, s)); lo_.append((pl, nl, s))
     return inner, up_, lo_
-def lips_geo(edge, rad=0.0062, nr=10):
+def lips_geo(edge, rad=0.0034, nr=10):
     rings_ = []
     for i, (p_, n_, s) in enumerate(edge):
         a_ = edge[max(i - 1, 0)][0]; b_ = edge[min(i + 1, len(edge) - 1)][0]; T = (b_ - a_).normalized(); Bn = T.cross(n_).normalized()
@@ -405,7 +406,7 @@ tong = M(nt, 'MULTIPLY', smooth(nt, M(nt, 'MULTIPLY', bsp.outputs[1], -1.0), 0.2
 mcol = mixc(nt, M(nt, 'MULTIPLY', tong, 0.85), mcol, lin((214, 104, 112)))          # lengua rosada abajo
 nt.links.new(mcol, bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.65; bs.inputs['Specular IOR Level'].default_value = 0.15
 m_lip = bpy.data.materials.new('labios'); m_lip.use_nodes = True; bs = m_lip.node_tree.nodes['Principled BSDF']
-bs.inputs['Base Color'].default_value = (*lin((200, 138, 146)), 1); bs.inputs['Roughness'].default_value = 0.32
+bs.inputs['Base Color'].default_value = (*lin((118, 132, 156)), 1); bs.inputs['Roughness'].default_value = 0.5   # labio discreto, apenas mas oscuro que la piel
 bs.inputs['Subsurface Weight'].default_value = 0.3; bs.inputs['Subsurface Radius'].default_value = (0.01, 0.005, 0.004); bs.inputs['Coat Weight'].default_value = 0.4
 mouth_in = build_mouth('FRY_boca_interior', POSES, m_mint, 'interior')
 mouth = build_mouth('FRY_boca_labios', POSES, m_lip, 'labios')
@@ -472,6 +473,7 @@ for F_ in range(1, NF + 1):
         b.keyframe_insert('rotation_euler', frame=F_)
     xs = -2.45 + 2.2 * (1 - (1 - min(1, (f - 1) / 58)) ** 2.2) + 0.03 * hover * math.sin(t * 1.3)
     zs = -0.07 + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
+    po = ease((F_ - E0) / (E1 - 6 - E0)); xs -= 1.1 * po * po; zs -= 0.45 * po * po   # el globo que crece lo empuja fuera de cuadro
     rig.location = (xs, 0, zs); rig.keyframe_insert('location', frame=F_)
     turn = ease((f - 54) / 10) * (1 - 0.5 * ease((f - 70) / 14))                   # gira hacia camara
     up_ = ease((f - 66) / 20)                                                    # sube la cabeza (duda) hacia la burbuja
@@ -792,7 +794,7 @@ def speech(name, C, A, B, tip, f0, f1):
     mw_ = bpy.data.materials.new(f'{name}_blanco'); mw_.use_nodes = True; bs_ = mw_.node_tree.nodes['Principled BSDF']
     bs_.inputs['Base Color'].default_value = (0.97, 0.975, 0.98, 1); bs_.inputs['Roughness'].default_value = 0.42
     bs_.inputs['Subsurface Weight'].default_value = 0.2; bs_.inputs['Subsurface Radius'].default_value = (0.03, 0.03, 0.035)
-    bs_.inputs['Coat Weight'].default_value = 0.35; bs_.inputs['Coat Roughness'].default_value = 0.12
+    bs_.inputs['Coat Weight'].default_value = 0.12; bs_.inputs['Coat Roughness'].default_value = 0.35
     bs_.inputs['Emission Color'].default_value = (1, 1, 1, 1); bs_.inputs['Emission Strength'].default_value = 0.5   # que lea blanco bajo el agua
     mo_ = bpy.data.materials.new(f'{name}_contorno'); mo_.use_nodes = True; nn_ = mo_.node_tree; nn_.nodes.clear()
     oo_ = nn_.nodes.new('ShaderNodeOutputMaterial'); eo_ = nn_.nodes.new('ShaderNodeEmission'); eo_.inputs['Color'].default_value = (*lin((16, 44, 92)), 1)
@@ -812,10 +814,10 @@ def speech(name, C, A, B, tip, f0, f1):
     return ctl
 MOUTH = mouth_world(FT(108)); SPC = Vector((MOUTH.x + 0.37, -0.04, MOUTH.z + 0.25))
 TIP = MOUTH + Vector((0.035, -0.04, 0.02)) - SPC                                  # la punta queda cerca de la boca
-speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100))
+GLOBO = speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100))
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
-sun.data.energy = 3.4; sun.data.color = (1.0, 0.97, 0.92); sun.data.angle = math.radians(5)
+sun.data.energy = 3.4; sun.data.color = (1.0, 0.97, 0.92); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
 sun.rotation_euler = (math.radians(22), math.radians(-16), 0)
 rim = bpy.data.objects.new('CONTRALUZ', bpy.data.lights.new('CONTRALUZ', 'SUN')); sc.collection.objects.link(rim)   # luz de contorno desde atras
 rim.data.energy = 3.2; rim.data.color = (0.82, 0.93, 1.0)                         # contraluz calido: separa al fry del fondo
@@ -834,6 +836,17 @@ for F_ in range(1, NF + 1):
     cam.rotation_euler = (math.radians(86 + 0.25 * math.sin(t * 1.3)), math.radians(0.3 * math.sin(t * 0.9)), math.radians(0.25 * math.sin(t * 1.6 + 1)))
     cam.keyframe_insert('location', frame=F_); cam.keyframe_insert('rotation_euler', frame=F_)
     cam.data.dof.focus_distance = 2.78 - push; cam.data.dof.keyframe_insert('focus_distance', frame=F_)
+# final: el globo se sigue inflando y viene hacia camara hasta tapar todo; se enciende a blanco puro para el titulo
+_mw = bpy.data.materials['PENSAMIENTO_globo_blanco'].node_tree.nodes['Principled BSDF'].inputs['Emission Strength']
+_mw.keyframe_insert('default_value', frame=E0)
+for F_ in range(E0, NF + 1):
+    sc.frame_set(F_); k = ease((F_ - E0) / (E1 - E0)); k2 = k * k
+    cpos = cam.matrix_world.translation; fwd = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+    tgt = cpos + fwd * 1.05 + Vector((0.0, 0, -0.02))
+    base_ = SPC + Vector((0, 0, 0.006 * math.sin((F_ - FT(90)) / FPS * 2.0)))
+    GLOBO.location = base_.lerp(tgt, k); s_ = 1.0 + 2.2 * k2 + 0.6 * k
+    GLOBO.scale = (s_, s_, s_); GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_)
+    _mw.default_value = 0.5 + 3.0 * ease((F_ - E0 - 12) / (E1 - E0 - 12)); _mw.keyframe_insert('default_value', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
@@ -893,7 +906,11 @@ if not VOLUMEN:
     vgn = cn.nodes.new('CompositorNodeImage'); vgn.image = vgi
     vgs = cn.nodes.new('CompositorNodeScale'); vgs.space = 'RENDER_SIZE'; vgs.frame_method = 'STRETCH'; cn.links.new(vgn.outputs['Image'], vgs.inputs[0])
     vm = cn.nodes.new('CompositorNodeMixRGB'); vm.blend_type = 'MULTIPLY'; vm.inputs[0].default_value = 1.0
-    cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vgs.outputs[0], vm.inputs[2]); cn.links.new(vm.outputs[0], co.inputs[0])
+    cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vgs.outputs[0], vm.inputs[2])
+    wh = cn.nodes.new('CompositorNodeMixRGB'); wh.blend_type = 'MIX'; wh.inputs[2].default_value = (1, 1, 1, 1)   # placa blanca final (para el titulo)
+    cn.links.new(vm.outputs[0], wh.inputs[1]); cn.links.new(wh.outputs[0], co.inputs[0])
+    for F_, v_ in ((1, 0.0), (E1 - 8, 0.0), (E1 + 2, 1.0), (NF, 1.0)):
+        wh.inputs[0].default_value = v_; wh.inputs[0].keyframe_insert('default_value', frame=F_)
 CLOSE = '--cerca' in argv                                                         # camara de primer plano a la cabeza (para revisar ojos/parpados)
 if SAVE: bpy.ops.wm.save_as_mainfile(filepath=SAVE)
 a, b = (int(v) for v in FR.split('-'))
