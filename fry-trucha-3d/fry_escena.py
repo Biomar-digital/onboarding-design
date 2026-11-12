@@ -361,18 +361,18 @@ def mouth_pts(op=0.0, sm=0.0, sk=0.0, rnd=0.0, pk=0.0):
     for i in range(NS_):
         s = -1 + 2 * i / (NS_ - 1); y = s * w_; env = (1 - s * s) ** 0.6
         zc = MCZ + 0.008 * sm * s * s - 0.003 * sm + 0.008 * sk * s - 0.002 * s * s * (1 - sm)   # curva de la boca (algo triste por defecto -> neutra)
-        h = (0.0016 + op * 0.05 + rnd * 0.034 + pk * 0.012) * (env if rnd < 0.5 else (1 - s * s) ** 0.45)
+        h = (0.0030 + op * 0.05 + rnd * 0.034 + pk * 0.012) * (env if rnd < 0.5 else (1 - s * s) ** 0.45)
         col_ = []
         for r in range(NR_):
-            rr = -1 + 2 * r / (NR_ - 1); p_, n_ = on_skin(y, zc + rr * h * 0.5); dep_ = (1 - rr * rr) * env * min(1.0, h / 0.02); col_.append(p_ + n_ * (0.0015 - 0.012 * dep_))
+            rr = -1 + 2 * r / (NR_ - 1); p_, n_ = on_skin(y, zc + rr * h * 0.5); dep_ = (1 - rr * rr) * env * min(1.0, h / 0.02); col_.append(p_ + n_ * (0.0035 - 0.0055 * dep_))
         inner.append(col_)
         pu, nu = on_skin(y, zc + h * 0.5); pl, nl = on_skin(y, zc - h * 0.5); up_.append((pu + nu * 0.010 * pk, nu, s)); lo_.append((pl + nl * 0.010 * pk, nl, s))   # en la 'o' el borde sale apenas
     return inner, up_, lo_, pk
-def lips_geo(edge, rad=0.0024, nr=10):
+def lips_geo(edge, rad=0.0028, nr=10):
     rings_ = []
     for i, (p_, n_, s) in enumerate(edge):
         a_ = edge[max(i - 1, 0)][0]; b_ = edge[min(i + 1, len(edge) - 1)][0]; T = (b_ - a_).normalized(); Bn = T.cross(n_).normalized()
-        r_ = rad * (0.25 + 0.75 * (1 - abs(s) ** 2)); c_ = p_ + n_ * r_ * 0.05
+        r_ = rad * (0.25 + 0.75 * (1 - abs(s) ** 2)); c_ = p_ + n_ * r_ * 0.25
         rings_.append([c_ + (n_ * math.cos(2 * math.pi * k / nr) + Bn * math.sin(2 * math.pi * k / nr)) * r_ for k in range(nr)])
     return rings_
 def build_mouth(name, poses, mat_, kind):
@@ -409,13 +409,13 @@ MA = on_skin(0.0, MCZ)[0]                                                       
 m_mint = bpy.data.materials.new('boca_interior'); m_mint.use_nodes = True; nt = m_mint.node_tree; bs = nt.nodes['Principled BSDF']
 bat = nt.nodes.new('ShaderNodeAttribute'); bat.attribute_name = 'bocauv'; bsp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(bat.outputs['Vector'], bsp.inputs[0])
 ins = M(nt, 'SUBTRACT', 1.0, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'POWER', bsp.outputs[0], 2.0), M(nt, 'POWER', bsp.outputs[1], 2.0))))
-mcol = mixc(nt, smooth(nt, ins, 0.0, 0.6), lin((168, 92, 104)), lin((52, 16, 26)))     # rosado en el borde -> oscuro adentro
+mcol = mixc(nt, smooth(nt, ins, 0.0, 0.6), lin((118, 50, 64)), lin((38, 10, 18)))     # rojo apagado en el borde -> oscuro adentro
 tong = M(nt, 'MULTIPLY', smooth(nt, M(nt, 'MULTIPLY', bsp.outputs[1], -1.0), 0.25, 0.75), M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', bsp.outputs[0]), 0.35, 0.7)))
 mcol = mixc(nt, M(nt, 'MULTIPLY', tong, 0.85), mcol, lin((214, 104, 112)))          # lengua rosada abajo
 nt.links.new(mcol, bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.65; bs.inputs['Specular IOR Level'].default_value = 0.15
 nt.links.new(mcol, bs.inputs['Emission Color']); bs.inputs['Emission Strength'].default_value = 0.12
 m_lip = bpy.data.materials.new('labios'); m_lip.use_nodes = True; bs = m_lip.node_tree.nodes['Principled BSDF']
-bs.inputs['Base Color'].default_value = (*lin((186, 206, 220)), 1); bs.inputs['Roughness'].default_value = 0.42   # borde de piel: mismo tono que el hocico
+bs.inputs['Base Color'].default_value = (*lin((132, 160, 186)), 1); bs.inputs['Roughness'].default_value = 0.5   # borde de piel en sombra (pliegue)
 bs.inputs['Subsurface Weight'].default_value = 0.3; bs.inputs['Subsurface Radius'].default_value = (0.01, 0.005, 0.004); bs.inputs['Coat Weight'].default_value = 0.4
 mouth_in = build_mouth('FRY_boca_interior', POSES, m_mint, 'interior')
 mouth = build_mouth('FRY_boca_labios', POSES, m_lip, 'labios')
