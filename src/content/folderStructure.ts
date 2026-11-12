@@ -7,9 +7,11 @@ import type { FolderNode } from "./types";
 // Every folder carries a `note`: some are the original annotation callouts from
 // the source diagram, the rest are inferred from the folder's name and place in
 // the tree so every folder has a short explanation, not just the annotated ones.
-// Note: the source diagram has two separate branches both labeled "SALMON" —
-// that duplication is preserved here on purpose (see FolderExplorer's index-based
-// keys, which handle same-named siblings safely).
+// Note: the source diagram labels two branches "SALMON". There is only one
+// SALMON folder (the market region); the second one holds the sustainability
+// materials — the wizard lists "Sustainability" as its own category and the
+// Complementary Guidelines cite "Sustainability > 1. Sustainability Report" —
+// so it is named Sustainability here.
 // ─────────────────────────────────────────────────────────────────────────────
 export const folderTree: FolderNode[] = [
   {
@@ -682,7 +684,7 @@ export const folderTree: FolderNode[] = [
         ]
       },
       { name: "RnD", note: "R&D (Research & Development) category folder — currently empty and not yet built out on the shared drive." },
-      { name: "SALMON", note: "Salmon R&D and sustainability communications materials",
+      { name: "Sustainability", note: "Sustainability and R&D communications materials: the sustainability report, BioSustain, white papers and related decks and videos",
         children: [
           { name: "¤ Archive", note: "Older or superseded sustainability/R&D files kept for reference" },
           { name: "1. Sustainability Report", note: "Annual salmon sustainability report and related files" },
