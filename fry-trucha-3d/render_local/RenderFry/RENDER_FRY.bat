@@ -72,7 +72,7 @@ if "%M%"=="2" (
   if not exist "prueba" mkdir "prueba"
   for %%F in (30 60 95 125 195 205) do (
     echo  Cuadro de prueba %%F...
-    "%BL%" -b -P "fuente\fry_escena.py" -- "fuente\silueta.json" "prueba" 1920 32 %%F-%%F > "prueba\log_%%F.txt" 2>&1
+    "%BL%" -b -P "%CD%\fuente\fry_escena.py" -- "%CD%\fuente\silueta.json" "%CD%\prueba" 1920 32 %%F-%%F > "prueba\log_%%F.txt" 2>&1
   )
   echo.
   echo  Listo: mira las imagenes en la carpeta "prueba".
@@ -80,6 +80,8 @@ if "%M%"=="2" (
   pause & goto :eof
 )
 
+rem ---- la primera version guardaba por error en C:\cuadros: si estan ahi, los trae
+if exist "C:\cuadros\f_0001.png" if not exist "%OUT%\f_0001.png" (echo  Traigo los cuadros que quedaron en C:\cuadros ... & copy /y "C:\cuadros\f_*.png" "%OUT%\" >nul)
 rem ---- busca el primer cuadro que falta (para retomar)
 set "START=1"
 :findstart
@@ -93,7 +95,7 @@ if !START! gtr %LAST% goto :encode
 echo.
 echo  Renderizando cuadros !START! a %LAST% ...  ^(se puede cerrar y volver a abrir: sigue desde el ultimo cuadro^)
 echo  Hora de inicio: %TIME%
-"%BL%" -b -P "fuente\fry_escena.py" -- "fuente\silueta.json" "%OUT%" 1920 32 !START!-%LAST% > "log_render.txt" 2>&1
+"%BL%" -b -P "%CD%\fuente\fry_escena.py" -- "%CD%\fuente\silueta.json" "%CD%\%OUT%" 1920 32 !START!-%LAST% > "log_render.txt" 2>&1
 set "N=0000%LAST%"
 set "N=!N:~-4!"
 if not exist "%OUT%\f_!N!.png" (
