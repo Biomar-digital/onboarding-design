@@ -1,0 +1,19 @@
+FRY DE TRUCHA 3D - RENDER EN TU COMPUTADORA
+===========================================
+
+1. Descomprimi el zip (clic derecho - "Extraer todo"). Mejor en C:\RenderFry, no dentro de OneDrive.
+2. Doble clic en RENDER_FRY.bat
+3. Elegi:
+     1 = video completo (calidad final, 1920x1080, 11 segundos)
+     2 = prueba rapida de 6 cuadros, para ver que todo funciona antes de largar el video
+     3 = empezar de cero (borra los cuadros ya hechos)
+4. Al terminar queda fry_pregunta.mp4 en esta misma carpeta. Los cuadros sueltos quedan en "cuadros".
+
+Notas
+- Usa el mismo Blender 4.2 y ffmpeg que bajo el render de RAS 360 (en %LOCALAPPDATA%\RAS360).
+  Si no estan, los descarga una sola vez (unos 580 MB).
+- Si se corta o cerras la ventana, volve a abrir el .bat y elegi 1: sigue desde el ultimo cuadro hecho.
+- Los primeros minutos no muestra nada: esta armando la escena. Despues va guardando un cuadro tras otro.
+- Con placa de video dedicada deberia tardar entre 5 y 20 minutos. Con graficos integrados, entre 30 y 60.
+- Si algo falla, mandame el archivo log_render.txt.
+- El globo de dialogo va vacio y los ultimos 1,5 segundos son blanco puro para poner el titulo.
