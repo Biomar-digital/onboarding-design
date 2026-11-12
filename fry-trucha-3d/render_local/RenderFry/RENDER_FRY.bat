@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title Fry de trucha 3D - render en tu placa de video (v16)
+title Fry de trucha 3D - render en tu placa de video (v17)
 cd /d "%~dp0"
 echo.
 echo  ===  Fry de trucha 3D - render del video (1920x1080, 11 s)  ===
@@ -63,7 +63,7 @@ echo    3 = Empezar de cero ^(borra los cuadros ya hechos^)
 echo.
 choice /c 123 /n /m "Elegi 1, 2 o 3: "
 set "M=%errorlevel%"
-set "OUT=cuadros_v16"
+set "OUT=cuadros_v17"
 set "LAST=228"
 if "%M%"=="3" (if exist "%OUT%" rmdir /s /q "%OUT%")
 if not exist "%OUT%" mkdir "%OUT%"
