@@ -355,7 +355,7 @@ def on_skin(phi, z):                                                            
     hit = _bvh.ray_cast(o_, -d_)
     if not hit[0]: return Vector((MX, 0, z)), Vector((1, 0, 0))
     n_ = hit[1].normalized(); return hit[0], (n_ if n_.dot(d_) > 0 else -n_)          # normal siempre hacia afuera
-MW, MCZ, NS_, NR_ = math.radians(66), MZ + 0.0, 48, 9
+MW, MCZ, NS_, NR_ = math.radians(50), MZ + 0.0, 48, 9
 def mouth_pts(op=0.0, sm=0.0, sk=0.0, rnd=0.0, pk=0.0):
     w_ = MW * (1 - 0.45 * rnd) * (1 - 0.5 * pk); inner, up_, lo_ = [], [], []
     for i in range(NS_):
@@ -380,7 +380,7 @@ def build_mouth(name, poses, mat_, kind):
     def flat(g):
         inner, up_, lo_, pk_ = g
         if kind == 'interior': return [p for col_ in inner for p in col_]
-        return [p for r in lips_geo(up_, 0.0034 * (1 + 1.6 * pk_)) + lips_geo(lo_, 0.0034 * (1 + 1.6 * pk_)) for p in r]
+        return [p for r in lips_geo(up_, 0.0034 * (1 + 1.2 * pk_)) + lips_geo(lo_, 0.0034 * (1 + 1.2 * pk_)) for p in r]
     m = bpy.data.meshes.new(name); bm_ = bmesh.new(); vs = [bm_.verts.new(p) for p in flat(geo[0])]
     if kind == 'interior':
         for i in range(NS_ - 1):
@@ -405,7 +405,7 @@ def build_mouth(name, poses, mat_, kind):
     sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 1
     return o
 POSES = {'Basis': {}, 'abre': {'op': 1.0}, 'o': {'rnd': 1.0}, 'sonrie': {'sm': 1.0}, 'duda': {'sk': 1.0}, 'sopla': {'rnd': 0.6, 'pk': 1.0}}
-MA = on_skin(0.0, MCZ)[0]                                                        # centro de la boca sobre la piel (punta del hocico): de aca sale el aire
+MA = on_skin(0.0, MCZ)[0] + Vector((0, 0, -0.005))                                                        # centro de la boca sobre la piel (punta del hocico): de aca sale el aire
 m_mint = bpy.data.materials.new('boca_interior'); m_mint.use_nodes = True; nt = m_mint.node_tree; bs = nt.nodes['Principled BSDF']
 bat = nt.nodes.new('ShaderNodeAttribute'); bat.attribute_name = 'bocauv'; bsp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(bat.outputs['Vector'], bsp.inputs[0])
 ins = M(nt, 'SUBTRACT', 1.0, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'POWER', bsp.outputs[0], 2.0), M(nt, 'POWER', bsp.outputs[1], 2.0))))
@@ -539,9 +539,10 @@ for F_ in range(1, NF + 1):
     SYL = []
     talk = sum(a_ * bump(f, s0, s1) for s0, s1, a_, _ in SYL); rnd_ = sum(r_ * bump(f, s0, s1) for s0, s1, _, r_ in SYL)
     breath = 0.06 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 0.9)) * hover * (1 - bump(f, 90, 112))
-    smile = 0.7 * ease((f - 121) / 10) * (1 - blow)
+    hold = ease((f - 89.0) / 2.5)                                                 # tiene el globo agarrado con los labios
+    smile = 0.3 * ease((f - 121) / 10) * (1 - blow)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff + 0.35 * inh * (1 - blow)), o=min(1.0, 0.9 * puff), sonrie=smile, duda=0.8 * hmm * (1 - blow), sopla=min(1.0, 1.25 * exh + blow))
+        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, 0.5 * hold + 0.6 * exh + 0.5 * blow)))
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
@@ -836,7 +837,7 @@ def pillow_mesh(name, poly, T=0.05, D=0.07, step=0.011):
     m = bpy.data.meshes.new(name); bm_.to_mesh(m)
     for p in m.polygons: p.use_smooth = True
     return m
-def speech(name, C, A, B, tip, f0, f1):
+def speech(name, C, A, B, tip, f0, f1, ff=(0.95, 0.3)):
     ctl = bpy.data.objects.new(name, None); sc.collection.objects.link(ctl); ctl.location = C
     a1, a2 = math.radians(205), math.radians(238)                                # la colita sale entre estos angulos del ovalo (abajo a la izquierda)
     pts = []
@@ -844,17 +845,18 @@ def speech(name, C, A, B, tip, f0, f1):
         a_ = a2 + (2 * math.pi - (a2 - a1)) * i / 109; pts.append((A * math.cos(a_), B * math.sin(a_)))
     e1 = (A * math.cos(a1), B * math.sin(a1)); e2 = (A * math.cos(a2), B * math.sin(a2))
     r_ = 0.016; mid_ = ((e1[0] + e2[0]) / 2, (e1[1] + e2[1]) / 2); dl_ = math.hypot(tip[0] - mid_[0], tip[1] - mid_[1])
-    d_ = ((tip[0] - mid_[0]) / dl_, (tip[1] - mid_[1]) / dl_); n_ = (-d_[1], d_[0]); tc_ = (tip[0] - d_[0] * r_, tip[1] - d_[1] * r_)   # centro del redondeo
+    d_ = (-ff[0], -ff[1]); n_ = (-d_[1], d_[0]);                                   # la punta apunta hacia adentro de la boca, en el eje del pez
+    tc_ = (tip[0] - d_[0] * r_, tip[1] - d_[1] * r_)   # centro del redondeo
     s1_ = 1 if (e1[0] - tc_[0]) * n_[0] + (e1[1] - tc_[1]) * n_[1] > 0 else -1
     ta_ = (tc_[0] + n_[0] * r_ * s1_, tc_[1] + n_[1] * r_ * s1_); tb_ = (tc_[0] - n_[0] * r_ * s1_, tc_[1] - n_[1] * r_ * s1_)
     for i in range(1, 22):
-        t = i / 22; c_ = (e1[0] * 0.5 + ta_[0] * 0.5, e1[1] * 0.2 + ta_[1] * 0.8)
+        t = i / 22; c_ = (ta_[0] + ff[0] * 0.11, ta_[1] + ff[1] * 0.11)
         pts.append(((1 - t) ** 2 * e1[0] + 2 * (1 - t) * t * c_[0] + t * t * ta_[0], (1 - t) ** 2 * e1[1] + 2 * (1 - t) * t * c_[1] + t * t * ta_[1]))
     for i in range(0, 11):                                                       # punta redonda
         a_ = math.pi * i / 10; ca_, sa_ = math.cos(a_) * s1_, math.sin(a_)
         pts.append((tc_[0] + r_ * (ca_ * n_[0] + sa_ * d_[0]), tc_[1] + r_ * (ca_ * n_[1] + sa_ * d_[1])))
     for i in range(1, 22):
-        t = i / 22; c_ = (e2[0] * 0.3 + tb_[0] * 0.7, e2[1] * 0.75 + tb_[1] * 0.25)
+        t = i / 22; c_ = (tb_[0] + ff[0] * 0.075, tb_[1] + ff[1] * 0.075)
         pts.append(((1 - t) ** 2 * tb_[0] + 2 * (1 - t) * t * c_[0] + t * t * e2[0], (1 - t) ** 2 * tb_[1] + 2 * (1 - t) * t * c_[1] + t * t * e2[1]))
     o_ = bpy.data.objects.new(f'{name}_globo', pillow_mesh(f'{name}_globo', pts)); sc.collection.objects.link(o_); o_.parent = ctl
     mw_ = bpy.data.materials.new(f'{name}_blanco'); mw_.use_nodes = True; bs_ = mw_.node_tree.nodes['Principled BSDF']
@@ -872,7 +874,7 @@ def speech(name, C, A, B, tip, f0, f1):
     tipL = Vector((tip[0], 0, tip[1]))                                             # la punta va metida en la boca: el globo se infla DESDE la boca y la sigue
     for F_ in range(f0 - 1, NF + 1):
         tt = max(0.0, (F_ - f0) / FPS); mw_ = mouth_world(F_); fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        tipW = Vector((mw_.x - 0.010 * fx_.x, C.y, mw_.z - 0.010 * fx_.z))            # 1 cm hacia adentro de la boca
+        tipW = Vector((mw_.x - 0.014 * fx_.x, C.y, mw_.z - 0.014 * fx_.z))            # 1 cm hacia adentro de la boca
         if F_ < f0: s_ = 0.0; q = 0.0; th = 0.0
         else:
             fr_ = F_ - f0; s_ = 0.0; q = 0.0
@@ -891,7 +893,8 @@ def speech(name, C, A, B, tip, f0, f1):
     return ctl
 MOUTH = mouth_world(FT(122)); SPC = Vector((MOUTH.x + 0.36, -0.04, MOUTH.z + 0.23))
 TIP = Vector((MOUTH.x, -0.04, MOUTH.z)) - SPC                                  # la punta queda cerca de la boca
-GLOBO = speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100))
+_fx = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); _fl = math.hypot(_fx.x, _fx.z)
+GLOBO = speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100), (_fx.x / _fl, _fx.z / _fl))
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
 sun.data.energy = 4.4; sun.data.color = (1.0, 0.93, 0.8); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
@@ -928,7 +931,7 @@ for F_ in range(E0, NF + 1):
     _mw.default_value = 0.5 + 3.0 * ease((u - 0.45) / 0.3); _mw.keyframe_insert('default_value', frame=F_)
     # el pez sigue con la boca en la punta del globo (lo esta inflando): la punta lo empuja de frente y el va hacia atras
     T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z))
-    fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); m_ = rig.matrix_world @ MA - fx_ * 0.010
+    fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); m_ = rig.matrix_world @ MA - fx_ * 0.014
     d_ = (T_ - m_); rig.location = Vector(rig.location) + Vector((d_.x, 0, d_.z)); rig.keyframe_insert('location', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
