@@ -368,39 +368,6 @@ export const modules: Module[] = [
     ],
   },
   {
-    id: "global-03",
-    chapterId: "global",
-    title: "Communication, 2026 Plan & Budgets",
-    summary:
-      "How Global Marketing communicates, the shape of the 2026 plan, and budget awareness.",
-    estMinutes: 20,
-    material: {
-      file: `${SLICE}/global--03-communication-plan-budgets.pptx`,
-      type: "pptx",
-      range: "Slides 13–18",
-    },
-    sections: [
-      {
-        heading: "How we communicate",
-        facts: [
-          { label: "Email", value: "New task/project · feedback" },
-          { label: "Teams chat", value: "Follow-ups" },
-          { label: "Meeting", value: "Define/clarify · deep review" },
-        ],
-      },
-      {
-        heading: "2026 Global Marketing Plan",
-        body: [
-          "The plan is organized at two levels — Group and Global — reflecting decisions and initiatives that apply across the whole organisation versus those specific to Global Marketing.",
-        ],
-      },
-      {
-        heading: "Budgets",
-        note: "Budget processes and figures are managed by Marketing leadership. As a designer, the practical impact is on prioritisation and turnaround — see the Design Hub 2026 chapter for how priority and turnaround work day to day.",
-      },
-    ],
-  },
-  {
     id: "global-04",
     chapterId: "global",
     title: "Product & Brand Glossary",
