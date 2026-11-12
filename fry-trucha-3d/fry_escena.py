@@ -12,8 +12,8 @@ RW = int(argv[2]) if len(argv) > 2 else 1920
 SPP = int(argv[3]) if len(argv) > 3 else 32
 FR = argv[4] if len(argv) > 4 and not argv[4].startswith('--') else '1-125'
 SAVE = argv[argv.index('--save') + 1] if '--save' in argv else None
-FPS, NF = 25, 250                                                                # 10 s: globo ~2,6 s para leer, se expande hasta llenar la pantalla de blanco (titulo)
-E0, E1 = 186, 214                                                               # expansion final del globo (frames reales); blanco total desde E1
+FPS, NF = 25, 275                                                                # 10 s: globo ~2,6 s para leer, se expande hasta llenar la pantalla de blanco (titulo)
+E0, E1 = 178, 236                                                               # expansion final del globo (frames reales); blanco total desde E1
 TS = 1.2                                                                         # la actuacion se estira x1.2 (mas tiempo para la duda)
 def FT(x): return int(round(1 + (x - 1) * TS))                                   # frame de diseno (5 s) -> frame real (6 s)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -297,9 +297,11 @@ m_brow = mat('ceja', lin((44, 58, 62)), 0.4)
 m_lid = bpy.data.materials.new('parpado'); m_lid.use_nodes = True; nt = m_lid.node_tree; bs = nt.nodes['Principled BSDF']   # piel mate (no vidrio)
 ltc = nt.nodes.new('ShaderNodeTexCoord'); lsp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(ltc.outputs['Object'], lsp.inputs[0])
 lz = M(nt, 'ABSOLUTE', lsp.outputs['Z'])                                        # borde del parpado (z local ~ 0): linea de pestanas oscura
-cl2 = nt.nodes.new('ShaderNodeMix'); cl2.data_type = 'RGBA'; nt.links.new(smooth(nt, lz, 0.004, 0.012), cl2.inputs[0])
-cl2.inputs[6].default_value = (*lin((22, 40, 70)), 1); cl2.inputs[7].default_value = (*lin((150, 186, 210)), 1); nt.links.new(cl2.outputs[2], bs.inputs['Base Color'])
+cl2 = nt.nodes.new('ShaderNodeMix'); cl2.data_type = 'RGBA'; nt.links.new(smooth(nt, lz, 0.002, 0.007), cl2.inputs[0])
+cl2.inputs[6].default_value = (*lin((34, 62, 104)), 1); cl2.inputs[7].default_value = (*lin((150, 186, 210)), 1); nt.links.new(cl2.outputs[2], bs.inputs['Base Color'])
 bs.inputs['Roughness'].default_value = 0.62; bs.inputs['Specular IOR Level'].default_value = 0.25
+m_lid2 = bpy.data.materials.new('parpado_inf'); m_lid2.use_nodes = True; _b2 = m_lid2.node_tree.nodes['Principled BSDF']   # parpado de abajo: liso, sin linea
+_b2.inputs['Base Color'].default_value = (*lin((176, 204, 222)), 1); _b2.inputs['Roughness'].default_value = 0.62; _b2.inputs['Specular IOR Level'].default_value = 0.25
 # ------------------------------------------------------------------ cara: ojos, ceja, boca (sobre el ojo y la boca del icono)
 EX, EZ = P(1292, 552); ER = 0.054
 eyes = []
@@ -339,7 +341,7 @@ for sgn in (-1, 1):
     lm2 = bpy.data.meshes.new(f'parpado_inf_{sgn}'); lb2 = bmesh.new()               # parpado de abajo (sube en la duda / al sonreir con los ojos)
     bmesh.ops.create_uvsphere(lb2, u_segments=64, v_segments=32, radius=ER * 1.07)
     bmesh.ops.delete(lb2, geom=[v for v in lb2.verts if v.co.z > 0.001], context='VERTS'); lb2.to_mesh(lm2)
-    lid2 = bpy.data.objects.new(f'FRY_parpado_inf_{sgn}', lm2); sc.collection.objects.link(lid2); lid2.parent = piv; lid2.data.materials.append(m_lid)
+    lid2 = bpy.data.objects.new(f'FRY_parpado_inf_{sgn}', lm2); sc.collection.objects.link(lid2); lid2.parent = piv; lid2.data.materials.append(m_lid2)
     so2 = lid2.modifiers.new('grosor', 'SOLIDIFY'); so2.thickness = ER * 0.1; so2.offset = 1; lid2.rotation_mode = 'XYZ'; lid2.modifiers.new('suave', 'SUBSURF').render_levels = 2
     for p in lm2.polygons: p.use_smooth = True
     eyes.append((piv, brow, ctl, lid, lid2))
@@ -463,62 +465,67 @@ def bump(f, a, b): return math.sin(math.pi * min(max((f - a) / (b - a), 0), 1))
 ENV = [0.10 + 0.9 * (i / (NB - 1)) ** 1.6 for i in range(NB)]                    # amplitud crece hacia la cola
 for o in pects:                                                                  # pectorales que se curvan (no solo giran)
     bd = o.modifiers.new('curva', 'SIMPLE_DEFORM'); bd.deform_method = 'BEND'; bd.deform_axis = 'Z'; o['bend'] = bd.name
-phase = 0.0
+phase = 0.0; pph = 0.0
 PUFF = [60, 64, 67, 71, 74]                                                      # cuando suelta burbujitas por la boca (frames de diseno)
+def path(ff):                                                                    # entrada: viene desde el fondo en una curva suave y termina de perfil
+    p_ = min(1.0, max(0.0, (ff - 1) / 58)); g_ = 1 - (1 - p_) ** 2.2
+    return -2.45 + 2.2 * g_, 1.5 * (1 - ease(g_)), -0.2 * (1 - ease(g_))
 for F_ in range(1, NF + 1):
     t = (F_ - 1) / FPS; f = 1 + (F_ - 1) / TS                                   # f = tiempo de diseno (la actuacion), t = tiempo real (el nado)
     cruise = 1 - ease((f - 40) / 12); hover = ease((f - 56) / 12)
-    freq = 3.0 * cruise + 0.7 * hover + 1.4 * (1 - cruise) * (1 - hover); phase += 2 * math.pi * freq / FPS
-    amp = 0.21 * cruise + 0.05 * hover + 0.12 * (1 - cruise) * (1 - hover)
-    pn_ = ease((F_ - (E0 - 7)) / 4.0); amp += 0.16 * pn_; phase += 2 * math.pi * 3.0 * pn_ / FPS   # colea de susto al final
-    cbend = 0.11 * bump(f, 42, 60) + 0.07 * ease((F_ - E0) / 4.0) * math.sin(F_ * 1.5)   # se retuerce mientras lo empujan                                                # frenada: curva en C
+    sp = (1 - min(1.0, max(0.0, (f - 1) / 58))) ** 1.2                           # velocidad de avance (1 al entrar -> 0 al quedarse quieto)
+    blow = ease((F_ - (E0 - 8)) / 8.0)                                            # final: sopla para inflar el globo
+    worry = ease((F_ - (E0 + 14)) / 10.0)                                         # ...se le va de las manos: se preocupa
+    pk = ease((F_ - (E0 + 8)) / 24.0)                                             # ...y el globo lo va empujando
+    freq = 0.7 + 2.3 * sp + 0.9 * worry; amp = 0.05 + 0.15 * sp ** 0.7 + 0.05 * worry   # el coleteo sale de la velocidad: mas rapido = mas batido
+    phase += 2 * math.pi * freq / FPS
+    cbend = 0.11 * bump(f, 42, 60)                                                # frenada: curva en C
     for i, b in enumerate(rig.pose.bones):
         b.rotation_mode = 'XYZ'
         ang = amp * ENV[i] * math.sin(phase - 0.75 * i) * (1.6 if i else 1) - (0.06 * amp * math.sin(phase + 0.6) if i == 0 else 0)
         b.rotation_euler = (0, 0, ang + cbend * (0.4 if i == 0 else 1.0) * (1 if i < NB - 3 else 0.6))
         b.keyframe_insert('rotation_euler', frame=F_)
-    xs = -2.45 + 2.2 * (1 - (1 - min(1, (f - 1) / 58)) ** 2.2) + 0.03 * hover * math.sin(t * 1.3)
-    zs = -0.07 + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
-    panic = ease((F_ - (E0 - 7)) / 4.0)                                           # ve que el globo se hincha: ojos grandes, boca en "o"
-    hit = bump(F_, E0, E0 + 7)                                                    # golpe del globo: se aplasta
-    pushk = ease((F_ - E0) / 4.0)                                                 # desde el golpe: aplastado contra el globo, resiste y va hacia atras
+    xs, ys, zp = path(f); xa, ya, _ = path(f - 0.5); xb, yb_, _ = path(f + 0.5); yaw = math.atan2(yb_ - ya, xb - xa) if xb - xa > 1e-6 else 0.0
+    xs += 0.03 * hover * math.sin(t * 1.3) + 0.012 * sp * math.sin(2 * phase)    # cada batido de cola lo impulsa un poquito
+    ys += 0.010 * (amp / 0.2) * math.sin(phase + 0.8)
+    zs = -0.07 + zp + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
     if F_ >= 106: xs -= 0.02 * bump(f, 90.5, 96)                                 # retrocede apenas cuando el globo le sale de la boca
-    xs -= 0.03 * hit; zs -= 0.015 * hit
-    rig.location = (xs, 0, zs); rig.keyframe_insert('location', frame=F_)
-    sqz = 0.12 * hit + 0.13 * pushk + 0.03 * pushk * math.sin(F_ * 2.1)          # acordeon: se comprime contra el globo y tiembla
-    rig.scale = (1 - sqz, 1 + 0.5 * sqz, 1 + 0.7 * sqz); rig.keyframe_insert('scale', frame=F_)
+    rig.location = (xs, ys, zs); rig.keyframe_insert('location', frame=F_)
+    rig.scale = (1 - 0.07 * pk, 1 + 0.03 * pk, 1 + 0.05 * pk); rig.keyframe_insert('scale', frame=F_)   # apenas comprimido contra el globo, sin temblar
     turn = ease((f - 54) / 10) * (1 - 0.5 * ease((f - 70) / 14))                   # gira hacia camara
     up_ = ease((f - 66) / 20)                                                    # sube la cabeza (duda) hacia la burbuja
     tilt = math.radians(7) * bump(f, 62, 104)                                    # inclina la cabeza (gesto de pregunta)
-    rig.rotation_euler = (tilt, -math.radians(17) * up_ - math.radians(18) * pushk + math.radians(1.2) * math.sin(t * 1.7) + math.radians(4) * pushk * math.sin(F_ * 1.7), -math.radians(14) * turn)   # la nariz queda apuntando al globo: lo empuja de frente, va de cola
+    rig.rotation_euler = (tilt, -math.radians(17) * up_ - math.radians(16) * pk + math.radians(1.2) * math.sin(t * 1.7), yaw + math.radians(2.0) * sp * math.sin(phase + 1.2) - math.radians(14) * turn)   # la nariz queda apuntando al globo: lo empuja de frente, va de cola
     rig.keyframe_insert('rotation_euler', frame=F_)
     # aletas pares: remo rapido al nadar, se abren para frenar, remo suave (y se curvan) para quedarse quieto
-    brake = max(bump(f, 40, 62), panic)
+    brake = max(bump(f, 40, 62), worry)
+    pph += 2 * math.pi * (1.1 + 0.5 * hover + 0.6 * worry) / FPS                  # remo de las pectorales: fase continua (sin saltos)
     for k, o in enumerate(pects):
-        sg = 1 if o.name.endswith('_1') else -1; fq = 3.2 * cruise + 1.6 * hover + 1.2
-        flap = math.sin(t * 2 * math.pi * fq + k * 0.5)
+        sg = 1 if o.name.endswith('_1') else -1; fl_k = 0.25 + 0.75 * hover                                     # nadando van recogidas; quieto, reman
+        flap = math.sin(pph + k * 0.5) * fl_k
         swing = math.radians(28 + 10 * (0.5 + 0.5 * flap) * (0.4 + 0.6 * hover) + 34 * brake)   # siempre hacia afuera: 28..72 grados
         o.rotation_euler = (sg * math.radians(8) * flap, math.radians(-14 - 8 * brake), -sg * swing)
         o.keyframe_insert('rotation_euler', frame=F_)
-        bd = o.modifiers[o['bend']]; bd.angle = -sg * math.radians(40) * math.sin(t * 2 * math.pi * fq + k * 0.5 - 1.3)
+        bd = o.modifiers[o['bend']]; bd.angle = -sg * math.radians(40) * math.sin(pph + k * 0.5 - 1.3) * fl_k
         bd.keyframe_insert('angle', frame=F_)
     # ojos: miradas rapidas a los costados (busca), mira a camara, mira hacia arriba; parpados: duda (entrecierra) y curiosidad
-    sacc = 0.22 * (1 if (f // 4) % 2 else -1) * bump(f, 46, 56)
+    sacc = 0.16 * math.sin(2 * math.pi * (f - 44) / 18.0) * bump(f, 44, 62)          # mira tranquilo: una vez a cada lado
     look_cam = ease((f - 56) / 5) * (1 - ease((f - 70) / 8)); look_up = ease((f - 70) / 10)
     squint = ease((f - 62) / 6) * (1 - ease((f - 94) / 6)); wide = ease((f - 94) / 5)
-    blink = max(max(bump(f, 124, 127.5), bump(f, 150, 153.5), bump(f, 176, 179.5)) * (1 - panic), pushk)   # aprieta los ojos mientras lo empujan
-    wide = max(wide, panic) * (1 - pushk); squint = squint * (1 - panic)
-    look_cam = max(look_cam, ease((f - 132) / 5) * (1 - ease((f - 160) / 6))); look_up = look_up * (1 - 0.8 * ease((f - 132) / 5) * (1 - ease((f - 160) / 6)))
-    look_cam = look_cam * (1 - panic); look_up = max(look_up, panic)
+    blink = max(bump(f, 124, 127.5), bump(f, 150, 153.5), bump(f, 176, 179.5)) * (1 - blow)
+    wide = max(wide, worry)
+    help_ = bump(F_, E0 + 26, E0 + 40)                                           # mira a camara un segundo: 'esto se me fue de las manos'
+    lc2 = ease((f - 132) / 5) * (1 - ease((f - 160) / 6)) * (1 - blow)
+    look_cam = max(look_cam, lc2, help_); look_up = max(look_up * (1 - 0.8 * lc2), blow) * (1 - 0.85 * help_)
     for (piv, brow, ctl, lid, lid2), sgn in zip(eyes, (-1, 1)):
-        cover = 0.16 + 0.24 * squint * (1 if sgn == -1 else 0.35) - 0.12 * wide
+        cover = 0.16 + 0.24 * squint * (1 if sgn == -1 else 0.35) - 0.12 * wide + 0.16 * blow * (1 - worry)   # entrecierra por el esfuerzo de soplar
         cover = cover + (0.62 - cover) * blink                                   # parpadeo: los dos parpados se juntan en el medio
-        cover2 = 0.06 + 0.2 * squint * (1 if sgn == -1 else 0.4) + 0.1 * wide * (1 - ease((f - 112) / 10))   # el de abajo sube: duda / sonrisa con los ojos
+        cover2 = 0.04 + 0.12 * squint * (1 if sgn == -1 else 0.4) + 0.08 * wide * (1 - ease((f - 112) / 10))   # el de abajo sube: duda / sonrisa con los ojos
         cover2 = cover2 + (0.58 - cover2) * blink
         lid.rotation_euler = (sgn * math.radians(90 - 180 * cover), 0, 0); lid.keyframe_insert('rotation_euler', frame=F_)
         lid2.rotation_euler = (-sgn * math.radians(90 - 180 * cover2), 0, 0); lid2.keyframe_insert('rotation_euler', frame=F_)
         ctl.rotation_euler = (sgn * 0.28 * look_up, 0, -sgn * (0.22 * look_up - 0.35 * look_cam + sacc)); ctl.keyframe_insert('rotation_euler', frame=F_)
-        s_ = 1 + 0.06 * wide + 0.10 * panic; ctl.scale = (s_, s_, s_); ctl.keyframe_insert('scale', frame=F_)
+        s_ = 1 + 0.06 * wide + 0.07 * worry; ctl.scale = (s_, s_, s_); ctl.keyframe_insert('scale', frame=F_)
         for hn in (f'FRY_brillo_{sgn}', f'FRY_brillo2_{sgn}'):                   # el brillo se apaga con el ojo cerrado (no atraviesa el parpado)
             h_ = bpy.data.objects[hn]; hs = 1 - ease((blink - 0.45) / 0.3); h_.scale = (hs, hs, hs); h_.keyframe_insert('scale', frame=F_)
     # boca 3D: "o" al soplar burbujitas, torcida en la duda, habla en silabas mientras aparece el globo, media sonrisa al final
@@ -527,9 +534,9 @@ for F_ in range(1, NF + 1):
     SYL = [(92, 95.5, 0.85, 0.0), (95.5, 98.5, 0.45, 0.6), (98.5, 102.5, 1.0, 0.0), (102.5, 105.5, 0.5, 0.5), (105.5, 110, 0.8, 0.2)]
     talk = sum(a_ * bump(f, s0, s1) for s0, s1, a_, _ in SYL); rnd_ = sum(r_ * bump(f, s0, s1) for s0, s1, _, r_ in SYL)
     breath = 0.06 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 0.9)) * hover * (1 - bump(f, 90, 112))
-    smile = 0.7 * ease((f - 112) / 10) * (1 - panic)
+    smile = 0.7 * ease((f - 112) / 10) * (1 - blow)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff + 0.5 * panic * (1 - pushk)), o=min(1.0, 0.9 * puff + 0.6 * rnd_ + 0.8 * panic * (1 - pushk)), sonrie=smile, duda=min(1.0, 0.8 * hmm + 0.9 * pushk))
+        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff + 0.2 * blow), o=min(1.0, 0.9 * puff + 0.6 * rnd_ + 0.85 * blow), sonrie=smile, duda=0.8 * hmm)
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
@@ -880,28 +887,20 @@ for F_ in range(1, NF + 1):
     cam.data.dof.focus_distance = 2.78 - push; cam.data.dof.keyframe_insert('focus_distance', frame=F_)
 # final: el globo se sigue inflando y viene hacia camara hasta tapar todo; se enciende a blanco puro para el titulo
 _mw = bpy.data.materials['PENSAMIENTO_globo_blanco'].node_tree.nodes['Principled BSDF'].inputs['Emission Strength']
-_mw.keyframe_insert('default_value', frame=E0 - 10)
-for F_ in range(E0 - 9, NF + 1):
-    sc.frame_set(F_); u = min(1.0, max(0.0, (F_ - E0) / (E1 - E0))); k = u ** 1.9          # acelera siempre (ease-in): arranca contenido y termina explotando
+_mw.keyframe_insert('default_value', frame=E0 - 1)
+for F_ in range(E0, NF + 1):
+    sc.frame_set(F_); u = min(1.0, max(0.0, (F_ - E0) / (E1 - E0))); k = u ** 2.6         # empieza lento y acelera sin parar hasta el blanco
     cpos = cam.matrix_world.translation.copy(); fwd = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
     ctr = cpos + fwd * ((SPC.y - cpos.y) / fwd.y); tt = (F_ - FT(90)) / FPS                 # centro del cuadro, en el mismo plano del globo y el pez
-    base_ = SPC + Vector((0, 0, 0.006 * math.sin(tt * 2.0)))
-    ant = bump(F_, E0 - 9, E0 + 1)                                                          # anticipacion: se encoge 9% y tiembla ("toma aire")
-    pop = ease((F_ - E0) / 4.0)                                                             # golpe inicial: salta 18% en 4 cuadros
-    s_ = (1.0 + 0.012 * math.sin(tt * 3.1) * (1 - pop)) * (1 - 0.09 * ant) + 0.18 * pop + 8.0 * k
-    jit = 0.012 * ant * math.sin(F_ * 2.6)
-    # el globo crece en su plano (no viene a camara): el contacto con el pez es real y el borde queda nitido
-    GLOBO.location = base_.lerp(ctr, ease(u * 1.2)) + Vector((0, 0, -0.012 * ant)); GLOBO.scale = (s_ * (1 + jit), min(s_, 2.2), s_ * (1 - jit))
-    GLOBO.rotation_euler = (0, math.radians(3.0) * ant * math.sin(F_ * 1.9), 0)
+    base_ = SPC + Vector((0, 0, 0.006 * math.sin(tt * 2.0) * (1 - ease(u * 5))))
+    s_ = 1.0 + 0.012 * math.sin(tt * 3.1) * (1 - ease(u * 5)) + 8.5 * k
+    GLOBO.location = base_.lerp(ctr, ease(u * 1.1)); GLOBO.scale = (s_, min(s_, 2.2), s_); GLOBO.rotation_euler = (0, 0, 0)
     GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('rotation_euler', frame=F_)
-    _mw.default_value = 0.5 + 3.0 * ease((F_ - E0 - 12) / (E1 - E0 - 12)); _mw.keyframe_insert('default_value', frame=F_)
-    # el pez queda con la boca clavada en la punta del globo: la punta lo empuja de frente y el va hacia atras, sin despegarse nunca
-    if F_ >= E0:
-        T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z))
-        m_ = rig.matrix_world @ Vector((MX + 0.02, 0, MZ)); w_ = ease((F_ - E0) / 3.0)
-        d_ = (T_ - m_) * w_; rig.location = Vector(rig.location) + Vector((d_.x + 0.012 * w_, 0, d_.z + 0.008 * w_)); rig.keyframe_insert('location', frame=F_)   # la punta se le hunde un poco en la cara
-        sh_ = 0.014 * math.exp(-(F_ - E0) / 5.0)                                            # sacudon de camara en el golpe
-        cam.location = cpos + Vector((sh_ * math.sin(F_ * 2.9), 0, sh_ * math.cos(F_ * 2.3))); cam.keyframe_insert('location', frame=F_)
+    _mw.default_value = 0.5 + 3.0 * ease((u - 0.6) / 0.4); _mw.keyframe_insert('default_value', frame=F_)
+    # el pez sigue con la boca en la punta del globo (lo esta inflando): la punta lo empuja de frente y el va hacia atras
+    T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z))
+    m_ = rig.matrix_world @ Vector((MX + 0.02, 0, MZ)); w_ = ease((F_ - E0) / 12.0)
+    d_ = (T_ - m_) * w_; rig.location = Vector(rig.location) + Vector((d_.x, 0, d_.z)); rig.keyframe_insert('location', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
