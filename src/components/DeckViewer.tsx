@@ -95,6 +95,7 @@ export function DeckViewer({
             <a
               key={r.file}
               href={r.file}
+              download
               target="_blank"
               rel="noreferrer"
               className="btn-ghost text-xs"

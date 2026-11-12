@@ -939,13 +939,19 @@ export const modules: Module[] = [
     chapterId: "brand-guidelines",
     title: "Colour & Brand Shapes",
     summary:
-      "Colour settings, the full BioMar palette and greys, logo colours, the BioMar shapes and the watermark sets.",
+      "Colour settings, the full BioMar palette and greys, logo colours, the BioMar shapes and the watermark sets — with the colours ready to download as Adobe swatches.",
     estMinutes: 30,
     material: {
       file: `${SLICE}/brand-guidelines-2026--03-colour-brand-shapes.pdf`,
       type: "pdf",
       range: "Pages 15–20",
     },
+    resources: [
+      { title: "Adobe swatches — RGB (.ase)", file: "/downloads/BioMar-Colours-2026-RGB.ase" },
+      { title: "Adobe swatches — CMYK (.ase)", file: "/downloads/BioMar-Colours-2026-CMYK.ase" },
+      { title: "All colour values (.csv)", file: "/downloads/BioMar-Colours-2026.csv" },
+      { title: "Swatch preview (.png)", file: "/downloads/BioMar-Colours-2026-preview.png" },
+    ],
     sections: [
       {
         heading: "Colour settings",
@@ -1022,6 +1028,18 @@ export const modules: Module[] = [
           "Business card: a dark organic watermark plus the icon layouts",
           "Cover pages: a BioMar Blue watermark or an approved water photograph",
         ],
+      },
+      {
+        heading: "Adobe swatches — download",
+        body: [
+          "The whole palette is ready to load into Adobe so you never type colour values by hand: 30 swatches in three groups — the core palette, the greys and the product sub-brand colours. Use the RGB file for screen and web, and the CMYK file for print.",
+        ],
+        bullets: [
+          "Illustrator or InDesign: Swatches panel → menu → Open Swatch Library → Other Library… and choose the .ase file. In Photoshop: Swatches panel menu → Import Swatches",
+          "To keep them in your Creative Cloud Library: select the swatches and use Add to CC Library, or Libraries panel → + → Color",
+          "Do it once with the RGB file and once with the CMYK file, each in its own library — Adobe doesn't mix colour modes inside one swatch",
+        ],
+        note: "Pantone references aren't stored inside the .ase files — they're in the .csv. The product sub-brand colours come from the Product Brand Guidelines; use them only for the product they belong to.",
       },
     ],
   },

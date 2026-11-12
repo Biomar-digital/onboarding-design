@@ -1,0 +1,31 @@
+Group,Name,HEX,R,G,B,C,M,Y,K,Pantone,Source
+BioMar core palette,BioMar Blue,#1F3E77,31,62,119,100,84,26,12,654 C,Brand Guidelines 2026
+BioMar core palette,Sky Blue,#92CEE8,146,206,232,50,0,6,0,297 C,Brand Guidelines 2026
+BioMar core palette,Leafy Green,#97D130,151,209,48,56,0,92,0,368 C,Brand Guidelines 2026
+BioMar core palette,Shrimp Orange,#DD6928,221,105,40,8,68,91,1,166 C,Brand Guidelines 2026
+BioMar core palette,Ocean Blue,#0471AD,4,113,173,87,50,8,0,285 C,Brand Guidelines 2026
+BioMar core palette,Crisp Blue,#C3E4EF,195,228,239,25,0,3,0,277 C,Brand Guidelines 2026
+BioMar core palette,Wheat Yellow,#EAB318,234,179,24,10,28,91,1,115 C,Brand Guidelines 2026
+BioMar core palette,White,#FFFFFF,255,255,255,0,0,0,0,,Brand Guidelines 2026
+BioMar greys,Black 80%,#575756,87,87,86,0,0,0,80,172-14 C,Brand Guidelines 2026
+BioMar greys,Black 70%,#706F6F,112,111,111,0,0,0,70,7540,Brand Guidelines 2026
+BioMar greys,Black 60%,#878787,135,135,135,0,0,0,60,Cool Grey 9,Brand Guidelines 2026
+BioMar greys,Black 50%,#9D9D9C,157,157,156,0,0,0,50,16-0000 TPG,Brand Guidelines 2026
+BioMar greys,Black 40%,#B2B2B2,178,178,178,0,0,0,40,Cool Gray 5 XGC,Brand Guidelines 2026 (CMYK printed as K30; K40 used)
+BioMar greys,Black 30%,#C6C6C6,198,198,198,0,0,0,30,Cool Gray 3 U,Brand Guidelines 2026
+BioMar greys,Black 20%,#DADADA,218,218,218,0,0,0,20,Cool Gray 1 XGC,Brand Guidelines 2026
+BioMar greys,Black 10%,#EDEDED,237,237,237,0,0,0,10,P 179-1 C,Brand Guidelines 2026
+Product sub-brand colours,Celeste,#00B5E5,0,181,229,75,0,5,0,306 C,Product Brand Guidelines 2025
+Product sub-brand colours,Medium Blue,#105893,16,88,147,94,64,16,3,7469 C,Product Brand Guidelines 2025
+Product sub-brand colours,Navy,#171F36,23,31,54,100,88,47,58,533 C,Product Brand Guidelines 2025
+Product sub-brand colours,Product Green,#009640,0,150,64,100,0,100,0,354 C,Product Brand Guidelines 2025 (named 'Green')
+Product sub-brand colours,Purple,#6A378D,106,55,141,72,89,0,0,258 C,Product Brand Guidelines 2025
+Product sub-brand colours,Prime Grey,#54565B,84,86,91,63,52,46,39,7540 C,Product Brand Guidelines 2025
+Product sub-brand colours,Focus Teal,#007FA4,0,127,164,100,22,24,9,3145 C,Product Brand Guidelines 2025
+Product sub-brand colours,Boost Black,#061F2D,6,31,45,100,75,50,70,296 C,Product Brand Guidelines 2025
+Product sub-brand colours,Start Green,#597722,89,119,34,55,9,95,45,575 C,Product Brand Guidelines 2025
+Product sub-brand colours,Balance P Green,#52A681,82,166,129,69,12,59,1,7723 C,Product Brand Guidelines 2025
+Product sub-brand colours,VetCare Red,#E62733,230,39,51,0,94,78,0,1787 C,"Product Brand Guidelines 2025 (RGB as printed; the guide lists HEX #E52632, 1 step off)"
+Product sub-brand colours,Blue IMPACT Green,#BAF190,186,241,144,34,0,55,0,365 C,Product Brand Guidelines 2025
+Product sub-brand colours,TRI X Green,#2BAA67,43,170,103,76,1,75,0,,Product Brand Guidelines 2025
+Product sub-brand colours,TRI X Teal,#00A099,0,160,153,79,11,45,0,,Product Brand Guidelines 2025
