@@ -896,7 +896,7 @@ for F_ in range(E0, NF + 1):
     s_ = 1.0 + 0.012 * math.sin(tt * 3.1) * (1 - ease(u * 5)) + 8.5 * k
     GLOBO.location = base_.lerp(ctr, ease(u * 1.1)); GLOBO.scale = (s_, min(s_, 2.2), s_); GLOBO.rotation_euler = (0, 0, 0)
     GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('rotation_euler', frame=F_)
-    _mw.default_value = 0.5 + 3.0 * ease((u - 0.6) / 0.4); _mw.keyframe_insert('default_value', frame=F_)
+    _mw.default_value = 0.5 + 3.0 * ease((u - 0.45) / 0.3); _mw.keyframe_insert('default_value', frame=F_)
     # el pez sigue con la boca en la punta del globo (lo esta inflando): la punta lo empuja de frente y el va hacia atras
     T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z))
     m_ = rig.matrix_world @ Vector((MX + 0.02, 0, MZ)); w_ = ease((F_ - E0) / 12.0)
@@ -963,7 +963,7 @@ if not VOLUMEN:
     cn.links.new(bc.outputs[0], vm.inputs[1]); cn.links.new(vgs.outputs[0], vm.inputs[2])
     wh = cn.nodes.new('CompositorNodeMixRGB'); wh.blend_type = 'MIX'; wh.inputs[2].default_value = (40, 40, 40, 1)   # AgX lleva 1.0 a gris: hace falta un valor alto para blanco puro   # placa blanca final (para el titulo)
     cn.links.new(vm.outputs[0], wh.inputs[1]); cn.links.new(wh.outputs[0], co.inputs[0])
-    for F_, v_ in ((1, 0.0), (E1 - 8, 0.0), (E1 + 2, 1.0), (NF, 1.0)):
+    for F_, v_ in ((1, 0.0), (E1 - 18, 0.0), (E1 - 8, 1.0), (NF, 1.0)):
         wh.inputs[0].default_value = v_; wh.inputs[0].keyframe_insert('default_value', frame=F_)
 CLOSE = '--cerca' in argv                                                         # camara de primer plano a la cabeza (para revisar ojos/parpados)
 if SAVE: bpy.ops.wm.save_as_mainfile(filepath=SAVE)
