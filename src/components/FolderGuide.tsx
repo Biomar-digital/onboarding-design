@@ -1,7 +1,7 @@
 import {
   KIND_STYLE,
   examplePaths,
-  matrixRows,
+  branchRows,
   resolveNames,
   type BranchKind,
 } from "../content/folderMeta";
@@ -14,10 +14,10 @@ export function FolderGuide({
   onTab,
 }: {
   onShow: (idxPath: number[]) => void;
-  onTab: (tab: "matrix" | "tree" | "wizard") => void;
+  onTab: (tab: "tree" | "wizard") => void;
 }) {
-  const products = matrixRows.filter((r) => r.kind === "product");
-  const markets = matrixRows.filter((r) => r.kind === "market");
+  const products = branchRows.filter((r) => r.kind === "product");
+  const markets = branchRows.filter((r) => r.kind === "market");
 
   return (
     <div className="space-y-6">
@@ -124,9 +124,6 @@ export function FolderGuide({
         <div className="flex flex-wrap gap-2">
           <button className="btn-primary px-4 py-2 text-sm" onClick={() => onTab("wizard")}>
             🧭 Where does this go?
-          </button>
-          <button className="btn-ghost px-4 py-2 text-sm" onClick={() => onTab("matrix")}>
-            🔲 See the matrix
           </button>
           <button className="btn-ghost px-4 py-2 text-sm" onClick={() => onTab("tree")}>
             🌳 Open the tree

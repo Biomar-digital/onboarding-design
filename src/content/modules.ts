@@ -1882,11 +1882,11 @@ export const modules: Module[] = [
     chapterId: null,
     title: "Folder Structure — The Shared Drive, Mapped",
     summary:
-      "How the Design Hub's shared drive is organised: the logic in one page, a where × what matrix, the full tree, and a wizard for where a new file belongs.",
+      "How the Design Hub's shared drive is organised: the logic in one page, the full tree, and a wizard for where a new file belongs.",
     estMinutes: 15,
     sections: [
       {
-        note: "This is a live map of the real structure — not a simplified example. Start with How it works, then use the matrix and the tree to look around, the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
+        note: "This is a live map of the real structure — not a simplified example. Start with How it works, then use the tree to look around, the wizard when you're not sure where something goes, and the search when you already know what you're looking for.",
       },
     ],
   },

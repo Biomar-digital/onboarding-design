@@ -38,7 +38,7 @@ export function FolderTree({ focus }: { focus: number[] | null }) {
     [q],
   );
 
-  // jump here from the matrix, the guide or the wizard
+  // jump here from the guide or the wizard
   useEffect(() => {
     if (!focus) return;
     setFilter("");

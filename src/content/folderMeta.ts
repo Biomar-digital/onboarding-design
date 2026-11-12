@@ -1,18 +1,10 @@
 import type { FolderNode } from "./types";
 import { folderTree } from "./folderStructure";
 
-// Shared helpers for the folder-structure visualisations (guide, matrix, tree).
+// Shared helpers for the folder-structure visualisations (guide, tree, wizard).
 // Everything is derived from folderTree, so the views never drift from the data.
 
 export type BranchKind = "digital" | "assets" | "product" | "market" | "other";
-
-export const KIND_LABEL: Record<BranchKind, string> = {
-  digital: "Digital Hub",
-  assets: "Design Assets",
-  product: "Products",
-  market: "Markets & corporate",
-  other: "Other",
-};
 
 // Literal class names so Tailwind can see them.
 export const KIND_STYLE: Record<
@@ -86,56 +78,16 @@ export function countDescendants(n: FolderNode): number {
   return (n.children ?? []).reduce((sum, c) => sum + 1 + countDescendants(c), 0);
 }
 
-// ── the "what is it" axis: deliverable types that repeat across branches ────
-/** Lower-case a folder name without its leading symbol or number (□ Adverts, 02. Videos…). */
-export const normName = (n: string) =>
-  n
-    .replace(/^[^A-Za-z0-9]+/, "")
-    .replace(/^\d+\.\s*/, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
-export interface MatrixColumn {
-  key: string;
-  label: string;
-  hint: string;
-  aliases: string[];
-}
-
-export const matrixColumns: MatrixColumn[] = [
-  { key: "adverts", label: "Adverts", hint: "Ads and advertisements", aliases: ["adverts", "advertisements", "adverts_generic"] },
-  { key: "brochures", label: "Brochures & handouts", hint: "Brochures, handouts and leaflets", aliases: ["brochures", "handouts", "leaflet"] },
-  { key: "rollups", label: "Roll-ups", hint: "Roll-up banners", aliases: ["roll-up banners", "roll ups", "roll up"] },
-  { key: "presentations", label: "Presentations", hint: "Decks and PPTs", aliases: ["presentations", "ppt", "ppts", "ppt_presentations"] },
-  { key: "some", label: "SoMe", hint: "Social media", aliases: ["some", "social media"] },
-  { key: "videos", label: "Videos", hint: "Video files", aliases: ["videos", "video"] },
-  { key: "datasheets", label: "Datasheets", hint: "Product datasheets", aliases: ["datasheets"] },
-  { key: "cards", label: "Business cards", hint: "Business card designs", aliases: ["business cards"] },
-  { key: "merch", label: "Merch", hint: "Merchandise", aliases: ["merch", "merchandise"] },
-  { key: "bags", label: "Bags & labels", hint: "Feed bags, big bags and labels", aliases: ["feed bags", "feed bag", "bags", "cn bags", "vn bags", "big bags", "labels", "cn_feed bag"] },
-  { key: "events", label: "Conferences & expos", hint: "Conferences, expos and events", aliases: ["conferences & expos", "conferences", "events"] },
-  { key: "logos", label: "Logos", hint: "Logo files", aliases: ["logos", "logo", "biomar logos"] },
-];
-
-export interface MatrixRow {
+// ── top-level branches that follow the "where" pattern ──────────────────────
+export interface BranchRow {
   idxPath: number[];
   name: string;
   kind: BranchKind;
 }
 
-/** Top-level branches that follow the "where × what" pattern. */
-export const matrixRows: MatrixRow[] = (folderTree[0].children ?? [])
+export const branchRows: BranchRow[] = (folderTree[0].children ?? [])
   .map((n, i) => ({ idxPath: [0, i], name: n.name, kind: branchKind(n.name) }))
   .filter((r) => r.kind === "product" || r.kind === "market" || r.kind === "digital");
-
-/** Every folder inside a branch whose normalised name matches one of the aliases. */
-export function cellMatches(rowIdxPath: number[], aliases: string[]): FlatEntry[] {
-  const prefix = keyOf(rowIdxPath) + ".";
-  return flatTree.filter(
-    (e) => keyOf(e.idxPath).startsWith(prefix) && aliases.includes(normName(e.node.name)),
-  );
-}
 
 // ── real example paths used to teach the logic ──────────────────────────────
 export interface ExamplePath {
