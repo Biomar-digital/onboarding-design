@@ -405,7 +405,7 @@ def build_mouth(name, poses, mat_, kind):
     sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 1
     return o
 POSES = {'Basis': {}, 'abre': {'op': 1.0}, 'o': {'rnd': 1.0}, 'sonrie': {'sm': 1.0}, 'duda': {'sk': 1.0}, 'sopla': {'rnd': 0.6, 'pk': 1.0}}
-MA = on_skin(0.0, MCZ)[0] + Vector((0, 0, -0.005))                                                        # centro de la boca sobre la piel (punta del hocico): de aca sale el aire
+MA = on_skin(0.0, MCZ)[0] + Vector((0, 0, -0.011))                                                        # centro de la boca sobre la piel (punta del hocico): de aca sale el aire
 m_mint = bpy.data.materials.new('boca_interior'); m_mint.use_nodes = True; nt = m_mint.node_tree; bs = nt.nodes['Principled BSDF']
 bat = nt.nodes.new('ShaderNodeAttribute'); bat.attribute_name = 'bocauv'; bsp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(bat.outputs['Vector'], bsp.inputs[0])
 ins = M(nt, 'SUBTRACT', 1.0, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'POWER', bsp.outputs[0], 2.0), M(nt, 'POWER', bsp.outputs[1], 2.0))))
@@ -542,7 +542,7 @@ for F_ in range(1, NF + 1):
     hold = ease((f - 89.0) / 2.5)                                                 # tiene el globo agarrado con los labios
     smile = 0.3 * ease((f - 121) / 10) * (1 - blow)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, 0.5 * hold + 0.6 * exh + 0.5 * blow)))
+        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, 0.82 * hold + 0.25 * exh + 0.2 * blow)))
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
