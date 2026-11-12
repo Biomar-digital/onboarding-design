@@ -5,7 +5,7 @@ import { modules } from "./modules";
 // lists, groups, schedules or sorts modules reads from here.
 //
 //   Welcome → Strategic (why the Hub exists) → Design Hub 2026 (how it works)
-//   → Brand Guidelines → Global & Group Marketing → set-up (tools & drive)
+//   → Brand Guidelines → Voice, Product & Photo Guidelines → Global & Group Marketing → set-up (tools & drive)
 //   → Playbook → Extra info.
 export interface JourneySection {
   key: string;
@@ -44,6 +44,7 @@ export const journey: JourneySection[] = [
   chapterSection("strategic"),
   chapterSection("dh2026"),
   chapterSection("brand-guidelines"),
+  chapterSection("more-guidelines"),
   chapterSection("global"),
   {
     key: "setup",
