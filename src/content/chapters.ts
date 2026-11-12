@@ -30,6 +30,14 @@ export const chapters: Chapter[] = [
       "The official visual identity: logo, typography, colour, shapes, photography and layout design.",
   },
   {
+    id: "more-guidelines",
+    title: "Voice, Product & Photo Guidelines",
+    source: "Brand Voice 2026 · Product Brand Guidelines 2025 · Photoshoot & Portrait 2024",
+    icon: "🗣️",
+    description:
+      "How we write, how the product brands are built, and how we shoot photos and portraits.",
+  },
+  {
     id: "global",
     title: "Global & Group Marketing",
     source: "Global and Group Marketing",

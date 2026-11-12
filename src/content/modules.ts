@@ -1271,6 +1271,7 @@ export const modules: Module[] = [
           "Sentence case for longer copy, body text, captions and paragraphs — unless there's a reason to follow another style (official product names, trademarks)",
           "In doubt, check the Brand Voice Guidelines",
         ],
+        note: "The Brand Voice Guidelines (July 2026) set sentence case for subheadings, captions, table headers and chart labels, and Title Case for article, press release, report and slide titles — follow them where they differ from the tips above.",
       },
       {
         heading: "Avoid gradients",
@@ -1365,6 +1366,497 @@ export const modules: Module[] = [
           "Product bags should support the message, not be the message",
         ],
         note: "Tip — ask yourself: “Could this post work without showing the bag?” If yes, lead with the concept and use the bag only when it adds value.",
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CHAPTER: Voice, Product & Photo Guidelines
+  // Brand Voice (Jul 2026) · Product Brand Guidelines (2025) · Photoshoot and
+  // Global Portrait Photo Guidelines (2024)
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: "voice-guidelines",
+    chapterId: "more-guidelines",
+    title: "Brand Voice Guidelines",
+    summary:
+      "How BioMar writes: identity in words, principles, British English, casing, the BioMar name, vocabulary, channels and Global Spanish.",
+    estMinutes: 20,
+    material: {
+      file: `${SLICE}/voice-guidelines-2026-07.pdf`,
+      type: "pdf",
+      range: "11 pages · v1, July 2026",
+    },
+    sections: [
+      {
+        heading: "Our identity in words",
+        body: [
+          "What distinguishes BioMar is that we work alongside the people who use our feed, and we say only what the science supports. We explain rather than assert: we give the reader the evidence and let it do the persuading, and we are willing to say what we don't yet know.",
+          "We write as a knowledgeable colleague, not as a supplier addressing a buyer: confident, calm and specific, never distant. A farm manager, a scientist and a journalist reading the same paragraph should each find it accurate, and none should find it patronising.",
+        ],
+        note: "These guidelines apply to all written communication: corporate materials, scientific articles, press releases, social media and customer-facing content.",
+      },
+      {
+        heading: "Core principles",
+        facts: [
+          { label: "Clear and informed", value: "Complex topics in straightforward, structured language, supported by data where relevant." },
+          { label: "Professional and approachable", value: "Balanced — not overly formal, not casual. Open, factual and respectful." },
+          { label: "Accurate and responsible", value: "Evidence-based claims; no hype, exaggeration or ambiguous promises." },
+          { label: "Consistent across markets", value: "One global company: the depth of detail may vary by audience, the tone stays constant." },
+        ],
+        note: "When principles conflict, accuracy wins. If a claim can't be simplified without losing precision, keep the precise version and add a sentence of explanation.",
+      },
+      {
+        heading: "Language style",
+        bullets: [
+          "Straightforward and structured: clean sentences; technical terms only when they add value",
+          "Short, readable paragraphs",
+          "Neutral and objective: facts lead; avoid unnecessary adjectives and dramatic language",
+          "British English for all English content — spelling, vocabulary and grammar",
+        ],
+      },
+      {
+        heading: "Casing",
+        facts: [
+          { label: "Title Case", value: "Article titles, press release headlines, report titles and presentation slide titles. Capitalise the first and last word and all nouns, pronouns, verbs, adjectives and adverbs; keep articles, coordinating conjunctions and prepositions of four letters or fewer in lower case." },
+          { label: "Sentence case", value: "Subheadings, captions, table headers and chart labels." },
+          { label: "Full capitals", value: "Not used — they read as raised volume. Exceptions: established acronyms (ASC, SBTi, FCR, EPA, DHA, R&D), brand names formally set in capitals (such as LARVIVA) and legal or safety text." },
+          { label: "Not permitted", value: "Capitals for emphasis, and in calls to action, buttons, navigation labels, social posts or email subject lines." },
+        ],
+        note: "Yes: “BioMar is expanding its French facility.” / “Download the report”. No: “BioMar is proud to announce a MAJOR expansion.” / “DOWNLOAD THE REPORT”. Where this differs from the Complementary Guidelines (chart titles and labels), follow Brand Voice — it is the reference those guidelines point to.",
+      },
+      {
+        heading: "The name BioMar, titles and “we”",
+        bullets: [
+          "Always BioMar — capital B and capital M, no space. Never Biomar, BIOMAR, biomar, Bio Mar or BioMAR, in any casing context",
+          "Capitalise a job title before a name or as part of a formal title (Chief Executive Officer Carlos Diaz); lower case for a team or role in general (the Global Marketing team)",
+          "“We” in BioMar-authored content such as website articles, corporate explanations or storytelling",
+          "Third person in joint press releases, partnership announcements or wherever neutrality is required. Naming BioMar directly is allowed and often preferred; “the company” only when third person is required (official reports, regulatory contexts)",
+        ],
+      },
+      {
+        heading: "Writing in practice — before and after",
+        facts: [
+          { label: "Press release opening", value: "Before: “BioMar is thrilled to unveil a revolutionary new chapter…”  After: “BioMar has expanded its Aquaculture Technology Centre in Hirtshals, adding four recirculation systems for trial work with sea bass and sea bream.”" },
+          { label: "LinkedIn post", value: "Before: “HUGE news from the BioMar team!!”  After: “Our team in Costa Rica has been trialling a new shrimp feed formulation with three partner farms. Early results on survival rates are encouraging…”" },
+          { label: "Describing research", value: "Before: “Our groundbreaking research proves that targeted nutrition eliminates gill health issues…”  After: “In a 12-week trial, salmon fed the test diet showed reduced gill score severity compared with the control group.”" },
+        ],
+      },
+      {
+        heading: "What to avoid",
+        bullets: [
+          "Exaggerated or dramatic language: revolutionary, game-changing, breakthrough, unveil, thrilled",
+          "Overpromising or implying guarantees; sustainability claims without supporting data",
+          "Marketing clichés and abstract corporate jargon; slang or overly casual expressions",
+          "US spelling or tone; emotional language in place of evidence",
+          "Debate-style engagement on social media; full capitals for emphasis",
+        ],
+      },
+      {
+        heading: "Preferred vocabulary",
+        facts: [
+          { label: "aquafeed", value: "Use instead of “feed” (feed is permitted to avoid repetition)" },
+          { label: "production facility / production site", value: "Use instead of “feed mill” or “factory”" },
+          { label: "design / formulate feed", value: "Use instead of “make feed”" },
+          { label: "reliance on…", value: "Use instead of “dependence on…”" },
+          { label: "targeted nutrition", value: "Use instead of “precision nutrition”" },
+          { label: "Also preferred", value: "alternative ingredients / alternative raw materials · blue foods · feed solutions · novel ingredients / novel raw materials · raw materials · resilient (industry or species level) · strong (leave where possible for LARVIVA materials)" },
+        ],
+      },
+      {
+        heading: "“Responsible” and “low-impact”",
+        body: [
+          "We prefer responsible to sustainable, and low-impact to sustainability, where the sentence allows. This is not a stylistic preference: environmental claims are increasingly regulated, and terms such as sustainable and green carry legal exposure when used without substantiation. Responsible and low-impact describe an approach; sustainable asserts an outcome.",
+        ],
+        note: "Replacing the word does not license a vaguer claim. If there is no figure, no methodology and no verification behind the sentence, neither word makes it publishable.",
+      },
+      {
+        heading: "Key themes and channels",
+        facts: [
+          { label: "Innovation", value: "Explain purpose, relevance and outcomes without dramatisation." },
+          { label: "Environmental performance", value: "Metrics, methodologies and recognised terminology; no vague or undefined claims." },
+          { label: "Partnerships and people", value: "Warm yet professional; highlight collaboration, shared progress and expertise." },
+          { label: "Corporate website", value: "Structured, explanatory and accessible; titles in title case." },
+          { label: "External press releases", value: "Concise, factual and direct; key message in the opening paragraph, natural-sounding quotes." },
+          { label: "LinkedIn and social media", value: "Professional tone, short paragraphs, accurate information; emojis sparingly (see the Social Media Guidelines)." },
+          { label: "Sustainability and R&D", value: "Precise and evidence-driven; research translated into accessible, factual language." },
+        ],
+      },
+      {
+        heading: "Non-translatable elements",
+        bullets: [
+          "Taglines stay in English: Better Feed. Better Fish. Better Food. · Start Strong. Stay Strong. · Powered by Partnership. Driven by Innovation. · You Care. We Care. · Optimise your Performance",
+          "Strategy names (Above & Beyond) and concept and product names (Blue Impact, SmartCare, Control Gill, BioFarm…)",
+          "The full company name BioMar Group stays in English; “the Group” may be used to avoid repetition and can be translated (el grupo)",
+        ],
+      },
+      {
+        heading: "BioMar Global Spanish",
+        body: [
+          "Spanish is the second global language. For global communications, internal and external, we use BioMar Global Spanish: one version that works across all Spanish-speaking markets. Local marketing teams are free to use their own regional terminology whenever possible.",
+        ],
+        bullets: [
+          "One Spanish for all markets: no regionalisms, slang or country-specific expressions unless truly necessary",
+          "Terminology: follow a market's own term when it relates uniquely to its species or production (camarón, because Ecuador is the only Spanish-speaking market farming shrimp); prefer the widely understood one otherwise (alimento / alimento acuícola for feed)",
+          "Informal tú for individuals and ustedes for groups; neutral sentence structure",
+          "No title case in Spanish — sentence case for titles and headlines; the ban on full capitals applies equally",
+        ],
+        note: "The BioMar voice: a knowledgeable, trustworthy and close partner in global aquaculture. Owner: Global Marketing. Approver: Executive Committee.",
+      },
+    ],
+  },
+  {
+    id: "product-guidelines-01",
+    chapterId: "more-guidelines",
+    title: "Product Brand Guidelines — Swoosh, naming & LARVIVA",
+    summary:
+      "The BioMar Swoosh that unites every product logo, how product and sub-brand names are capitalised, and the LARVIVA hatchery range.",
+    estMinutes: 30,
+    material: {
+      file: `${SLICE}/product-guidelines-2025--01-swoosh-larviva.pdf`,
+      type: "pdf",
+      range: "Pages 1–36 · Product Brand Guidelines v1, 2025",
+    },
+    sections: [
+      {
+        heading: "The BioMar Swoosh — one family of product logos",
+        body: [
+          "Product logos have been redesigned to form one visual family, reflecting BioMar's position as a global brand where consistency and recognition are key. At the core is the swoosh: the recurring element across all product logos and the link that ties them back to BioMar.",
+          "The swoosh symbolises movement, continuity and the shared purpose of our feeds, and unites the full product range under a single identity — every product logo is instantly recognisable as BioMar.",
+        ],
+      },
+      {
+        heading: "Capitalisation of product names",
+        facts: [
+          { label: "On logos", value: "Concept name and sub-brand are always in uppercase." },
+          { label: "In body text — standard", value: "Concept name in uppercase; sub-brand with first letter uppercase and the rest lowercase. E.g. “EFICO Alpha”." },
+          { label: "Internal capitalisation", value: "Keep the sub-brand's defined form. E.g. “LARVIVA ProStart”." },
+          { label: "Two or more words", value: "Each word starts uppercase unless otherwise specified. E.g. “EXIA Maxio Boost”." },
+          { label: "Additional letters", value: "The word follows the standard form and the extra letters stay uppercase. E.g. “Plus MT”." },
+          { label: "SmartCare", value: "Always written SmartCare, in logos and body text. Sub-brands in body text: one word → first letter uppercase (Calm); several words → each starts uppercase (Assist Skin); standalone letters stay uppercase (Control Gill Q)." },
+        ],
+        note: "The Brand Voice Guidelines refer to this document for how product names are set — don't extend capitals to product names that aren't set that way.",
+      },
+      {
+        heading: "LARVIVA — hatchery feeds",
+        body: [
+          "LARVIVA offers a complete range of hatchery feeds for fish and shrimp, developed to maximise the success of hatchery operations: give larvae a strong start and ensure robust, high-quality fry and post-larvae, well prepared for grow-out.",
+        ],
+        facts: [
+          { label: "Tagline", value: "Start Strong. Stay Strong. — shown by itself or under the LARVIVA logo, always in a single colour, in its fixed position." },
+          { label: "Logo colour", value: "Always a single colour: BioMar Blue or White." },
+          { label: "Never", value: "Alter the dimensions, change the colour, flip or move the icon, change the spacing, or type the logo. The logo should never be re-created." },
+        ],
+      },
+      {
+        heading: "LARVIVA sub-branding",
+        bullets: [
+          "First line: the main LARVIVA logo. Second line: the sub-brand name, left-aligned beneath it. Names should not exceed 8–10 characters per line; a third line is allowed for longer names — maximum three lines",
+          "Fixed spacing: one-tenth of the BioMar logo height between the LARVIVA logo and the sub-brand name, and one-fifth between the sub-brand and the BioMar logo",
+          "Sub-brand colours come from the approved BioMar palette; a new colour must be pre-approved by Global Marketing",
+          "Typography: the main LARVIVA logo is custom made in Avenir Next Regular; sub-brand names use Avenir Next Medium",
+        ],
+        note: "The rest of the section (pages 15–36) shows the sub-brand overview for fish and for shrimp and each sub-product's logo.",
+      },
+    ],
+  },
+  {
+    id: "product-guidelines-02",
+    chapterId: "more-guidelines",
+    title: "Product Brand Guidelines — INICIO, INTRO & EXIA",
+    summary:
+      "The starter-feed range INICIO (fish and shrimp), the INTRO transfer-period strategy and EXIA for shrimp.",
+    estMinutes: 25,
+    material: {
+      file: `${SLICE}/product-guidelines-2025--02-inicio-intro-exia.pdf`,
+      type: "pdf",
+      range: "Pages 37–92 · Product Brand Guidelines v1, 2025",
+    },
+    sections: [
+      {
+        heading: "INICIO — starter feed",
+        body: [
+          "INICIO is BioMar's range of high-quality extruded starter feeds, designed to give fry the very best start in life. The guidelines cover INICIO for fish (pages 37–50) and for shrimp (pages 51–64).",
+        ],
+        facts: [
+          { label: "Logo colour", value: "Always a single colour. Approved colours: Celeste, BioMar Blue and White." },
+        ],
+        note: "The concept description pages are still marked “Coming soon” in this version.",
+      },
+      {
+        heading: "INTRO — the transfer period",
+        body: [
+          "INTRO is a holistic nutritional strategy that prepares and supports fish through the challenging transfer period, delivering robustness and high performance.",
+        ],
+      },
+      {
+        heading: "EXIA — shrimp",
+        body: [
+          "EXIA delivers high-performance feeds and smart nutrition solutions that help shrimp farmers achieve optimal results, adapted to their farming conditions and production goals.",
+        ],
+      },
+      {
+        heading: "How each section is organised",
+        bullets: [
+          "The concept and its logo, with the approved colours and the single-colour rules",
+          "Incorrect uses of the logo",
+          "The sub-brand structure and an overview of each sub-product's logo",
+        ],
+      },
+    ],
+  },
+  {
+    id: "product-guidelines-03",
+    chapterId: "more-guidelines",
+    title: "Product Brand Guidelines — EFICO, MAXIO & POWER",
+    summary:
+      "The performance ranges EFICO, MAXIO and POWER, which share the tagline “Optimise your Performance”.",
+    estMinutes: 25,
+    material: {
+      file: `${SLICE}/product-guidelines-2025--03-efico-maxio-power.pdf`,
+      type: "pdf",
+      range: "Pages 93–140 · Product Brand Guidelines v1, 2025",
+    },
+    sections: [
+      {
+        heading: "One tagline for three ranges",
+        body: [
+          "EFICO, MAXIO and POWER each use the tagline Optimise your Performance, which stays in English in every market.",
+        ],
+        facts: [
+          { label: "EFICO", value: "Logo always in a single colour. Pages 93–116." },
+          { label: "MAXIO", value: "Logo in a single colour — Ocean Blue — and, secondarily, BioMar Blue or White. Pages 117–124." },
+          { label: "POWER", value: "Logo always in a single colour. Pages 125–140." },
+        ],
+        note: "The concept description pages are still marked “Coming soon” in this version. EFICO bags have their own packaging exceptions — see Complementary Guidelines → Packaging.",
+      },
+      {
+        heading: "In body text",
+        body: [
+          "Concept names are written in uppercase and sub-brands follow their defined form — for example “EFICO Alpha”. See the naming rules in the first Product Brand Guidelines module.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "product-guidelines-04",
+    chapterId: "more-guidelines",
+    title: "Product Brand Guidelines — SmartCare",
+    summary:
+      "SmartCare, BioMar's preventative healthcare programme, its logo system and sub-brands.",
+    estMinutes: 30,
+    material: {
+      file: `${SLICE}/product-guidelines-2025--04-smartcare.pdf`,
+      type: "pdf",
+      range: "Pages 141–196 · Product Brand Guidelines v1, 2025",
+    },
+    sections: [
+      {
+        heading: "What SmartCare is",
+        body: [
+          "SmartCare is a preventative healthcare programme that helps tackle the daily challenges faced in aquaculture operations. By adjusting nutritional and functional ingredients, you can reduce the risk of health challenges while supporting growth.",
+        ],
+      },
+      {
+        heading: "Writing SmartCare names",
+        bullets: [
+          "The concept is always SmartCare — capital S and C — in logos and body text",
+          "Sub-brands are uppercase on logos; in body text a single word has only its first letter uppercase (Calm), several words each start uppercase (Assist Skin), and standalone letters stay uppercase (Control Gill Q)",
+        ],
+      },
+      {
+        heading: "Using this section",
+        body: [
+          "This is the longest section of the product guidelines (56 pages): it sets the SmartCare logo and then each sub-brand's logo, colours and layout. Use it as a reference when you work on a SmartCare piece.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "product-guidelines-05",
+    chapterId: "more-guidelines",
+    title: "Product Brand Guidelines — Blue Impact, Orbit, Symbio, DAN-EX & Tri-X",
+    summary:
+      "The Blue Impact range and its dual-colour logo system, plus the Orbit, Symbio, DAN-EX and Tri-X ranges.",
+    estMinutes: 30,
+    material: {
+      file: `${SLICE}/product-guidelines-2025--05-blue-impact-orbit-symbio-danex-trix.pdf`,
+      type: "pdf",
+      range: "Pages 197–240 · Product Brand Guidelines v1, 2025",
+    },
+    extraMaterial: [
+      {
+        file: `${SLICE}/product-guidelines-2025--blue-impact-standalone.pdf`,
+        type: "pdf",
+        range: "Blue Impact guidelines — standalone version (17 pages)",
+      },
+    ],
+    sections: [
+      {
+        heading: "Blue Impact",
+        body: [
+          "The Blue Impact feed range acts as a catalyst for driving change: applied, science-based sustainability is used to select ingredients with a lower impact on our planet. New nutrient-dense ingredients that don't compete with food for human consumption come to market first in Blue Impact diets.",
+        ],
+        facts: [
+          { label: "Tagline", value: "Progressively transforming aquaculture" },
+          { label: "Logo colours", value: "Dual colour: BioMar Blue, Blue IMPACT Green (#baf190 · Pantone 365 C) and White. The top of the icon is always Blue IMPACT Green; the bottom of the icon and the wordmark are always BioMar Blue or White." },
+          { label: "Single colour", value: "Only where there are barriers, such as limited-colour print — otherwise always dual colour." },
+          { label: "Never", value: "Use a solid colour, reverse the assigned colours, alter dimensions, change colours, flip or change the spacing of the icon, or type the logo." },
+          { label: "Sub-brands", value: "Blue IMPACT AQUA and Blue IMPACT QUINNAT, each with its own approved dual-colour combinations. The sub-brand name sits on the third line, in BioMar Blue." },
+        ],
+        note: "For the standard bag design, refer to the BioMar Brand Guidelines (Layout Design → Packaging).",
+      },
+      {
+        heading: "Orbit",
+        body: [
+          "Orbit is designed for land-based production systems, with a focus on high fish and system performance — the choice for intensive farming environments, to enhance faecal stability and water quality and minimise waste.",
+        ],
+      },
+      {
+        heading: "Symbio",
+        body: [
+          "Cleaner fish are highly valued partners of fish farmers, gently and continually de-lousing salmon. The Symbio range prioritises the nutritional balance and wellbeing of this fish.",
+        ],
+        note: "The Symbio logo should be shown in two colours whenever possible, using the accepted combinations; single colour only where there are barriers such as one-colour print.",
+      },
+      {
+        heading: "DAN-EX",
+        body: [
+          "With the widest range of sizes for all eel stages, DAN-EX aims for the lowest feed quotient, the highest growth rate and the maximum production per m³, to minimise the total cost per kg of eel produced.",
+        ],
+      },
+      {
+        heading: "Tri-X",
+        body: [
+          "Tri-X is formulated for the rapid growth and unique needs of triploid salmon, from freshwater to harvest. It delivers the precise nutrition — particularly vital minerals — needed for strong skeletal development, helping to minimise the deformities and cataracts often associated with triploid farming.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "photoshoot-guidelines",
+    chapterId: "more-guidelines",
+    title: "Photoshoot Guidelines",
+    summary:
+      "Briefing a photographer: photo use, people, colour palette, wardrobe and props, annotated examples and animal welfare.",
+    estMinutes: 25,
+    material: {
+      file: `${SLICE}/photoshoot-guidelines-2024.pdf`,
+      type: "pdf",
+      range: "22 slides · 2024",
+    },
+    sections: [
+      {
+        heading: "Photo use",
+        body: [
+          "Photos are used on the website, social media, campaigns, press releases, handouts, banners and brochures, so a variety of landscape and portrait images — and video footage where possible — is needed.",
+        ],
+        bullets: [
+          "Leave visual space around the key focus so photos can be cropped; a mix of landscape and portrait is required",
+          "Include the outside scenery so the location is recognisable (Norway, Chile, UK…); a slightly blurred background is preferred",
+          "Warn locations beforehand so they can clean up",
+        ],
+      },
+      {
+        heading: "People",
+        bullets: [
+          "Where it makes sense, two people collaborating; avoid photos with too many people. People in the background are fine if they don't distract",
+          "Natural, not overly posed — everyday workers doing regular tasks, with a diversity mix and a mix of identifiable and non-identifiable people, facing and not facing the camera",
+          "BioMar logo only on BioMar people or props; customers should not wear BioMar clothing, and their own company logo is welcome on their own people",
+          "Where possible, use the SmartCare brand colours subtly in the environment, water or clothing",
+          "Everyone on site signs a GDPR consent before the shoot",
+        ],
+      },
+      {
+        heading: "Colour palette",
+        body: [
+          "Follow the mood boards: soft blue tones and imagery that shows caring and nurturing, in the background, clothing, water and props.",
+        ],
+        note: "Avoid red, orange and yellow — except for life jackets.",
+      },
+      {
+        heading: "Wardrobe",
+        bullets: [
+          "Simple, conservative, classic clothing that matches the location; solid tones — blue, black, grey, white and natural notes, with shades of blue preferred",
+          "Avoid red, yellow, pink and orange (orange or yellow is permitted in a life jacket), prints, stripes, busy patterns, neon colours and visible branding — except BioMar-branded items or the customer's brand. Wearing BioMar clothing is recommended, with the logo visible (for example on the sleeve over a life jacket)",
+          "Grooming: minimal, simple jewellery; no shimmering make-up; neutral nails (no red, yellow, pink or orange); hair not over-styled",
+        ],
+      },
+      {
+        heading: "Props",
+        body: [
+          "Bring your own clean, branded props, so the quality of the shots is consistent.",
+        ],
+        bullets: [
+          "Buckets: branded feed buckets, or large neutral buckets for water — white or black",
+          "Jackets: BioMar branded, logo on the right sleeve and left chest. T-shirts branded per the BioMar Brand Guidelines. Caps: BioMar branded",
+          "Beakers; feed scoops — BioMar branded, or white, black or blue, never red or yellow",
+        ],
+      },
+      {
+        heading: "Learning from the annotated examples",
+        bullets: [
+          "Depth: several layers at different focus levels (location, people, hands and fish) show the eye where to look",
+          "Natural poses and expressions — less direct eye contact, more focus on the task; a slight angle works better than straight on",
+          "Subtle, tactful BioMar logo; framing that gives context; clear backgrounds with some blur",
+          "Underwater: watch the water quality (too many particles looks dirty — choose the time of year), use artificial lights if needed, aim for sharp, clear images since they are often zoomed in and cropped; including the feed shows the product in action",
+          "Replace damaged or dirty props, and clear distracting colours from the background — a strong red steals attention",
+        ],
+      },
+      {
+        heading: "Animal welfare",
+        body: [
+          "Be mindful and respectful in how fish and shrimp are handled. Photos that show them cared for are preferred over showing them cut up, damaged or broken: careful, delicate, gentle handling. Avoid hunting or trophy-style poses.",
+        ],
+        note: "It's hard for fish and shrimp to look alive and well in photos — water movement, such as ripples or droplets, helps.",
+      },
+    ],
+  },
+  {
+    id: "portrait-guidelines",
+    chapterId: "more-guidelines",
+    title: "Global Portrait Photo Guidelines",
+    summary:
+      "How portraits of BioMar people should look: use, framing, wardrobe and props, and dos and don'ts.",
+    estMinutes: 15,
+    material: {
+      file: `${SLICE}/portrait-photo-guidelines-2024.pdf`,
+      type: "pdf",
+      range: "11 slides · v1, 2024",
+    },
+    sections: [
+      {
+        heading: "Photo use",
+        body: [
+          "Portraits are used on the website, social media and press releases, so a variety of natural, friendly poses is needed — with the person comfortable and well represented — and a balance of casual and professional photos.",
+        ],
+        bullets: [
+          "Backgrounds can reflect the person's position, but must be blurred and cool-toned; many portraits go on the website, so they must be consistent",
+          "Profile pictures are often shown in circles and at small scale: leave enough space around the person and keep the background light",
+        ],
+      },
+      {
+        heading: "Framing",
+        bullets: [
+          "Wide shots from the waist up, ideally in landscape format with visual space, so they can be cropped to other formats",
+          "A blurred, dynamic background adds depth; props where appropriate; a consistent colour palette unifies a group photo",
+          "Wear BioMar colours and branded items to keep the look and feel alive",
+        ],
+      },
+      {
+        heading: "Wardrobe and props",
+        bullets: [
+          "“Smart office” in the right colour tones — simple, conservative and classic, matching the person's position; if casual, a BioMar branded collared polo",
+          "Blue, black, grey, white and natural tones, shades of blue preferred; avoid red, yellow, pink and orange",
+          "Avoid prints, stripes and busy patterns, shimmering make-up and neon colours; natural make-up and minimal jewellery. A BioMar pin on a classic suit is a nice branded touch",
+        ],
+      },
+      {
+        heading: "Do's and don'ts",
+        facts: [
+          { label: "Do", value: "Shoot from the waist up with space for cropping and a blurred background · pose facing slightly right against a light, cool-toned background · take multiple poses with different, natural expressions · wear BioMar colours with natural make-up" },
+          { label: "Don't", value: "Use black and white, poor resolution or tight crops · face the camera straight on against a warm-toned flat background · wear warm colours — above all red" },
+        ],
       },
     ],
   },
