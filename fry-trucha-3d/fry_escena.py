@@ -466,6 +466,7 @@ ENV = [0.10 + 0.9 * (i / (NB - 1)) ** 1.6 for i in range(NB)]                   
 for o in pects:                                                                  # pectorales que se curvan (no solo giran)
     bd = o.modifiers.new('curva', 'SIMPLE_DEFORM'); bd.deform_method = 'BEND'; bd.deform_axis = 'Z'; o['bend'] = bd.name
 phase = 0.0; pph = 0.0
+BLOWS = [(89.5, 98.5), (100, 108.5), (110, 119)]                                # los tres soplidos que inflan el globo (frames de diseno)
 PUFF = [60, 65, 70, 76, 81]                                                      # cuando suelta burbujitas por la boca (frames de diseno)
 def path(ff):                                                                    # entrada: viene desde el fondo en una curva suave y termina de perfil
     p_ = min(1.0, max(0.0, (ff - 1) / 58)); g_ = 1 - (1 - p_) ** 2.2
@@ -491,11 +492,13 @@ for F_ in range(1, NF + 1):
     zs = -0.07 + zp + 0.015 * math.sin(t * 2.0) + 0.06 * ease((f - 64) / 26)
     if F_ >= 106: xs -= 0.02 * bump(f, 90.5, 96)                                 # retrocede apenas cuando el globo le sale de la boca
     rig.location = (xs, ys, zs); rig.keyframe_insert('location', frame=F_)
-    rig.scale = (1 - 0.07 * pk, 1 + 0.03 * pk, 1 + 0.05 * pk); rig.keyframe_insert('scale', frame=F_)   # apenas comprimido contra el globo, sin temblar
+    inh = max(bump(f, b0 - 5.5, b0 + 0.5) for b0, b1 in BLOWS); exh = max(bump(f, b0, b1) for b0, b1 in BLOWS)   # toma aire (se hincha) y sopla (se desinfla)
+    bz_ = 1 + 0.085 * inh - 0.03 * exh
+    rig.scale = ((1 - 0.07 * pk) * (1 - 0.015 * inh), (1 + 0.03 * pk) * bz_, (1 + 0.05 * pk) * bz_); rig.keyframe_insert('scale', frame=F_)   # apenas comprimido contra el globo, sin temblar
     turn = ease((f - 54) / 10) * (1 - 0.5 * ease((f - 70) / 14))                   # gira hacia camara
     up_ = ease((f - 66) / 20)                                                    # sube la cabeza (duda) hacia la burbuja
     tilt = math.radians(7) * bump(f, 62, 104)                                    # inclina la cabeza (gesto de pregunta)
-    rig.rotation_euler = (tilt, -math.radians(17) * up_ - math.radians(16) * pk + math.radians(1.2) * math.sin(t * 1.7), yaw + math.radians(7.0) * sp ** 0.5 * math.sin(phase + 1.9) - math.radians(14) * turn)   # la nariz queda apuntando al globo: lo empuja de frente, va de cola
+    rig.rotation_euler = (tilt, -math.radians(17) * up_ - math.radians(16) * pk - math.radians(3.5) * inh + math.radians(2.0) * exh + math.radians(1.2) * math.sin(t * 1.7), yaw + math.radians(7.0) * sp ** 0.5 * math.sin(phase + 1.9) - math.radians(14) * turn)   # la nariz queda apuntando al globo: lo empuja de frente, va de cola
     rig.keyframe_insert('rotation_euler', frame=F_)
     # aletas pares: remo rapido al nadar, se abren para frenar, remo suave (y se curvan) para quedarse quieto
     brake = max(bump(f, 40, 62), worry)
@@ -531,12 +534,12 @@ for F_ in range(1, NF + 1):
     # boca 3D: "o" al soplar burbujitas, torcida en la duda, habla en silabas mientras aparece el globo, media sonrisa al final
     puff = max([bump(f, p_ - 2, p_ + 3) for p_ in PUFF] + [0])
     hmm = squint * (1 - wide)
-    SYL = [(89.5, 98.5, 0.25, 1.4), (100, 108.5, 0.25, 1.4), (110, 119, 0.25, 1.4)]   # tres soplidos que inflan el globo
+    SYL = [(b0, b1, 0.25, 1.4) for b0, b1 in BLOWS]
     talk = sum(a_ * bump(f, s0, s1) for s0, s1, a_, _ in SYL); rnd_ = sum(r_ * bump(f, s0, s1) for s0, s1, _, r_ in SYL)
     breath = 0.06 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 0.9)) * hover * (1 - bump(f, 90, 112))
     smile = 0.7 * ease((f - 121) / 10) * (1 - blow)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff + 0.2 * blow), o=min(1.0, 0.9 * puff + 0.6 * rnd_ + 0.85 * blow), sonrie=smile, duda=0.8 * hmm)
+        mouth_keys(o_, F_, abre=min(1.0, 0.75 * talk + breath + 0.15 * puff + 0.2 * blow + 0.45 * inh), o=min(1.0, 0.9 * puff + 0.6 * rnd_ + 0.85 * blow), sonrie=smile, duda=0.8 * hmm)
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
@@ -740,6 +743,17 @@ for i, (f0, r, dx_) in enumerate(((FT(60), 0.020, 0.030), (FT(65), 0.011, -0.012
         t = (f - f0) / FPS; o.location = p0 + Vector((0.018 * math.sin(t * 5 + i * 2.1) * min(1, t * 2) + dx_ * t * 1.6 + 0.03 * min(t, 0.25) * 4 * 0.25, -0.02, vz_ * t + 0.06 * t * t))
         s = ease((f - f0) / 5.0); w_ = 0.06 * math.sin(t * 14 + i); o.scale = (s * (1 + w_), s, s * (1 - w_))
         o.keyframe_insert('location', frame=f); o.keyframe_insert('scale', frame=f)
+R2 = random.Random(21)
+for i in range(18):                                                             # estela: burbujitas finas que deja la cola al entrar nadando
+    f0 = FT(8 + i * 2.3 + R2.uniform(-0.8, 0.8)); sc.frame_set(f0)
+    p0 = rig.matrix_world @ Vector((-0.46 + R2.uniform(-0.04, 0.04), R2.uniform(-0.02, 0.02), R2.uniform(-0.04, 0.04)))
+    r = R2.uniform(0.004, 0.009); o = bubble(f'AIRE_estela_{i}', r); life = R2.uniform(28, 44); dx_ = R2.uniform(-0.03, 0.01); ph_ = R2.uniform(0, 6)
+    o.scale = (0, 0, 0); o.location = p0; o.keyframe_insert('scale', frame=f0 - 1); o.keyframe_insert('location', frame=f0 - 1)
+    for f in range(f0, int(f0 + life) + 2):
+        t = (f - f0) / FPS; u_ = (f - f0) / life
+        o.location = p0 + Vector((dx_ * t * 3 + 0.012 * math.sin(t * 6 + ph_), 0, (0.10 + 6 * r) * t))
+        s = ease((f - f0) / 3.0) * (1 - ease((u_ - 0.6) / 0.4)); o.scale = (s, s, s)
+        o.keyframe_insert('location', frame=f); o.keyframe_insert('scale', frame=f)
 for i in range(0):                                                              # (sin hilo de burbujas lejano) (queda en la capa con niebla)
     o = bubble(f'AIREFONDO_{i}', R.uniform(0.006, 0.016), m_air_far); x0 = 1.15 + R.uniform(-0.05, 0.05); y0 = 1.4; ph_ = R.uniform(0, 10)
     for f in range(1, NF + 1, 3):
@@ -891,8 +905,9 @@ fill.data.energy = 0.9; fill.data.color = (0.75, 0.95, 0.95); fill.rotation_eule
 cam = bpy.data.objects.new('CAM', bpy.data.cameras.new('CAM')); sc.collection.objects.link(cam); sc.camera = cam
 cam.data.lens = 50; cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 2.8
 for F_ in range(1, NF + 1):
-    f = 1 + (F_ - 1) / TS; t = (F_ - 1) / FPS; push = 0.12 * ease((f - 1) / 60) + 0.2 * ease((f - 62) / 50)
-    cam.location = (0.08 * ease((f - 1) / 80) + 0.006 * math.sin(t * 1.9) + 0.004 * math.sin(t * 3.1 + 1), -2.78 + push, 0.32 + 0.005 * math.sin(t * 2.3 + 2))
+    f = 1 + (F_ - 1) / TS; t = (F_ - 1) / FPS; ci = ease((f - 46) / 24) * (1 - ease((f - 78) / 16))   # acercamiento al pez
+    push = 0.12 * ease((f - 1) / 60) + 0.2 * ease((f - 62) / 50) + 0.32 * ci
+    cam.location = (0.08 * ease((f - 1) / 80) - 0.12 * ci + 0.006 * math.sin(t * 1.9) + 0.004 * math.sin(t * 3.1 + 1), -2.78 + push, 0.32 - 0.08 * ci + 0.005 * math.sin(t * 2.3 + 2))
     cam.rotation_euler = (math.radians(86 + 0.25 * math.sin(t * 1.3)), math.radians(0.3 * math.sin(t * 0.9)), math.radians(0.25 * math.sin(t * 1.6 + 1)))
     cam.keyframe_insert('location', frame=F_); cam.keyframe_insert('rotation_euler', frame=F_)
     cam.data.dof.focus_distance = 2.78 - push; cam.data.dof.keyframe_insert('focus_distance', frame=F_)

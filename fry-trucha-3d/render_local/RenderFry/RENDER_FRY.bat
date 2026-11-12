@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title Fry de trucha 3D - render en tu placa de video
+title Fry de trucha 3D - render en tu placa de video (v16)
 cd /d "%~dp0"
 echo.
 echo  ===  Fry de trucha 3D - render del video (1920x1080, 11 s)  ===
@@ -63,7 +63,7 @@ echo    3 = Empezar de cero ^(borra los cuadros ya hechos^)
 echo.
 choice /c 123 /n /m "Elegi 1, 2 o 3: "
 set "M=%errorlevel%"
-set "OUT=cuadros"
+set "OUT=cuadros_v16"
 set "LAST=228"
 if "%M%"=="3" (if exist "%OUT%" rmdir /s /q "%OUT%")
 if not exist "%OUT%" mkdir "%OUT%"
@@ -80,8 +80,6 @@ if "%M%"=="2" (
   pause & goto :eof
 )
 
-rem ---- la primera version guardaba por error en C:\cuadros: si estan ahi, los trae
-if exist "C:\cuadros\f_0001.png" if not exist "%OUT%\f_0001.png" (echo  Traigo los cuadros que quedaron en C:\cuadros ... & copy /y "C:\cuadros\f_*.png" "%OUT%\" >nul)
 rem ---- busca el primer cuadro que falta (para retomar)
 set "START=1"
 :findstart
@@ -95,6 +93,8 @@ if !START! gtr %LAST% goto :encode
 echo.
 echo  Renderizando cuadros !START! a %LAST% ...  ^(se puede cerrar y volver a abrir: sigue desde el ultimo cuadro^)
 echo  Hora de inicio: %TIME%
+echo  Esta ventana no muestra el avance: para verlo, abri la carpeta %OUT% y mira como aparecen los cuadros.
+start "" "%CD%\%OUT%"
 "%BL%" -b -P "%CD%\fuente\fry_escena.py" -- "%CD%\fuente\silueta.json" "%CD%\%OUT%" 1920 32 !START!-%LAST% > "log_render.txt" 2>&1
 set "N=0000%LAST%"
 set "N=!N:~-4!"
@@ -107,10 +107,12 @@ if not exist "%OUT%\f_!N!.png" (
 :encode
 echo.
 echo  Armando el MP4 ^(el ultimo cuadro, blanco, se sostiene hasta los 11 s^)...
-"%FF%" -y -loglevel error -framerate 25 -i "%OUT%\f_%%04d.png" -vf "tpad=stop_mode=clone:stop_duration=1.88" -c:v libx264 -pix_fmt yuv420p -crf 14 -preset slow -movflags +faststart "fry_pregunta.mp4"
+"%FF%" -y -loglevel error -framerate 25 -i "%OUT%\f_%%04d.png" -vf "tpad=stop_mode=clone:stop_duration=1.88" -c:v libx264 -pix_fmt yuv420p -crf 14 -preset slow -movflags +faststart "fry_pregunta_sin_sonido.mp4"
+if errorlevel 1 (echo  Fallo al armar el video. & pause & goto :eof)
+"%FF%" -y -loglevel error -i "fry_pregunta_sin_sonido.mp4" -i "fuente\fry_sonido.wav" -c:v copy -c:a aac -b:a 192k -movflags +faststart "fry_pregunta.mp4"
 if errorlevel 1 (echo  Fallo al armar el video. & pause & goto :eof)
 echo.
-echo  LISTO: fry_pregunta.mp4  ^(hora: %TIME%^)
+echo  LISTO: fry_pregunta.mp4 ^(con sonido^) y fry_pregunta_sin_sonido.mp4  ^(hora: %TIME%^)
 start "" "%CD%"
 pause & goto :eof
 
