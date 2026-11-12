@@ -7,8 +7,7 @@ interface FlatEntry {
   /** Names from root to this node, inclusive — for display. */
   names: string[];
   /** Child indexes from root to this node, inclusive — unique even when two
-   * siblings share a name (the source diagram has two different branches
-   * both labeled "SALMON"), so this is what identifies a node unambiguously. */
+   * siblings share a name, so this is what identifies a node unambiguously. */
   idxPath: number[];
 }
 
