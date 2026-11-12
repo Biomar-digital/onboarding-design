@@ -355,24 +355,25 @@ def on_skin(phi, z):                                                            
     hit = _bvh.ray_cast(o_, -d_)
     if not hit[0]: return Vector((MX, 0, z)), Vector((1, 0, 0))
     n_ = hit[1].normalized(); return hit[0], (n_ if n_.dot(d_) > 0 else -n_)          # normal siempre hacia afuera
-MW, MCZ, NS_, NR_ = math.radians(66), MZ + 0.0, 48, 9
+MPHI = -math.radians(48)                                                         # la boca mira 48 grados hacia camara
+MW, MCZ, NS_, NR_ = math.radians(38), MZ + 0.0, 48, 9
 def mouth_pts(op=0.0, sm=0.0, sk=0.0, rnd=0.0, pk=0.0):
     w_ = MW * (1 - 0.45 * rnd) * (1 - 0.5 * pk); inner, up_, lo_ = [], [], []
     for i in range(NS_):
-        s = -1 + 2 * i / (NS_ - 1); y = s * w_; env = (1 - s * s) ** 0.6
-        zc = MCZ + 0.010 * sm * s * s - 0.004 * sm + 0.010 * sk * s - 0.006 * s * s * (1 - sm)   # curva de la boca (algo triste por defecto -> neutra)
-        h = (0.0016 + op * 0.05 + rnd * 0.034 + pk * 0.012) * (env if rnd < 0.5 else (1 - s * s) ** 0.45)
+        s = -1 + 2 * i / (NS_ - 1); y = MPHI + s * w_; env = (1 - s * s) ** 0.6
+        zc = MCZ + 0.008 * sm * s * s - 0.003 * sm + 0.008 * sk * s - 0.002 * s * s * (1 - sm)   # curva de la boca (algo triste por defecto -> neutra)
+        h = (0.0030 + op * 0.05 + rnd * 0.034 + pk * 0.012) * (env if rnd < 0.5 else (1 - s * s) ** 0.45)
         col_ = []
         for r in range(NR_):
-            rr = -1 + 2 * r / (NR_ - 1); p_, n_ = on_skin(y, zc + rr * h * 0.5); col_.append(p_ + n_ * 0.005)
+            rr = -1 + 2 * r / (NR_ - 1); p_, n_ = on_skin(y, zc + rr * h * 0.5); dep_ = (1 - rr * rr) * env * min(1.0, h / 0.02); col_.append(p_ + n_ * (0.0016 - 0.0012 * dep_))
         inner.append(col_)
-        pu, nu = on_skin(y, zc + h * 0.5); pl, nl = on_skin(y, zc - h * 0.5); up_.append((pu, nu, s)); lo_.append((pl, nl, s))   # fruncida: los labios salen hacia adelante
+        pu, nu = on_skin(y, zc + h * 0.5); pl, nl = on_skin(y, zc - h * 0.5); up_.append((pu + nu * 0.010 * pk, nu, s)); lo_.append((pl + nl * 0.010 * pk, nl, s))   # en la 'o' el borde sale apenas
     return inner, up_, lo_, pk
-def lips_geo(edge, rad=0.0034, nr=10):
+def lips_geo(edge, rad=0.0028, nr=10):
     rings_ = []
     for i, (p_, n_, s) in enumerate(edge):
         a_ = edge[max(i - 1, 0)][0]; b_ = edge[min(i + 1, len(edge) - 1)][0]; T = (b_ - a_).normalized(); Bn = T.cross(n_).normalized()
-        r_ = rad * (0.35 + 0.65 * (1 - abs(s) ** 3)); c_ = p_ + n_ * r_ * 0.45
+        r_ = rad * (0.25 + 0.75 * (1 - abs(s) ** 2)); c_ = p_ + n_ * r_ * 0.25
         rings_.append([c_ + (n_ * math.cos(2 * math.pi * k / nr) + Bn * math.sin(2 * math.pi * k / nr)) * r_ for k in range(nr)])
     return rings_
 def build_mouth(name, poses, mat_, kind):
@@ -404,18 +405,18 @@ def build_mouth(name, poses, mat_, kind):
             for r in range(NR_): at_.data[i * NR_ + r].vector = (-1 + 2 * i / (NS_ - 1), -1 + 2 * r / (NR_ - 1), 0)
     sb = o.modifiers.new('sub', 'SUBSURF'); sb.levels = sb.render_levels = 1
     return o
-POSES = {'Basis': {}, 'abre': {'op': 1.0}, 'o': {'rnd': 1.0}, 'sonrie': {'sm': 1.0}, 'duda': {'sk': 1.0}, 'sopla': {'rnd': 0.75, 'pk': 0.6}}
-MA = on_skin(0.0, MCZ)[0]                                                        # centro de la boca sobre la piel (punta del hocico): de aca sale el aire
+POSES = {'Basis': {}, 'abre': {'op': 1.0}, 'o': {'rnd': 1.0}, 'sonrie': {'sm': 1.0}, 'duda': {'sk': 1.0}, 'sopla': {'rnd': 0.9, 'pk': 0.4}}
+MA, MN = on_skin(MPHI, MCZ)                                                        # centro de la boca sobre la piel (punta del hocico): de aca sale el aire
 m_mint = bpy.data.materials.new('boca_interior'); m_mint.use_nodes = True; nt = m_mint.node_tree; bs = nt.nodes['Principled BSDF']
 bat = nt.nodes.new('ShaderNodeAttribute'); bat.attribute_name = 'bocauv'; bsp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(bat.outputs['Vector'], bsp.inputs[0])
 ins = M(nt, 'SUBTRACT', 1.0, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'POWER', bsp.outputs[0], 2.0), M(nt, 'POWER', bsp.outputs[1], 2.0))))
-mcol = mixc(nt, smooth(nt, ins, 0.0, 0.6), lin((150, 62, 72)), lin((74, 22, 32)))     # interior rojo oscuro (no negro)
+mcol = mixc(nt, smooth(nt, ins, 0.05, 0.45), lin((150, 66, 80)), lin((30, 8, 14)))     # rosado en el borde -> casi negro al fondo (hueco)
 tong = M(nt, 'MULTIPLY', smooth(nt, M(nt, 'MULTIPLY', bsp.outputs[1], -1.0), 0.25, 0.75), M(nt, 'SUBTRACT', 1.0, smooth(nt, M(nt, 'ABSOLUTE', bsp.outputs[0]), 0.35, 0.7)))
 mcol = mixc(nt, M(nt, 'MULTIPLY', tong, 0.85), mcol, lin((214, 104, 112)))          # lengua rosada abajo
 nt.links.new(mcol, bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.65; bs.inputs['Specular IOR Level'].default_value = 0.15
-nt.links.new(mcol, bs.inputs['Emission Color']); bs.inputs['Emission Strength'].default_value = 0.22   # que no se vaya a negro en sombra
+nt.links.new(mcol, bs.inputs['Emission Color']); bs.inputs['Emission Strength'].default_value = 0.12
 m_lip = bpy.data.materials.new('labios'); m_lip.use_nodes = True; bs = m_lip.node_tree.nodes['Principled BSDF']
-bs.inputs['Base Color'].default_value = (*lin((118, 132, 156)), 1); bs.inputs['Roughness'].default_value = 0.5   # labio discreto, apenas mas oscuro que la piel
+bs.inputs['Base Color'].default_value = (*lin((132, 160, 186)), 1); bs.inputs['Roughness'].default_value = 0.5   # borde de piel en sombra (pliegue)
 bs.inputs['Subsurface Weight'].default_value = 0.3; bs.inputs['Subsurface Radius'].default_value = (0.01, 0.005, 0.004); bs.inputs['Coat Weight'].default_value = 0.4
 mouth_in = build_mouth('FRY_boca_interior', POSES, m_mint, 'interior')
 mouth = build_mouth('FRY_boca_labios', POSES, m_lip, 'labios')
@@ -874,7 +875,7 @@ def speech(name, C, A, B, tip, f0, f1, ff=(0.95, 0.3)):
     tipL = Vector((tip[0], 0, tip[1]))                                             # la punta va metida en la boca: el globo se infla DESDE la boca y la sigue
     for F_ in range(f0 - 1, NF + 1):
         tt = max(0.0, (F_ - f0) / FPS); mw_ = mouth_world(F_); fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        tipW = mw_ - fx_ * 0.016                                                      # la punta entra 1,6 cm en la boca, a la misma profundidad            # 1 cm hacia adentro de la boca
+        nw_ = rig.matrix_world.to_quaternion() @ MN; tipW = mw_ - nw_ * 0.016                                                      # la punta entra 1,6 cm en la boca, a la misma profundidad            # 1 cm hacia adentro de la boca
         if F_ < f0: s_ = 0.0; q = 0.0; th = 0.0
         else:
             fr_ = F_ - f0; s_ = 0.0; q = 0.0
@@ -931,7 +932,7 @@ for F_ in range(E0, NF + 1):
     _mw.default_value = 0.5 + 3.0 * ease((u - 0.45) / 0.3); _mw.keyframe_insert('default_value', frame=F_)
     # el pez sigue con la boca en la punta del globo (lo esta inflando): la punta lo empuja de frente y el va hacia atras
     T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z))
-    fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); m_ = rig.matrix_world @ MA - fx_ * 0.016
+    fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); m_ = rig.matrix_world @ MA - (rig.matrix_world.to_quaternion() @ MN) * 0.016
     d_ = (T_ - m_); d_.y = 0.0; rig.location = Vector(rig.location) + Vector((d_.x, 0, d_.z)); rig.keyframe_insert('location', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16

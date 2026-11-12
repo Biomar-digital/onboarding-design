@@ -8,7 +8,7 @@ FRY DE TRUCHA 3D - RENDER EN TU COMPUTADORA
      2 = prueba rapida de 6 cuadros, para ver que todo funciona antes de largar el video
      3 = empezar de cero (borra los cuadros ya hechos)
 4. Al terminar quedan en esta misma carpeta fry_pregunta.mp4 (con sonido) y fry_pregunta_sin_sonido.mp4.
-   Los cuadros sueltos quedan en "cuadros_v18" y el sonido solo en fuente\fry_sonido.wav.
+   Los cuadros sueltos quedan en "cuadros_v19" y el sonido solo en fuente\fry_sonido.wav.
 
 Notas
 - Usa el mismo Blender 4.2 y ffmpeg que bajo el render de RAS 360 (en %LOCALAPPDATA%\RAS360).
