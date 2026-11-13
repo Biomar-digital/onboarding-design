@@ -607,6 +607,15 @@ export const modules: Module[] = [
         ],
       },
       {
+        heading: "Everything starts with an email",
+        body: [
+          "All design requests are received through design@biomar.com, the Design Hub's shared inbox. This central mailbox lets the team track incoming requests, keep visibility across projects and hand over smoothly whenever needed.",
+        ],
+        facts: [
+          { label: "Add the DH mailbox", value: "To add the Design Hub account, the username is design@biomar.onmicrosoft.com. Ask your Design Hub colleague for the password." },
+        ],
+      },
+      {
         heading: "The brief is the foundation of every project",
         body: [
           "It provides the essential information needed to understand the request: objective, target audience, deliverables, timeline, copy, format specifications, and any relevant assets or references. A clear brief minimizes revisions later.",

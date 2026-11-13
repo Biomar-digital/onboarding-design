@@ -37,6 +37,7 @@ export const infoPanel: InfoPanelGroup[] = [
     icon: "🧰",
     rows: [
       { label: "Accesses & lists", value: "Loop Link", url: PLATFORMS_ACCESSES_URL },
+      { label: "DH mailbox login", value: "design@biomar.onmicrosoft.com", hint: "ask a DH colleague for the password" },
       { label: "Brand assets (DAM)", value: "The Pond (Kontainer)", url: POND_URL },
       { label: "The Pond tutorials", value: "Step-by-step how-tos", url: POND_TUTORIALS_URL },
       { label: "Website content", value: "Umbraco" },

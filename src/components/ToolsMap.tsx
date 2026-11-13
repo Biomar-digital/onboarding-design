@@ -30,6 +30,12 @@ export function ToolsMap() {
         This map is only about <em>what each tool is for</em>.
       </p>
 
+      <p className="rounded-xl border-l-4 border-biomar-green bg-biomar-green/10 px-4 py-3 text-sm text-biomar-navy">
+        📧 <span className="font-semibold">Design Hub mailbox:</span> to add the account, the username is{" "}
+        <span className="font-semibold">design@biomar.onmicrosoft.com</span>. Ask your Design Hub colleague for the
+        password.
+      </p>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {toolGroups.map((group) => {
           const color = HEX[group.accent] ?? "#1F3E77";
