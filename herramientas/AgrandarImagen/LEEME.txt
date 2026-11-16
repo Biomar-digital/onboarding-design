@@ -1,0 +1,26 @@
+AGRANDAR IMAGEN - mas resolucion con IA, en tu computadora
+=========================================================
+
+Sube la resolucion de imagenes PNG o JPG con inteligencia artificial (Real-ESRGAN),
+usando tu placa de video. No sube nada a internet.
+
+Como se usa
+1. Descomprimi el zip (clic derecho - "Extraer todo").
+2. Arrastra una o varias imagenes ENCIMA de AGRANDAR_IMAGEN.bat
+   (o copialas en esta carpeta y hace doble clic en AGRANDAR_IMAGEN.bat).
+3. Elegi el tipo de imagen:
+     1 = foto real
+     2 = ilustracion, 3D, render o imagen hecha con IA
+4. Elegi el tamano: x2, x4, 4K (lado largo 3840 px) u 8K (lado largo 7680 px).
+5. La imagen nueva queda al lado de la original, con el mismo nombre terminado en
+   _x2_AGRANDADA, _x4_AGRANDADA, _4K_AGRANDADA o _8K_AGRANDADA.
+   Un PNG sale en PNG (mantiene la transparencia) y un JPG sale en JPG (calidad 95).
+
+Notas
+- La primera vez descarga Real-ESRGAN (50 MB). Despues funciona sin internet.
+- Siempre mantiene la proporcion de la imagen.
+- Una imagen chica tarda unos segundos. Una grande (por ejemplo 4000 px) puede tardar un minuto o mas.
+- La IA trabaja en x4. Para x2 la achica despues, asi queda mas nitida. Para 8K estira un poco
+  el resultado si la original es chica.
+- Si la placa de video no puede, prueba sola en modo seguro (mas lento).
+- Si algo falla, saca una captura de la ventana y mandasela a Claude.
