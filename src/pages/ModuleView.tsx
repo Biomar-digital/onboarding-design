@@ -260,6 +260,21 @@ function Section({
           ))}
         </dl>
       )}
+      {section.links && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {section.links.map((l) => (
+            <a
+              key={l.url}
+              href={l.url}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost text-sm font-semibold text-biomar-swoosh"
+            >
+              {l.label} ↗
+            </a>
+          ))}
+        </div>
+      )}
       {section.note && (
         <p className="rounded-lg border-l-4 border-biomar-swoosh bg-biomar-ice/50 px-3 py-2 text-sm text-biomar-navy">
           💡 {g(section.note)}

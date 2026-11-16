@@ -1905,6 +1905,76 @@ export const modules: Module[] = [
     ],
   },
   {
+    id: "templates",
+    chapterId: null,
+    title: "Templates — Where to Find Them & How to Update Them",
+    summary:
+      "Where the BioMar branded Office templates live, and how the Design Hub adds or updates them in SharePoint.",
+    estMinutes: 10,
+    sections: [
+      {
+        heading: "Where to find our templates",
+        body: [
+          "Watch the video first: it shows how to open the BioMar branded templates and the corporate presentation straight from PowerPoint and Word (File → New → BioMar → Global).",
+          "All employees have read access to the branded template library. The end-user guide explains how to use the templates and what to do if they don't show up.",
+        ],
+        links: [
+          {
+            label: "Where to find and how to work with company branded templates",
+            url: "https://biomar.service-now.com/sp?id=kb_article_view&sysparm_article=KB0010753",
+          },
+        ],
+      },
+      {
+        heading: "Who can add or update templates",
+        body: [
+          "Marketing manages the templates. Relevant Marketing employees get access by creating a ticket in MyIT, and the Design Hub approves who gets it. With access you have full rights on the SharePoint site where every template is stored.",
+        ],
+        links: [
+          {
+            label: "Templates SharePoint site",
+            url: "https://biomar.sharepoint.com/sites/Office365/Templates/Forms/AllItems.aspx?viewid=0d32c5dd%2Dd419%2D41b7%2Dad25%2Db11dc441557d",
+          },
+          {
+            label: "Full article: How to add or update BioMar Branded templates",
+            url: "https://biomar.service-now.com/sp?id=kb_article_view&sysparm_article=KB0010976",
+          },
+        ],
+      },
+      {
+        heading: "Folder structure",
+        bullets: [
+          "The root folder is organised by company, then by site (for now BioMar only)",
+          "Global holds the templates used company-wide: the PowerPoint widescreen, the corporate slide deck and the standard BioMar Word templates",
+          "Other sites have their own folders — for example Turkey (PowerPoint Sagun widescreen template) and Norway (their specific Word templates)",
+          "In the future, the corporate templates used by business units will sit under Global, and each site can have department subfolders (HR, R&D…) so teams can store and distribute their own templates centrally",
+        ],
+        note: "Example: BioMar → Norway → R&D · HR · …   and   BioMar → Denmark → R&D · HR · …",
+      },
+      {
+        heading: "Templates & format rules",
+        bullets: [
+          "File names MUST NOT contain a year — the name stays the same when a template is updated, so nobody has to re-pin it",
+          "PowerPoint and Word templates are stored together in the same folders",
+          "Templates must be .potx (PowerPoint) or .dotx (Word) — other formats won't appear in the applications",
+          "The BioMar corporate slide deck is also saved as .potx so it can be opened from inside PowerPoint",
+          "PowerPoint templates need a thumbnail: File → Info → Properties → Advanced Properties → Save preview picture → OK",
+        ],
+      },
+      {
+        heading: "How to upload a template, step by step",
+        bullets: [
+          "1 · Open the relevant destination folder in SharePoint",
+          "2 · Click Upload and select Files",
+          "3 · Choose the template files you want to upload and click Open",
+          "4 · If you're updating an existing template you'll be asked to Replace, Keep Both or Decide for Each — select Replace",
+          "5 · Once uploaded, the template is available instantly to users who are online",
+        ],
+        note: "If a template doesn't show up for someone, send them to the end-user guide above and its Troubleshooting section (section 6).",
+      },
+    ],
+  },
+  {
     id: "folder-structure",
     chapterId: null,
     title: "Folder Structure — The Shared Drive, Mapped",

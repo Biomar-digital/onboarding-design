@@ -31,7 +31,7 @@ const chapterSection = (id: string): JourneySection => {
   };
 };
 
-const SETUP_IDS = ["tools-map", "folder-structure"];
+const SETUP_IDS = ["tools-map", "templates", "folder-structure"];
 
 export const journey: JourneySection[] = [
   {

@@ -41,6 +41,8 @@ export interface LessonSection {
   facts?: { label: string; value: string }[];
   /** Optional highlighted note. */
   note?: string;
+  /** Optional external links shown as buttons. */
+  links?: { label: string; url: string }[];
 }
 
 /** The original-document material shown for a module — exact, unedited. */

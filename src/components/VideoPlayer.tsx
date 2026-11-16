@@ -25,19 +25,29 @@ export function VideoPlayer({ moduleId }: { moduleId: string }) {
       </div>
       <div className="space-y-4 p-4">
         {videos.map((v) => (
-          <figure key={v.vimeo}>
+          <figure key={v.file ?? v.vimeo}>
             <div
               className="relative w-full overflow-hidden rounded-xl bg-black"
               style={{ aspectRatio: "16 / 9" }}
             >
-              <iframe
-                src={vimeoEmbed(v.vimeo)}
-                title={v.title ?? "Video"}
-                className="absolute inset-0 h-full w-full"
-                frameBorder={0}
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-              />
+              {v.file ? (
+                <video
+                  src={v.file}
+                  poster={v.poster}
+                  controls
+                  preload="metadata"
+                  className="absolute inset-0 h-full w-full"
+                />
+              ) : (
+                <iframe
+                  src={vimeoEmbed(v.vimeo ?? "")}
+                  title={v.title ?? "Video"}
+                  className="absolute inset-0 h-full w-full"
+                  frameBorder={0}
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
             </div>
             {v.title && (
               <figcaption className="mt-2 text-sm text-slate-500">
