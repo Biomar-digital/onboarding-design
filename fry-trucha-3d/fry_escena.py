@@ -861,8 +861,8 @@ def white_mat(name):
 def spring(fr, dur, over=0.14):                                                  # 0 -> 1 con un rebote suave
     if fr <= 0: return 0.0
     tt = fr / dur; return min(1.0 + over, 1 - math.exp(-5.2 * tt) * math.cos(2 * math.pi * 0.85 * tt)) * ease(tt / 0.35)
-CS = 0.29                                                                        # escala de la nube (ancho total ~ 0.55)
-MOUTH = mouth_world(FT(122)); SPC = Vector((MOUTH.x + 0.42, MOUTH.y + 0.02, MOUTH.z + 0.30))
+CS = 0.27                                                                        # escala de la nube (ancho total ~ 0.55)
+MOUTH = mouth_world(FT(122)); SPC = Vector((MOUTH.x + 0.36, MOUTH.y + 0.06, MOUTH.z + 0.31))   # un poco detras del pez (si se tocan, el pez queda adelante)
 poly_, rad_ = cloud_poly(CS)
 mw_ = white_mat('PENSAMIENTO_globo_blanco')
 GLOBO = bpy.data.objects.new('PENSAMIENTO_globo', None); sc.collection.objects.link(GLOBO)
@@ -878,7 +878,7 @@ def puff_ball(name, r):
     for p in o.data.polygons: p.use_smooth = True
     o.data.materials.append(mw_); return o
 TRAIL = []
-for j, (fr_, r_, at_) in enumerate(((0.36, 0.024, (89.5, 96.5)), (0.68, 0.040, (100.0, 107.0)))):   # chica cerca de la boca, mediana cerca de la nube
+for j, (fr_, r_, at_) in enumerate(((0.30, 0.030, (89.5, 96.5)), (0.64, 0.050, (100.0, 107.0)))):   # chica cerca de la boca, mediana cerca de la nube
     o = puff_ball(f'PENSAMIENTO_estela_{j}', r_); goal = MOUTH.lerp(EDGE0, fr_) + Vector((0, 0, 0.012 * (1 - j)))
     f0, f1 = FT(at_[0]), FT(at_[1])
     for F_ in range(f0 - 1, NF + 1):
@@ -914,7 +914,8 @@ cam.data.lens = 50; cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 2
 for F_ in range(1, NF + 1):
     f = 1 + (F_ - 1) / TS; t = (F_ - 1) / FPS; ci = ease((f - 46) / 24) * (1 - ease((f - 78) / 16))   # acercamiento al pez
     push = 0.12 * ease((f - 1) / 60) + 0.2 * ease((f - 62) / 50) + 0.32 * ci
-    cam.location = (0.08 * ease((f - 1) / 80) - 0.12 * ci + 0.006 * math.sin(t * 1.9) + 0.004 * math.sin(t * 3.1 + 1), -2.78 + push, 0.32 - 0.08 * ci + 0.005 * math.sin(t * 2.3 + 2))
+    pan = 0.26 * ease((f - 96) / 26)                                               # acompana a la nube: el pez queda a la izquierda
+    cam.location = (0.08 * ease((f - 1) / 80) - 0.12 * ci + pan + 0.006 * math.sin(t * 1.9) + 0.004 * math.sin(t * 3.1 + 1), -2.78 + push, 0.32 - 0.08 * ci + 0.005 * math.sin(t * 2.3 + 2))
     cam.rotation_euler = (math.radians(86 + 0.25 * math.sin(t * 1.3)), math.radians(0.3 * math.sin(t * 0.9)), math.radians(0.25 * math.sin(t * 1.6 + 1)))
     cam.keyframe_insert('location', frame=F_); cam.keyframe_insert('rotation_euler', frame=F_)
     cam.data.dof.focus_distance = 2.78 - push; cam.data.dof.keyframe_insert('focus_distance', frame=F_)
@@ -935,9 +936,12 @@ for F_ in range(E0, NF + 1):
         g_ = Vector(o.location); ab = ease((F_ - E0 - 4 - 3 * j) / 8.0)
         o.location = g_.lerp(T_, ab); sc_ = 1 - ab; o.scale = (sc_, sc_, sc_)
         o.keyframe_insert('location', frame=F_); o.keyframe_insert('scale', frame=F_)
-    m_ = rig.matrix_world @ MA; dir_ = Vector((EDGE_L.x, 0, EDGE_L.z)).normalized()
-    pen = (T_ - m_).dot(dir_) + 0.015                                                        # si el borde ya paso la boca, empuja al pez
-    if pen > 0: rig.location = Vector(rig.location) + dir_ * pen; rig.keyframe_insert('location', frame=F_)
+    pen_, dir_ = 0.0, None
+    for lp_ in (MA, Vector((0.36, 0, 0.06)), Vector((0.30, 0, -0.06)), Vector((0.18, 0, 0.0))):   # boca, frente, garganta, ojo
+        w_ = rig.matrix_world @ lp_; v_ = Vector((w_.x - GLOBO.location.x, 0, w_.z - GLOBO.location.z)); dist_ = v_.length
+        a_ = math.atan2(v_.z, v_.x) % (2 * math.pi); r_ = CS * rad_[int(round(a_ / (2 * math.pi) * len(rad_))) % len(rad_)] * s_ + 0.012
+        if r_ - dist_ > pen_: pen_, dir_ = r_ - dist_, v_.normalized()
+    if dir_ is not None: rig.location = Vector(rig.location) + dir_ * pen_; rig.keyframe_insert('location', frame=F_)   # el borde lo empuja hacia afuera
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
