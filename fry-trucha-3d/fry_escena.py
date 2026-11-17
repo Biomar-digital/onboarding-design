@@ -871,7 +871,7 @@ def sien_world(f):
 H0 = sien_world(FT(122))
 # ---- estela precisa: misma recta, tamanos en proporcion 1 : 1,6 y separaciones iguales (como la referencia)
 R1, R2, GAP = 0.024, 0.039, 0.024
-DIR = Vector((math.cos(math.radians(58)), 0, math.sin(math.radians(58))))         # hacia arriba y adelante
+DIR = Vector((math.cos(math.radians(38)), 0, math.sin(math.radians(38))))         # hacia arriba y adelante
 _ang = math.atan2(-DIR.z, -DIR.x) % (2 * math.pi)                                 # el borde de la nube que mira a la cabeza
 poly_, rad_ = cloud_poly(CS); _i = int(round(_ang / (2 * math.pi) * len(rad_))) % len(rad_)
 EDGE_L = Vector((CS * rad_[_i] * math.cos(_ang), 0, CS * rad_[_i] * math.sin(_ang)))
