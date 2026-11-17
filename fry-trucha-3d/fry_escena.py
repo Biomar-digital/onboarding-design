@@ -902,7 +902,8 @@ for F_ in range(CF0 - 1, NF + 1):
     fr = F_ - CF0; tt = max(0.0, fr / FPS)
     s_ = spring(fr, (CF1 - CF0) * 1.3) if fr > 0 else 0.0; q = 0.05 * math.exp(-4.0 * tt) * math.sin(2 * math.pi * 1.4 * tt) if fr > 0 else 0.0
     bob = 0.004 * math.sin(tt * 2.0) * ease(tt / 0.8)
-    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob)) + (sien_world(F_) - H0)
+    off_ = sien_world(F_) - H0                                                     # (frame_set primero: si no, pisa la escala recien puesta)
+    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob)) + off_
     GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('location', frame=F_)
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
