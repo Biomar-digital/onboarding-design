@@ -540,10 +540,10 @@ for F_ in range(1, NF + 1):
     SYL = []
     talk = sum(a_ * bump(f, s0, s1) for s0, s1, a_, _ in SYL); rnd_ = sum(r_ * bump(f, s0, s1) for s0, s1, _, r_ in SYL)
     breath = 0.06 * (0.5 + 0.5 * math.sin(t * 2 * math.pi * 0.9)) * hover * (1 - bump(f, 90, 112))
-    hold = ease((f - 89.0) / 2.5)                                                 # tiene el globo agarrado con los labios
+    hold = 0.0                                                                     # (la nube de pensamiento no va agarrada a la boca)
     smile = 0.3 * ease((f - 121) / 10) * (1 - blow)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, 0.82 * hold + 0.25 * exh + 0.2 * blow)))
+        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, exh, 0.6 * blow)))
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
@@ -838,64 +838,64 @@ def pillow_mesh(name, poly, T=0.05, D=0.07, step=0.011):
     m = bpy.data.meshes.new(name); bm_.to_mesh(m)
     for p in m.polygons: p.use_smooth = True
     return m
-def speech(name, C, A, B, tip, f0, f1, ff=(0.95, 0.3)):
-    ctl = bpy.data.objects.new(name, None); sc.collection.objects.link(ctl); ctl.location = C
-    a1, a2 = math.radians(205), math.radians(238)                                # la colita sale entre estos angulos del ovalo (abajo a la izquierda)
+# nube de pensamiento 3D: contorno = union de circulos (lobulos como la referencia), inflada como almohadon blanco, sin borde.
+LOBES = [(-0.70, -0.05, 0.36), (-0.32, 0.22, 0.38), (0.14, 0.30, 0.41), (0.55, 0.13, 0.35), (0.80, -0.07, 0.26),
+         (0.47, -0.30, 0.32), (0.02, -0.34, 0.34), (-0.38, -0.29, 0.30), (0.0, 0.0, 0.50)]
+def cloud_poly(sx, n=260):
     pts = []
-    for i in range(110):
-        a_ = a2 + (2 * math.pi - (a2 - a1)) * i / 109; pts.append((A * math.cos(a_), B * math.sin(a_)))
-    e1 = (A * math.cos(a1), B * math.sin(a1)); e2 = (A * math.cos(a2), B * math.sin(a2))
-    r_ = 0.009; mid_ = ((e1[0] + e2[0]) / 2, (e1[1] + e2[1]) / 2); dl_ = math.hypot(tip[0] - mid_[0], tip[1] - mid_[1])
-    d_ = (-ff[0], -ff[1]); n_ = (-d_[1], d_[0]);                                   # la punta apunta hacia adentro de la boca, en el eje del pez
-    tc_ = (tip[0] - d_[0] * r_, tip[1] - d_[1] * r_)   # centro del redondeo
-    s1_ = 1 if (e1[0] - tc_[0]) * n_[0] + (e1[1] - tc_[1]) * n_[1] > 0 else -1
-    ta_ = (tc_[0] + n_[0] * r_ * s1_, tc_[1] + n_[1] * r_ * s1_); tb_ = (tc_[0] - n_[0] * r_ * s1_, tc_[1] - n_[1] * r_ * s1_)
-    for i in range(1, 22):
-        t = i / 22; c_ = (ta_[0] + ff[0] * 0.11, ta_[1] + ff[1] * 0.11)
-        pts.append(((1 - t) ** 2 * e1[0] + 2 * (1 - t) * t * c_[0] + t * t * ta_[0], (1 - t) ** 2 * e1[1] + 2 * (1 - t) * t * c_[1] + t * t * ta_[1]))
-    for i in range(0, 11):                                                       # punta redonda
-        a_ = math.pi * i / 10; ca_, sa_ = math.cos(a_) * s1_, math.sin(a_)
-        pts.append((tc_[0] + r_ * (ca_ * n_[0] + sa_ * d_[0]), tc_[1] + r_ * (ca_ * n_[1] + sa_ * d_[1])))
-    for i in range(1, 22):
-        t = i / 22; c_ = (tb_[0] + ff[0] * 0.075, tb_[1] + ff[1] * 0.075)
-        pts.append(((1 - t) ** 2 * tb_[0] + 2 * (1 - t) * t * c_[0] + t * t * e2[0], (1 - t) ** 2 * tb_[1] + 2 * (1 - t) * t * c_[1] + t * t * e2[1]))
-    o_ = bpy.data.objects.new(f'{name}_globo', pillow_mesh(f'{name}_globo', pts)); sc.collection.objects.link(o_); o_.parent = ctl
-    mw_ = bpy.data.materials.new(f'{name}_blanco'); mw_.use_nodes = True; bs_ = mw_.node_tree.nodes['Principled BSDF']
+    for i in range(n):
+        a = 2 * math.pi * i / n; dx, dz = math.cos(a), math.sin(a); best = 0.0
+        for cx, cz, r in LOBES:                                                  # lejania del rayo dentro de cada circulo
+            b = dx * cx + dz * cz; c = cx * cx + cz * cz - r * r; disc = b * b - c
+            if disc >= 0: best = max(best, b + math.sqrt(disc))
+        pts.append(best)
+    sm = [(pts[i - 1] + 2 * pts[i] + pts[(i + 1) % n]) / 4 for i in range(n)]    # apenas suaviza las puntas entre lobulos
+    return [(sx * sm[i] * math.cos(2 * math.pi * i / n), sx * sm[i] * math.sin(2 * math.pi * i / n)) for i in range(n)], sm
+def white_mat(name):
+    mw_ = bpy.data.materials.new(name); mw_.use_nodes = True; bs_ = mw_.node_tree.nodes['Principled BSDF']
     bs_.inputs['Base Color'].default_value = (0.97, 0.975, 0.98, 1); bs_.inputs['Roughness'].default_value = 0.42
     bs_.inputs['Subsurface Weight'].default_value = 0.2; bs_.inputs['Subsurface Radius'].default_value = (0.03, 0.03, 0.035)
-    bs_.inputs['Coat Weight'].default_value = 0.35; bs_.inputs['Coat Roughness'].default_value = 0.12   # globo 3D brillante (version aprobada)
-    bs_.inputs['Emission Color'].default_value = (1, 1, 1, 1); bs_.inputs['Emission Strength'].default_value = 0.5   # que lea blanco bajo el agua
-    mo_ = bpy.data.materials.new(f'{name}_contorno'); mo_.use_nodes = True; nn_ = mo_.node_tree; nn_.nodes.clear()
-    oo_ = nn_.nodes.new('ShaderNodeOutputMaterial'); eo_ = nn_.nodes.new('ShaderNodeEmission'); eo_.inputs['Color'].default_value = (*lin((16, 44, 92)), 1)
-    nn_.links.new(eo_.outputs[0], oo_.inputs[0]); mo_.use_backface_culling = True
-    o_.data.materials.append(mw_); o_.data.materials.append(mo_)
-    sb_ = o_.modifiers.new('sub', 'SUBSURF'); sb_.levels = sb_.render_levels = 1
-    so_ = o_.modifiers.new('contorno', 'SOLIDIFY'); so_.show_render = False;   # sin contorno: el globo 3D aprobado no lo tenia
-    so_.thickness = 0.009; so_.offset = 1; so_.use_flip_normals = True; so_.material_offset = 1; so_.use_rim = False
-    tipL = Vector((tip[0], 0, tip[1]))                                             # la punta va metida en la boca: el globo se infla DESDE la boca y la sigue
+    bs_.inputs['Coat Weight'].default_value = 0.35; bs_.inputs['Coat Roughness'].default_value = 0.12   # 3D brillante (como el globo aprobado)
+    bs_.inputs['Emission Color'].default_value = (1, 1, 1, 1); bs_.inputs['Emission Strength'].default_value = 0.5
+    return mw_
+def spring(fr, dur, over=0.14):                                                  # 0 -> 1 con un rebote suave
+    if fr <= 0: return 0.0
+    tt = fr / dur; return min(1.0 + over, 1 - math.exp(-5.2 * tt) * math.cos(2 * math.pi * 0.85 * tt)) * ease(tt / 0.35)
+CS = 0.29                                                                        # escala de la nube (ancho total ~ 0.55)
+MOUTH = mouth_world(FT(122)); SPC = Vector((MOUTH.x + 0.42, MOUTH.y + 0.02, MOUTH.z + 0.30))
+poly_, rad_ = cloud_poly(CS)
+mw_ = white_mat('PENSAMIENTO_globo_blanco')
+GLOBO = bpy.data.objects.new('PENSAMIENTO_globo', None); sc.collection.objects.link(GLOBO)
+cl_ = bpy.data.objects.new('PENSAMIENTO_globo_nube', pillow_mesh('PENSAMIENTO_nube', poly_, T=0.055, D=0.06)); sc.collection.objects.link(cl_)
+cl_.parent = GLOBO; cl_.data.materials.append(mw_); sb_ = cl_.modifiers.new('sub', 'SUBSURF'); sb_.levels = sb_.render_levels = 1
+# punto del borde de la nube que mira a la boca (de ahi sale la estela y ahi empuja al final)
+_d = Vector((MOUTH.x - SPC.x, 0, MOUTH.z - SPC.z)).normalized(); _ang = math.atan2(_d.z, _d.x) % (2 * math.pi); _i = int(round(_ang / (2 * math.pi) * len(rad_))) % len(rad_)
+EDGE_L = Vector((CS * rad_[_i] * math.cos(_ang), 0, CS * rad_[_i] * math.sin(_ang)))   # en coordenadas de la nube (sin escala)
+EDGE0 = SPC + EDGE_L
+def puff_ball(name, r):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=48, ring_count=24); o = bpy.context.object; o.name = name
+    o.scale = (1, 0.75, 1); bpy.ops.object.transform_apply(scale=True)
+    for p in o.data.polygons: p.use_smooth = True
+    o.data.materials.append(mw_); return o
+TRAIL = []
+for j, (fr_, r_, at_) in enumerate(((0.36, 0.024, (89.5, 96.5)), (0.68, 0.040, (100.0, 107.0)))):   # chica cerca de la boca, mediana cerca de la nube
+    o = puff_ball(f'PENSAMIENTO_estela_{j}', r_); goal = MOUTH.lerp(EDGE0, fr_) + Vector((0, 0, 0.012 * (1 - j)))
+    f0, f1 = FT(at_[0]), FT(at_[1])
     for F_ in range(f0 - 1, NF + 1):
-        tt = max(0.0, (F_ - f0) / FPS); mw_ = mouth_world(F_); fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        nw_ = rig.matrix_world.to_quaternion() @ MN; tipW = mw_ - nw_ * 0.016                                                      # la punta entra 1,6 cm en la boca, a la misma profundidad            # 1 cm hacia adentro de la boca
-        if F_ < f0: s_ = 0.0; q = 0.0; th = 0.0
+        if F_ < f0: sc_ = 0.0; loc = mouth_world(f0)
         else:
-            fr_ = F_ - f0; s_ = 0.0; q = 0.0
-            for (a0, a1, v0, v1) in ((0, 9, 0.0, 0.40), (12, 21, 0.40, 0.76), (24, 34, 0.76, 1.0)):   # tres soplidos: crece, afloja apenas, crece
-                if fr_ >= a0:
-                    e_ = ease((fr_ - a0) / (a1 - a0)); s_ = v0 + (v1 - v0) * e_; q = 0.035 * math.sin(math.pi * min(1.0, (fr_ - a0) / (a1 - a0 + 4)))
-                    if fr_ > a1: s_ = v1 - 0.02 * math.sin(math.pi * min(1.0, (fr_ - a1) / 3.0)) * (0 if v1 >= 1.0 else 1)
-            s_ += 0.035 * math.exp(-(max(0, fr_ - 34)) / 6.0) * math.sin(max(0, fr_ - 34) * 0.5) if fr_ > 34 else 0.0   # rebote suave al terminar
-            th = math.radians(-9) * (1 - ease(fr_ / 34.0))                                     # arranca inclinado hacia la boca y se endereza
-        idle = 1 - math.exp(-3.0 * tt); wb = 1.0 + 0.012 * math.sin(tt * 3.1) * idle
-        sx, sz = s_ * (1 + q), s_ * (1 - q)
-        off = Matrix.Rotation(th, 4, 'Y') @ Vector((sx * wb * tipL.x, 0, sz * wb * tipL.z))                      # la punta no se despega de la boca
-        ctl.scale = (sx * wb, s_ * wb, sz * wb); ctl.rotation_euler = (0, th, 0)
-        ctl.location = tipW - off
-        ctl.keyframe_insert('scale', frame=F_); ctl.keyframe_insert('location', frame=F_); ctl.keyframe_insert('rotation_euler', frame=F_)
-    return ctl
-MOUTH = mouth_world(FT(122)); SPC = Vector((MOUTH.x + 0.36, MOUTH.y, MOUTH.z + 0.23))
-TIP = MOUTH - SPC                                  # la punta queda cerca de la boca
-_fx = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); _fl = math.hypot(_fx.x, _fx.z)
-GLOBO = speech('PENSAMIENTO_globo', SPC, 0.27, 0.18, (TIP.x, TIP.z), FT(90), FT(100), (_fx.x / _fl, _fx.z / _fl))
+            u_ = (F_ - f0) / (f1 - f0); sc_ = spring(F_ - f0, (f1 - f0) * 1.4); mo = mouth_world(min(F_, f1))
+            loc = mo.lerp(goal, 1 - (1 - min(1.0, u_)) ** 3) + Vector((0, 0, 0.004 * math.sin((F_ - f0) / FPS * 2.2 + j * 1.7))) * min(1.0, u_)
+        o.location = loc; o.scale = (sc_, sc_, sc_); o.keyframe_insert('location', frame=F_); o.keyframe_insert('scale', frame=F_)
+    TRAIL.append((o, goal))
+# la nube nace en su borde cercano a la estela y se infla hacia afuera con rebote (tercer soplido)
+CF0, CF1 = FT(110), FT(121)
+for F_ in range(CF0 - 1, NF + 1):
+    fr = F_ - CF0; tt = max(0.0, fr / FPS)
+    s_ = spring(fr, (CF1 - CF0) * 1.3) if fr > 0 else 0.0; q = 0.06 * math.exp(-4.0 * tt) * math.sin(2 * math.pi * 1.4 * tt) if fr > 0 else 0.0
+    bob = 0.006 * math.sin(tt * 2.0) * ease(tt / 0.8)
+    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob))
+    GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('location', frame=F_)
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
 sun.data.energy = 4.4; sun.data.color = (1.0, 0.93, 0.8); sun.data.angle = math.radians(14)   # sol suave: brillos anchos, no rayas duras
@@ -924,16 +924,20 @@ _mw.keyframe_insert('default_value', frame=E0 - 1)
 for F_ in range(E0, NF + 1):
     sc.frame_set(F_); u = min(1.0, max(0.0, (F_ - E0) / (E1 - E0))); k = u ** 2.6         # empieza lento y acelera sin parar hasta el blanco
     cpos = cam.matrix_world.translation.copy(); fwd = cam.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-    ctr = cpos + fwd * ((SPC.y - cpos.y) / fwd.y); tt = (F_ - FT(90)) / FPS                 # centro del cuadro, en el mismo plano del globo y el pez
-    base_ = Vector(GLOBO.location)                                                          # donde ya esta: pegado a la boca
-    s_ = 1.0 + 0.012 * math.sin(tt * 3.1) * (1 - ease(u * 5)) + 8.5 * k
-    GLOBO.location = base_.lerp(ctr, ease(u * 1.1)); GLOBO.scale = (s_, min(s_, 2.2), s_); GLOBO.rotation_euler = (0, 0, 0)
-    GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('rotation_euler', frame=F_)
+    ctr = cpos + fwd * ((SPC.y - cpos.y) / fwd.y)                                           # centro del cuadro, en el plano de la nube
+    base_ = Vector(GLOBO.location); s_ = 1.0 + 8.5 * k
+    if F_ == E0: B0 = base_.copy()
+    GLOBO.location = B0.lerp(ctr, ease(u * 1.1)); GLOBO.scale = (s_, min(s_, 2.2), s_)
+    GLOBO.keyframe_insert('location', frame=F_); GLOBO.keyframe_insert('scale', frame=F_)
     _mw.default_value = 0.5 + 3.0 * ease((u - 0.45) / 0.3); _mw.keyframe_insert('default_value', frame=F_)
-    # el pez sigue con la boca en la punta del globo (lo esta inflando): la punta lo empuja de frente y el va hacia atras
-    T_ = GLOBO.location + Vector((GLOBO.scale.x * TIP.x, 0, GLOBO.scale.z * TIP.z))
-    fx_ = rig.matrix_world.to_quaternion() @ Vector((1, 0, 0)); m_ = rig.matrix_world @ MA - (rig.matrix_world.to_quaternion() @ MN) * 0.016
-    d_ = (T_ - m_); d_.y = 0.0; rig.location = Vector(rig.location) + Vector((d_.x, 0, d_.z)); rig.keyframe_insert('location', frame=F_)
+    T_ = GLOBO.location + EDGE_L * s_                                                        # borde de la nube que mira al pez
+    for j, (o, goal) in enumerate(TRAIL):                                                    # la estela queda atrapada: el borde la alcanza y se funde en la nube
+        g_ = Vector(o.location); ab = ease((F_ - E0 - 4 - 3 * j) / 8.0)
+        o.location = g_.lerp(T_, ab); sc_ = 1 - ab; o.scale = (sc_, sc_, sc_)
+        o.keyframe_insert('location', frame=F_); o.keyframe_insert('scale', frame=F_)
+    m_ = rig.matrix_world @ MA; dir_ = Vector((EDGE_L.x, 0, EDGE_L.z)).normalized()
+    pen = (T_ - m_).dot(dir_) + 0.015                                                        # si el borde ya paso la boca, empuja al pez
+    if pen > 0: rig.location = Vector(rig.location) + dir_ * pen; rig.keyframe_insert('location', frame=F_)
 sc.render.engine = 'BLENDER_EEVEE_NEXT'; ee = sc.eevee; ee.taa_render_samples = SPP
 ee.use_volumetric_shadows = True; ee.volumetric_tile_size = '4'; ee.volumetric_samples = 64; ee.volumetric_end = 14.0; ee.volumetric_shadow_samples = 16
 try: ee.use_shadows = True; ee.shadow_ray_count = 2; ee.shadow_step_count = 8
