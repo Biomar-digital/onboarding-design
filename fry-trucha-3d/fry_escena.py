@@ -864,21 +864,21 @@ def spring(fr, dur, over=0.14):                                                 
 CS = 0.27                                                                        # escala de la nube (ancho total ~ 0.55)
 # ---- el pensamiento sale de la sien: punto de la piel arriba y atras del ojo, del lado de camara
 sc.frame_set(FT(122)); bpy.context.view_layer.update()
-_h = _bvh.ray_cast(Vector((EX - 0.045, -1.0, EZ + 0.050)), Vector((0, 1, 0)))     # rayo desde el lado de camara hacia la cabeza (en reposo)
-SIEN_L = (_h[0] if _h[0] else Vector((EX - 0.045, -half_w(EX), EZ + 0.05))) + Vector((0, 0, 0.004))
+_h = _bvh.ray_cast(Vector((EX - 0.03, -0.02, 1.0)), Vector((0, 0, -1)))           # rayo desde arriba: el borde de arriba de la cabeza, sobre el ojo (silueta)
+SIEN_L = (_h[0] if _h[0] else Vector((EX - 0.03, -0.02, top(EX - 0.03))))
 def sien_world(f):
     sc.frame_set(f); return rig.matrix_world @ SIEN_L
 H0 = sien_world(FT(122))
 # ---- estela precisa: misma recta, tamanos en proporcion 1 : 1,6 y separaciones iguales (como la referencia)
 R1, R2, GAP = 0.024, 0.039, 0.024
-DIR = Vector((math.cos(math.radians(48)), 0, math.sin(math.radians(48))))         # hacia arriba y adelante
+DIR = Vector((math.cos(math.radians(58)), 0, math.sin(math.radians(58))))         # hacia arriba y adelante
 _ang = math.atan2(-DIR.z, -DIR.x) % (2 * math.pi)                                 # el borde de la nube que mira a la cabeza
 poly_, rad_ = cloud_poly(CS); _i = int(round(_ang / (2 * math.pi) * len(rad_))) % len(rad_)
 EDGE_L = Vector((CS * rad_[_i] * math.cos(_ang), 0, CS * rad_[_i] * math.sin(_ang)))
 EDGE0 = H0 + DIR * (GAP + 2 * R1 + GAP + 2 * R2 + GAP)
-SPC = EDGE0 - EDGE_L + Vector((0, 0.03, 0))                                      # nube apenas detras (si se tocan, el pez queda adelante)
+SPC = EDGE0 - EDGE_L; SPC.y = 0.05                                             # nube detras del eje del pez (si se tocan, el pez queda adelante)                                      # nube apenas detras (si se tocan, el pez queda adelante)
 EDGE0 = SPC + EDGE_L
-C1 = H0 + DIR * (GAP + R1) + Vector((0, -0.01, 0)); C2 = H0 + DIR * (GAP + 2 * R1 + GAP + R2) + Vector((0, 0.01, 0))
+C1 = H0 + DIR * (GAP + R1); C2 = H0 + DIR * (GAP + 2 * R1 + GAP + R2)
 mw_ = white_mat('PENSAMIENTO_globo_blanco')
 GLOBO = bpy.data.objects.new('PENSAMIENTO_globo', None); sc.collection.objects.link(GLOBO)
 cl_ = bpy.data.objects.new('PENSAMIENTO_globo_nube', pillow_mesh('PENSAMIENTO_nube', poly_, T=0.055, D=0.06)); sc.collection.objects.link(cl_)
@@ -893,7 +893,7 @@ for j, (goal, r_, f0) in enumerate(((C1, R1, FT(92)), (C2, R2, FT(100)))):      
     o = puff_ball(f'PENSAMIENTO_estela_{j}', r_)
     for F_ in range(f0 - 1, NF + 1):
         fr = F_ - f0; sc_ = spring(fr, 9) if fr > 0 else 0.0; tt = max(0.0, fr / FPS)
-        o.location = goal + Vector((0, 0, 0.003 * math.sin(tt * 2.0 + 1.3 * j))) * ease(tt / 0.8)
+        o.location = goal + (sien_world(F_) - H0) + Vector((0, 0, 0.003 * math.sin(tt * 2.0 + 1.3 * j))) * ease(tt / 0.8)
         o.scale = (sc_, sc_, sc_); o.keyframe_insert('location', frame=F_); o.keyframe_insert('scale', frame=F_)
     TRAIL.append((o, goal))
 # la nube nace en su borde que mira a la estela y se infla hacia afuera con rebote
@@ -902,7 +902,7 @@ for F_ in range(CF0 - 1, NF + 1):
     fr = F_ - CF0; tt = max(0.0, fr / FPS)
     s_ = spring(fr, (CF1 - CF0) * 1.3) if fr > 0 else 0.0; q = 0.05 * math.exp(-4.0 * tt) * math.sin(2 * math.pi * 1.4 * tt) if fr > 0 else 0.0
     bob = 0.004 * math.sin(tt * 2.0) * ease(tt / 0.8)
-    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob))
+    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob)) + (sien_world(F_) - H0)
     GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('location', frame=F_)
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
