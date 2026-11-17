@@ -496,7 +496,7 @@ for F_ in range(1, NF + 1):
     if F_ >= 106: xs -= 0.02 * bump(f, 90.5, 96)                                 # retrocede apenas cuando el globo le sale de la boca
     rig.location = (xs, ys, zs); rig.keyframe_insert('location', frame=F_)
     inh = max(bump(f, b0 - 5.5, b0 + 0.5) for b0, b1 in BLOWS); exh = max(bump(f, b0, b1) for b0, b1 in BLOWS)   # toma aire (se hincha) y sopla (se desinfla)
-    bz_ = 1 + 0.085 * inh - 0.03 * exh
+    inh = exh = 0.0; bz_ = 1.0                                                     # (ya no sopla: el pensamiento sale de la cabeza)
     rig.scale = ((1 - 0.07 * pk) * (1 - 0.015 * inh), (1 + 0.03 * pk) * bz_, (1 + 0.05 * pk) * bz_); rig.keyframe_insert('scale', frame=F_)   # apenas comprimido contra el globo, sin temblar
     turn = ease((f - 54) / 10) * (1 - 0.5 * ease((f - 70) / 14))                   # gira hacia camara
     up_ = ease((f - 66) / 20)                                                    # sube la cabeza (duda) hacia la burbuja
@@ -543,7 +543,7 @@ for F_ in range(1, NF + 1):
     hold = 0.0                                                                     # (la nube de pensamiento no va agarrada a la boca)
     smile = 0.3 * ease((f - 121) / 10) * (1 - blow)
     for o_ in (mouth, mouth_in):
-        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, exh, 0.6 * blow)))
+        mouth_keys(o_, F_, abre=min(1.0, breath * (1 - hold) + 0.10 * puff + 0.16 * inh * (1 - blow)), o=0.0, sonrie=smile, duda=0.8 * hmm * (1 - blow) * (1 - hold), sopla=min(1.0, max(0.9 * puff, 0.6 * blow)))
 for fc in (rig.animation_data.action.fcurves if rig.animation_data else []):
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for j, (y0, z0, x0, x1, sc_, ph0) in enumerate(()):                              # cardumen de fondo desactivado (sin ojos y en la niebla se leia como fantasmas)
@@ -862,39 +862,48 @@ def spring(fr, dur, over=0.14):                                                 
     if fr <= 0: return 0.0
     tt = fr / dur; return min(1.0 + over, 1 - math.exp(-5.2 * tt) * math.cos(2 * math.pi * 0.85 * tt)) * ease(tt / 0.35)
 CS = 0.27                                                                        # escala de la nube (ancho total ~ 0.55)
-MOUTH = mouth_world(FT(122)); SPC = Vector((MOUTH.x + 0.36, MOUTH.y + 0.06, MOUTH.z + 0.31))   # un poco detras del pez (si se tocan, el pez queda adelante)
-poly_, rad_ = cloud_poly(CS)
+# ---- el pensamiento sale de la sien: punto de la piel arriba y atras del ojo, del lado de camara
+sc.frame_set(FT(122)); bpy.context.view_layer.update()
+_h = _bvh.ray_cast(Vector((EX - 0.03, -0.02, 1.0)), Vector((0, 0, -1)))           # rayo desde arriba: el borde de arriba de la cabeza, sobre el ojo (silueta)
+SIEN_L = (_h[0] if _h[0] else Vector((EX - 0.03, -0.02, top(EX - 0.03))))
+def sien_world(f):
+    sc.frame_set(f); return rig.matrix_world @ SIEN_L
+H0 = sien_world(FT(122))
+# ---- estela precisa: misma recta, tamanos en proporcion 1 : 1,6 y separaciones iguales (como la referencia)
+R1, R2, GAP = 0.024, 0.039, 0.024
+DIR = Vector((math.cos(math.radians(38)), 0, math.sin(math.radians(38))))         # hacia arriba y adelante
+_ang = math.atan2(-DIR.z, -DIR.x) % (2 * math.pi)                                 # el borde de la nube que mira a la cabeza
+poly_, rad_ = cloud_poly(CS); _i = int(round(_ang / (2 * math.pi) * len(rad_))) % len(rad_)
+EDGE_L = Vector((CS * rad_[_i] * math.cos(_ang), 0, CS * rad_[_i] * math.sin(_ang)))
+EDGE0 = H0 + DIR * (GAP + 2 * R1 + GAP + 2 * R2 + GAP)
+SPC = EDGE0 - EDGE_L; SPC.y = 0.05                                             # nube detras del eje del pez (si se tocan, el pez queda adelante)                                      # nube apenas detras (si se tocan, el pez queda adelante)
+EDGE0 = SPC + EDGE_L
+C1 = H0 + DIR * (GAP + R1); C2 = H0 + DIR * (GAP + 2 * R1 + GAP + R2)
 mw_ = white_mat('PENSAMIENTO_globo_blanco')
 GLOBO = bpy.data.objects.new('PENSAMIENTO_globo', None); sc.collection.objects.link(GLOBO)
 cl_ = bpy.data.objects.new('PENSAMIENTO_globo_nube', pillow_mesh('PENSAMIENTO_nube', poly_, T=0.055, D=0.06)); sc.collection.objects.link(cl_)
 cl_.parent = GLOBO; cl_.data.materials.append(mw_); sb_ = cl_.modifiers.new('sub', 'SUBSURF'); sb_.levels = sb_.render_levels = 1
-# punto del borde de la nube que mira a la boca (de ahi sale la estela y ahi empuja al final)
-_d = Vector((MOUTH.x - SPC.x, 0, MOUTH.z - SPC.z)).normalized(); _ang = math.atan2(_d.z, _d.x) % (2 * math.pi); _i = int(round(_ang / (2 * math.pi) * len(rad_))) % len(rad_)
-EDGE_L = Vector((CS * rad_[_i] * math.cos(_ang), 0, CS * rad_[_i] * math.sin(_ang)))   # en coordenadas de la nube (sin escala)
-EDGE0 = SPC + EDGE_L
 def puff_ball(name, r):
     bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=48, ring_count=24); o = bpy.context.object; o.name = name
     o.scale = (1, 0.75, 1); bpy.ops.object.transform_apply(scale=True)
     for p in o.data.polygons: p.use_smooth = True
     o.data.materials.append(mw_); return o
 TRAIL = []
-for j, (fr_, r_, at_) in enumerate(((0.30, 0.030, (89.5, 96.5)), (0.64, 0.050, (100.0, 107.0)))):   # chica cerca de la boca, mediana cerca de la nube
-    o = puff_ball(f'PENSAMIENTO_estela_{j}', r_); goal = MOUTH.lerp(EDGE0, fr_) + Vector((0, 0, 0.012 * (1 - j)))
-    f0, f1 = FT(at_[0]), FT(at_[1])
+for j, (goal, r_, f0) in enumerate(((C1, R1, FT(92)), (C2, R2, FT(100)))):       # aparecen de a una, en su lugar, con un pop
+    o = puff_ball(f'PENSAMIENTO_estela_{j}', r_)
     for F_ in range(f0 - 1, NF + 1):
-        if F_ < f0: sc_ = 0.0; loc = mouth_world(f0)
-        else:
-            u_ = (F_ - f0) / (f1 - f0); sc_ = spring(F_ - f0, (f1 - f0) * 1.4); mo = mouth_world(min(F_, f1))
-            loc = mo.lerp(goal, 1 - (1 - min(1.0, u_)) ** 3) + Vector((0, 0, 0.004 * math.sin((F_ - f0) / FPS * 2.2 + j * 1.7))) * min(1.0, u_)
-        o.location = loc; o.scale = (sc_, sc_, sc_); o.keyframe_insert('location', frame=F_); o.keyframe_insert('scale', frame=F_)
+        fr = F_ - f0; sc_ = spring(fr, 9) if fr > 0 else 0.0; tt = max(0.0, fr / FPS)
+        o.location = goal + (sien_world(F_) - H0) + Vector((0, 0, 0.003 * math.sin(tt * 2.0 + 1.3 * j))) * ease(tt / 0.8)
+        o.scale = (sc_, sc_, sc_); o.keyframe_insert('location', frame=F_); o.keyframe_insert('scale', frame=F_)
     TRAIL.append((o, goal))
-# la nube nace en su borde cercano a la estela y se infla hacia afuera con rebote (tercer soplido)
-CF0, CF1 = FT(110), FT(121)
+# la nube nace en su borde que mira a la estela y se infla hacia afuera con rebote
+CF0, CF1 = FT(108), FT(119)
 for F_ in range(CF0 - 1, NF + 1):
     fr = F_ - CF0; tt = max(0.0, fr / FPS)
-    s_ = spring(fr, (CF1 - CF0) * 1.3) if fr > 0 else 0.0; q = 0.06 * math.exp(-4.0 * tt) * math.sin(2 * math.pi * 1.4 * tt) if fr > 0 else 0.0
-    bob = 0.006 * math.sin(tt * 2.0) * ease(tt / 0.8)
-    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob))
+    s_ = spring(fr, (CF1 - CF0) * 1.3) if fr > 0 else 0.0; q = 0.05 * math.exp(-4.0 * tt) * math.sin(2 * math.pi * 1.4 * tt) if fr > 0 else 0.0
+    bob = 0.004 * math.sin(tt * 2.0) * ease(tt / 0.8)
+    off_ = sien_world(F_) - H0                                                     # (frame_set primero: si no, pisa la escala recien puesta)
+    GLOBO.scale = (s_ * (1 + q), s_, s_ * (1 - q)); GLOBO.location = EDGE0 + (SPC - EDGE0) * s_ + Vector((0, 0, bob)) + off_
     GLOBO.keyframe_insert('scale', frame=F_); GLOBO.keyframe_insert('location', frame=F_)
 # ------------------------------------------------------------------ luz (sol nitido e inclinado, como en el film), camara, render
 sun = bpy.data.objects.new('SOL', bpy.data.lights.new('SOL', 'SUN')); sc.collection.objects.link(sun)
