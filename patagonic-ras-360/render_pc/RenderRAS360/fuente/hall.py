@@ -511,6 +511,19 @@ if os.environ.get('RAS_ENGINE','').upper()=='EEVEE':
         except Exception as e: print('vector blur unavailable, render motion blur:',e,flush=True)
     if not vb: _set(sc.render,'use_motion_blur',True); _set(sc.render,'motion_blur_shutter',0.5); _set(ee,'motion_blur_steps',1)
     _set(sc.render,'use_persistent_data',False)
+if os.environ.get('RAS_FARM'):
+    # Granja de render: un .blend por pantalla, ya horneado (todo en keyframes, no corre scripts), con su camara,
+    # resolucion, cuadros 1..F y salida PNG. Se sube tal cual a la granja (Blender 4.2, Cycles GPU).
+    FD=os.environ['RAS_FARM']; os.makedirs(FD,exist_ok=True)
+    sc.cycles.device='GPU'; sc.render.use_persistent_data=False
+    sc.frame_start=1; sc.frame_end=F; sc.render.image_settings.file_format='PNG'
+    for s,co in cams:
+        if ONLY and s['name'] not in ONLY: continue
+        sc.camera=co; sc.render.resolution_x=int(s['res'][0]*SCALE); sc.render.resolution_y=int(s['res'][1]*SCALE); sc.render.resolution_percentage=100
+        sc.render.filepath='//'+s['name']+'/'+s['name']+'_'
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(FD,'RAS360_'+s['name']+'.blend'),compress=True,copy=True)
+        print('FARM guardado',os.path.join(FD,'RAS360_'+s['name']+'.blend'),flush=True)
+    print('DONE'); sys.exit(0)
 FR=os.environ.get('RAS_FRAMES'); FA,FB=(int(FR.split('-')[0]),int(FR.split('-')[1])) if FR else (1,F)
 ext='.png'
 if os.environ.get('RAS_JPG'): sc.render.image_settings.file_format='JPEG'; sc.render.image_settings.quality=93; ext='.jpg'
