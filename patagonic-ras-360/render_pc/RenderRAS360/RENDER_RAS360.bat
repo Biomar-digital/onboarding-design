@@ -110,8 +110,26 @@ set "RAS_FARM=%CD%\granja"
 "%BL%" -b --factory-startup -P fuente\hall.py -- "%CD%\granja_tmp" 0 2160 1.0 banner_frontal,banner_lateral > granja_log.txt 2>&1
 findstr /c:"FARM guardado" granja_log.txt
 findstr /c:"DONE" granja_log.txt >nul || (echo. & echo  No termino bien. Mandame el archivo granja_log.txt. & pause & goto :eof)
+rem ---- blender.farm no acepta archivos de Blender 4.2: se re-guardan con Blender 4.5 LTS (se baja una sola vez)
+set "BL45=%TOOLS%\blender45\blender.exe"
+if exist "%BL45%" goto :have45
+if not exist "%TOOLS%\blender45.zip" (
+  echo.
+  echo  Descargando Blender 4.5 LTS ^(400 MB, una sola vez^) para la granja...
+  curl -L -o "%TOOLS%\blender45.zip" https://download.blender.org/release/Blender4.5/blender-4.5.16-windows-x64.zip || goto :errdl
+)
+echo  Descomprimiendo Blender 4.5 ^(1-3 minutos^)...
+tar -xf "%TOOLS%\blender45.zip" -C "%TOOLS%" || powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%TOOLS%\blender45.zip' -DestinationPath '%TOOLS%'" || goto :errzip
+if exist "%TOOLS%\blender45" rmdir /s /q "%TOOLS%\blender45"
+move "%TOOLS%\blender-4.5.16-windows-x64" "%TOOLS%\blender45" >nul || goto :errzip
+del "%TOOLS%\blender45.zip"
+:have45
+echo  Pasando los archivos a Blender 4.5...
+for %%b in (frontal lateral) do "%BL45%" -b "%CD%\granja\RAS360_banner_%%b.blend" -P fuente\a45.py -- "%CD%\granja\RAS360_banner_%%b_45.blend" >> granja_log.txt 2>&1
+findstr /c:"CONVERTIDO" granja_log.txt
 echo.
-echo  Listo. Subi a la granja los dos archivos de la carpeta "granja" ^(Blender 4.2, Cycles, GPU, cuadros 1-2160^).
+echo  Listo. En la carpeta "granja" usa los archivos terminados en _45.blend ^(Blender 4.5, Cycles, cuadros 1-2160^).
+echo  Para mandarlos a blender.farm abri cada uno con: "%BL45%"
 explorer "%CD%\granja"
 pause
 goto :eof
