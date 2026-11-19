@@ -96,7 +96,7 @@ if "%P%"=="8"  set "ONLY=cocina"
 if "%P%"=="9"  set "ONLY=totem_R1"
 if "%P%"=="10" set "ONLY=totem_R2"
 set "OUT=render_v2_%ONLY%"
-if "%P%"=="11" (set "ONLY=banner_frontal,banner_lateral" & set "OUT=render_v3_banners")
+if "%P%"=="11" (set "ONLY=banner_frontal,banner_lateral" & set "OUT=render_v3_banners" & set "RAS_SAMPLES=32")
 if "%M%"=="2" set "OUT=%OUT%_10s"
 goto :go
 :resume
@@ -118,7 +118,7 @@ if "%OUT%"=="" (echo  Numero invalido. & pause & goto :eof)
 if /i "%OUT%"=="render_v2_loop90" goto :go
 set "ONLY=%OUT:render_v2_=%"
 if /i "%ONLY:~-4%"=="_10s" (set "ONLY=%ONLY:~0,-4%" & set "RAS_FRAMES=1-240")
-if /i "%ONLY:~0,19%"=="render_v3_banners" set "ONLY=banner_frontal,banner_lateral"
+if /i "%ONLY:~0,19%"=="render_v3_banners" (set "ONLY=banner_frontal,banner_lateral" & set "RAS_SAMPLES=32")
 echo  Retomando "%OUT%" ^(pantalla %ONLY%^): primero prepara la escena y despues sigue desde el ultimo cuadro.
 :go
 set "RAS_GPU=AUTO"
