@@ -20,7 +20,7 @@ YH, YT = -0.951, 0.952
 # restos de la aleta pectoral vieja (cresta oscura detras del operculo): se alisan contra el cuerpo
 bm = bmesh.new(); bm.from_mesh(body.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
 zone = [v for v in bm.verts if -0.68 <= v.co.y <= -0.38 and -0.20 <= v.co.z <= 0.03 and abs(v.co.x) > 0.04]
-for it in range(3): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+for it in range(30): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
 for it in range(25): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.6, use_axis_x=True, use_axis_y=False, use_axis_z=False)
 bm.to_mesh(body.data); bm.free()
 for p in body.data.polygons: p.use_smooth = True
@@ -130,7 +130,7 @@ FU, FV, FW = asp.outputs[0], asp.outputs[1], asp.outputs[2]                     
 ray = M(fn, 'POWER', M(fn, 'ABSOLUTE', M(fn, 'SINE', M(fn, 'MULTIPLY', FW, math.pi))), 6.0)   # radios finos
 ray = M(fn, 'MULTIPLY', ray, M(fn, 'SUBTRACT', 1.0, M(fn, 'MULTIPLY', smooth(fn, FU, 0.75, 1.0), 0.6)))
 lead = smooth(fn, FV, 0.10, 0.0)                                                   # borde de ataque blanco (como la arcoiris)
-fc = mix(fn, smooth(fn, FU, 0.0, 0.9), lin((176, 150, 112)), lin((214, 140, 96)))  # membrana oliva -> ambar en el borde
+fc = mix(fn, smooth(fn, FU, 0.0, 0.9), lin((150, 138, 108)), lin((200, 140, 100)))  # membrana oliva -> ambar en el borde
 fc = mix(fn, M(fn, 'MULTIPLY', ray, 0.75), fc, lin((96, 74, 50)))
 fc = mix(fn, M(fn, 'MULTIPLY', lead, 0.8), fc, lin((240, 238, 230)))
 fn.links.new(fc, fb.inputs['Base Color']); fb.inputs['Roughness'].default_value = 0.4; fb.inputs['Coat Weight'].default_value = 0.25
@@ -167,7 +167,7 @@ def fan_fin(name, base0, base1, tipdir, outdir, length, spread, rays, NU=14, NV=
     return o
 fins = []
 for side in (1, -1):
-    p0, _ = skin_x(-0.600, -0.095, side); p1, _ = skin_x(-0.545, -0.125, side)   # pectoral: detras del opérculo, baja
+    p0, _ = skin_x(-0.625, -0.095, side); p1, _ = skin_x(-0.565, -0.125, side)   # pectoral: detras del opérculo, baja
     fins.append(('pect', side, fan_fin(f'TRUCHA_pectoral_{side}', p0 - Vector((side * 0.004, 0, 0)), p1 - Vector((side * 0.004, 0, 0)),
                 (side * 0.22, 1.0, -0.30), (side * 1, 0, 0), 0.20, 1.0, 16, sv=(side * 0.25, 0, -1))))
     q0, _ = skin_z(0.035, side * 0.050); q1, _ = skin_z(0.095, side * 0.040)        # pelvica: bajo la panza, hacia atras
