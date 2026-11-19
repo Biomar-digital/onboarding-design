@@ -99,6 +99,12 @@ col = mix(nt, M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', dot, where), 0.92), col, lin((
 anal = M(nt, 'MULTIPLY', smooth(nt, zn, -0.72, -0.86), M(nt, 'MULTIPLY', smooth(nt, u, 0.62, 0.66), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.82, 0.86))))
 col = mix(nt, M(nt, 'MULTIPLY', anal, 0.85), col, lin((150, 140, 112)), 'MIX')
 col = mix(nt, M(nt, 'MULTIPLY', anal, M(nt, 'MULTIPLY', smooth(nt, zn, -0.95, -1.12), 0.8)), col, lin((236, 234, 226)), 'MIX')
+# parche detras del operculo: la textura y el mapa normal de Meshy traen pintada la aleta vieja -> plata lisa
+ey = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Y, -0.600), 0.075); ez = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Z, -0.065), 0.065)
+patch = smooth(nt, M(nt, 'ADD', M(nt, 'MULTIPLY', ey, ey), M(nt, 'MULTIPLY', ez, ez)), 1.0, 0.45)
+col = mix(nt, M(nt, 'MULTIPLY', patch, 0.9), col, lin((226, 226, 222)), 'MIX')
+nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
+nt.links.new(M(nt, 'SUBTRACT', 1.0, patch), nmap.inputs['Strength'])
 nt.links.new(col, bs.inputs['Base Color'])
 # 4) piel mojada: capa brillante, plata con algo de iridiscencia en el flanco
 bs.inputs['Coat Weight'].default_value = 0.55; bs.inputs['Coat Roughness'].default_value = 0.06
