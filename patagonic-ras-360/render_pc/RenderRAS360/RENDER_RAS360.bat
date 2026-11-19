@@ -25,7 +25,7 @@ if exist "%BL%" goto :haveblender
 if not exist "%TOOLS%\blender.zip" (
   echo.
   echo  Descargando Blender 4.2 LTS ^(380 MB, una sola vez^)...
-  curl -L -o "%TOOLS%\blender.zip" https://download.blender.org/release/Blender4.2/blender-4.2.23-windows-x64.zip || goto :errdl
+  curl --ssl-no-revoke -L -o "%TOOLS%\blender.zip" https://download.blender.org/release/Blender4.2/blender-4.2.23-windows-x64.zip || goto :errdl
 )
 echo  Descomprimiendo Blender ^(1-3 minutos^)...
 if exist "%TOOLS%\blender-4.2.23-windows-x64" rmdir /s /q "%TOOLS%\blender-4.2.23-windows-x64"
@@ -45,7 +45,7 @@ if exist "%FF%" goto :haveffmpeg
 if not exist "%TOOLS%\ffmpeg.zip" (
   echo.
   echo  Descargando ffmpeg ^(200 MB, una sola vez^)...
-  curl -L -o "%TOOLS%\ffmpeg.zip" https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip || goto :errdl
+  curl --ssl-no-revoke -L -o "%TOOLS%\ffmpeg.zip" https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip || goto :errdl
 )
 echo  Descomprimiendo ffmpeg...
 tar -xf "%TOOLS%\ffmpeg.zip" -C "%TOOLS%"
@@ -116,7 +116,7 @@ if exist "%BL45%" goto :have45
 if not exist "%TOOLS%\blender45.zip" (
   echo.
   echo  Descargando Blender 4.5 LTS ^(400 MB, una sola vez^) para la granja...
-  curl -L -o "%TOOLS%\blender45.zip" https://download.blender.org/release/Blender4.5/blender-4.5.16-windows-x64.zip || goto :errdl
+  curl --ssl-no-revoke -L -o "%TOOLS%\blender45.zip" https://download.blender.org/release/Blender4.5/blender-4.5.16-windows-x64.zip || goto :errdl
 )
 echo  Descomprimiendo Blender 4.5 ^(1-3 minutos^)...
 tar -xf "%TOOLS%\blender45.zip" -C "%TOOLS%" || powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%TOOLS%\blender45.zip' -DestinationPath '%TOOLS%'" || goto :errzip
