@@ -19,6 +19,9 @@ for p in body.data.polygons: p.use_smooth = True
 YH, YT = -0.951, 0.952
 # restos de la aleta pectoral vieja (cresta oscura detras del operculo): se alisan contra el cuerpo
 bm = bmesh.new(); bm.from_mesh(body.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+med = sorted(f.calc_area() for f in bm.faces)[len(bm.faces) // 2]
+caps = [f for f in bm.faces if f.calc_area() > 8 * med and -0.62 < f.calc_center_median().y < -0.48]
+bmesh.ops.poke(bm, faces=caps)                                                    # tapas largas -> abanicos con centro, se alisan mejor
 zone = [v for v in bm.verts if -0.68 <= v.co.y <= -0.38 and -0.20 <= v.co.z <= 0.03 and abs(v.co.x) > 0.04]
 for it in range(30): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
 for it in range(25): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.6, use_axis_x=True, use_axis_y=False, use_axis_z=False)
@@ -99,10 +102,9 @@ col = mix(nt, M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', dot, where), 0.92), col, lin((
 anal = M(nt, 'MULTIPLY', smooth(nt, zn, -0.72, -0.86), M(nt, 'MULTIPLY', smooth(nt, u, 0.62, 0.66), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.82, 0.86))))
 col = mix(nt, M(nt, 'MULTIPLY', anal, 0.85), col, lin((150, 140, 112)), 'MIX')
 col = mix(nt, M(nt, 'MULTIPLY', anal, M(nt, 'MULTIPLY', smooth(nt, zn, -0.95, -1.12), 0.8)), col, lin((236, 234, 226)), 'MIX')
-# parche detras del operculo: la textura y el mapa normal de Meshy traen pintada la aleta vieja -> plata lisa
-ey = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Y, -0.600), 0.075); ez = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Z, -0.065), 0.065)
+# corte de la aleta vieja (tapa de la base): sin relieve del mapa normal de Meshy
+ey = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Y, -0.552), 0.06); ez = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Z, -0.100), 0.04)
 patch = smooth(nt, M(nt, 'ADD', M(nt, 'MULTIPLY', ey, ey), M(nt, 'MULTIPLY', ez, ez)), 1.0, 0.45)
-col = mix(nt, M(nt, 'MULTIPLY', patch, 0.9), col, lin((226, 226, 222)), 'MIX')
 nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
 nt.links.new(M(nt, 'SUBTRACT', 1.0, patch), nmap.inputs['Strength'])
 nt.links.new(col, bs.inputs['Base Color'])
@@ -173,7 +175,7 @@ def fan_fin(name, base0, base1, tipdir, outdir, length, spread, rays, NU=14, NV=
     return o
 fins = []
 for side in (1, -1):
-    p0, _ = skin_x(-0.625, -0.095, side); p1, _ = skin_x(-0.565, -0.125, side)   # pectoral: detras del opérculo, baja
+    p0, _ = skin_x(-0.592, -0.078, side); p1, _ = skin_x(-0.515, -0.124, side)   # pectoral: detras del opérculo, baja
     fins.append(('pect', side, fan_fin(f'TRUCHA_pectoral_{side}', p0 - Vector((side * 0.004, 0, 0)), p1 - Vector((side * 0.004, 0, 0)),
                 (side * 0.22, 1.0, -0.30), (side * 1, 0, 0), 0.20, 1.0, 16, sv=(side * 0.25, 0, -1))))
     q0, _ = skin_z(0.035, side * 0.050); q1, _ = skin_z(0.095, side * 0.040)        # pelvica: bajo la panza, hacia atras
