@@ -5,7 +5,7 @@ PX=26.4/350.0
 def m(X,Y): return np.array([(X-761)*PX, -(Y-229)*PX])
 # name, plan endpoints (image px), point on the public side, width, height, bottom height, resolution
 SCREENS=[
- ('banner_frontal',  (761,190),(761,268), (800,229), 4.0,1.0, 3.0, (1344,366)),
+ ('banner_frontal',  (761,274),(761,274-6.0/PX), (800,234), 6.0,1.0, 3.0, (2016,336)),   # 6 x 1 m, sale de la esquina hacia el norte
  ('totem_N1',        (845,189),(869,189), (857,229), 1.0,3.0, 0.0, (336,1008)),
  ('totem_N2',        (902,189),(926,189), (914,229), 1.0,3.0, 0.0, (336,1008)),
  ('totem_N3',        (969,189),(993,189), (981,229), 1.0,3.0, 0.0, (336,1008)),
@@ -14,7 +14,7 @@ SCREENS=[
  ('cocina',          (1342,380),(1416,325),(1300,330),4.0,2.0, 1.5, (1344,672)),
  ('totem_R1',        (1207,397),(1243,420),(1205,455),1.0,2.0, 0.0, (336,672)),
  ('totem_R2',        (1222,505),(1245,472),(1205,455),1.0,2.0, 0.0, (336,672)),
- ('banner_lateral',  (782,274),(962,274), (872,240), 8.0,1.0, 3.0, (2688,336)),
+ ('banner_lateral',  (761+7.0/PX,274),(761,274), (807,240), 7.0,1.0, 3.0, (2352,336)),   # 7 x 1 m, pegado al frontal en la esquina
 ]
 EYE_H=1.7
 def screen(s):
@@ -27,6 +27,13 @@ def screen(s):
     eye=np.array([c[0]+n[0]*D,c[1]+n[1]*D,EYE_H])
     return dict(name=name,c=np.array([c[0],c[1],zc]),t=np.array([t[0],t[1],0.0]),n=np.array([n[0],n[1],0.0]),W=W,H=H,res=res,eye=eye,D=D)
 SC=[screen(s) for s in SCREENS]
+# Los dos banners estan pegados en la esquina (L): los dos se ven desde UN mismo punto de vista, asi la imagen
+# sigue de corrido de un banner al otro y un pez que sale por un borde entra al instante por el otro.
+CORNER=m(761,274); _bis=np.array([1.0,1.0])/math.sqrt(2)                       # bisectriz hacia el hall (normales: frontal +x, lateral +y)
+SHARED_EYE=np.array([CORNER[0]+_bis[0]*8.0, CORNER[1]+_bis[1]*8.0, EYE_H])
+for _s in SC:
+    if _s['name'] in ('banner_frontal','banner_lateral'):
+        _s['eye']=SHARED_EYE.copy(); _s['D']=float((SHARED_EYE-_s['c'])@_s['n'])
 # swim circuit: 3.5 m behind each screen (inside the water), in this order, closed loop, smoothed
 ORDER=['banner_frontal','totem_N1','totem_N2','totem_N3','totem_N4','concava','banner_lateral']   # cocina and rotunda totems: standalone, own local schools (local_loop)
 BEHIND=3.5

@@ -71,8 +71,8 @@ if "%M%"=="4" goto :resume
 if "%M%"=="2" set "RAS_FRAMES=1-240"
 echo.
 echo  Que pantalla?
-echo    1 = Banner frontal        (4 x 1 m)
-echo    2 = Banner lateral        (8 x 1 m)
+echo    1 = Banner frontal        (6 x 1 m)
+echo    2 = Banner lateral        (7 x 1 m)
 echo    3 = Totem N1              (1 x 3 m)
 echo    4 = Totem N2              (1 x 3 m)
 echo    5 = Totem N3              (1 x 3 m)
@@ -81,8 +81,9 @@ echo    7 = Pantalla concava      (6 x 5 m)   ^<- la mas pesada
 echo    8 = Pantalla cocina       (4 x 2 m)
 echo    9 = Totem R1 rotonda      (1 x 2 m)
 echo    0 = Totem R2 rotonda      (1 x 2 m)
+echo    B = LOS DOS BANNERS juntos (frontal + lateral, pegados en la esquina)   ^<- recomendado para los banners
 echo.
-choice /c 1234567890 /n /m "Elegi la pantalla (1-9 o 0): "
+choice /c 1234567890B /n /m "Elegi la pantalla (1-9, 0 o B): "
 set "P=%errorlevel%"
 if "%P%"=="1"  set "ONLY=banner_frontal"
 if "%P%"=="2"  set "ONLY=banner_lateral"
@@ -95,13 +96,14 @@ if "%P%"=="8"  set "ONLY=cocina"
 if "%P%"=="9"  set "ONLY=totem_R1"
 if "%P%"=="10" set "ONLY=totem_R2"
 set "OUT=render_v2_%ONLY%"
-if "%M%"=="2" set "OUT=render_v2_%ONLY%_10s"
+if "%P%"=="11" (set "ONLY=banner_frontal,banner_lateral" & set "OUT=render_v3_banners")
+if "%M%"=="2" set "OUT=%OUT%_10s"
 goto :go
 :resume
 echo.
 echo  Renders encontrados en esta carpeta:
 set "K=0"
-for /d %%d in (render_v2_*) do (
+for /d %%d in (render_v2_* render_v3_*) do (
   set /a K+=1
   set "R!K!=%%~nxd"
   set "C=0"
@@ -116,6 +118,7 @@ if "%OUT%"=="" (echo  Numero invalido. & pause & goto :eof)
 if /i "%OUT%"=="render_v2_loop90" goto :go
 set "ONLY=%OUT:render_v2_=%"
 if /i "%ONLY:~-4%"=="_10s" (set "ONLY=%ONLY:~0,-4%" & set "RAS_FRAMES=1-240")
+if /i "%ONLY:~0,19%"=="render_v3_banners" set "ONLY=banner_frontal,banner_lateral"
 echo  Retomando "%OUT%" ^(pantalla %ONLY%^): primero prepara la escena y despues sigue desde el ultimo cuadro.
 :go
 set "RAS_GPU=AUTO"

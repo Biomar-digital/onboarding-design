@@ -15,6 +15,8 @@ PATAGONIC RAS 360 - RENDER EN TU PC
    El video loopea perfecto: el ultimo cuadro empalma con el primero.
    Usa siempre el mismo zip en todas las PCs, asi las pantallas coinciden.
    En una misma PC renderiza de a una pantalla por vez (no abras dos ventanas a la vez).
+   BANNERS: el frontal (6 x 1 m) y el lateral (7 x 1 m) estan pegados en la esquina. Elegi la pantalla B
+   (los dos juntos): se renderizan con el mismo punto de vista y los peces pasan de uno al otro sin corte.
 4. Al terminar abre la carpeta con un MP4 por pantalla. Mandalos al chat y armo el mockup.
 
 - Si cerras la ventana o se apaga la PC, volve a hacer doble clic y elegi la misma opcion:
