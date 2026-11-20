@@ -17,16 +17,49 @@ body = [o for o in bpy.data.objects if o.type == 'MESH'][0]; body.name = 'TRUCHA
 for p in body.data.polygons: p.use_smooth = True
 # modelo: largo en Y (cabeza en -Y, cola en +Y), alto en Z, ancho en X; 1,9 unidades de largo
 YH, YT = -0.951, 0.952
-# restos de la aleta pectoral vieja (cresta oscura detras del operculo): se alisan contra el cuerpo
+# cortes de las aletas viejas (pectorales y pelvicas de Meshy): la piel alrededor se reconstruye.
+# Por cada rebanada en Y se toma el contorno sano (radio segun el angulo alrededor del eje) y los vertices
+# de la zona del corte se llevan a ese contorno: desaparecen tapas, pliegues y escalones.
+from mathutils.kdtree import KDTree
 bm = bmesh.new(); bm.from_mesh(body.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
 med = sorted(f.calc_area() for f in bm.faces)[len(bm.faces) // 2]
-caps = [f for f in bm.faces if f.calc_area() > 8 * med and -0.62 < f.calc_center_median().y < -0.48]
-bmesh.ops.poke(bm, faces=caps)                                                    # tapas largas -> abanicos con centro, se alisan mejor
-zone = [v for v in bm.verts if -0.68 <= v.co.y <= -0.38 and -0.20 <= v.co.z <= 0.03 and abs(v.co.x) > 0.04]
-for it in range(30): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-for it in range(25): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.6, use_axis_x=True, use_axis_y=False, use_axis_z=False)
+def in_cut(c): return (-0.66 < c.y < -0.46 and c.z < 0.0) or (-0.08 < c.y < 0.28 and c.z < -0.12)
+caps = [f for f in bm.faces if f.calc_area() > 6 * med and in_cut(f.calc_center_median())]
+cut_pts = [v.co.copy() for f in caps for v in f.verts]
+bmesh.ops.poke(bm, faces=caps)
+kd = KDTree(len(cut_pts))
+for i, c in enumerate(cut_pts): kd.insert(c, i)
+kd.balance()
+R0, R1 = 0.030, 0.060
+wt = {}
+for v in bm.verts:
+    if not cut_pts: break
+    d = kd.find(v.co)[2]
+    if d < R1: wt[v.index] = 1.0 if d < R0 else 1.0 - (d - R0) / (R1 - R0)
+bm.verts.ensure_lookup_table()
+co = np.array([v.co[:] for v in bm.verts]); n_fix = 0
+for vi, w in wt.items():
+    v = bm.verts[vi]; y = v.co.y
+    sl = np.where(np.abs(co[:, 1] - y) < 0.006)[0]
+    sl = [i for i in sl if wt.get(i, 0.0) == 0.0]
+    if len(sl) < 12: continue
+    P = co[sl]; zc = 0.5 * (P[:, 2].max() + P[:, 2].min())
+    th = np.arctan2(P[:, 2] - zc, P[:, 0]); r = np.hypot(P[:, 0], P[:, 2] - zc)
+    o = np.argsort(th); th, r = th[o], r[o]
+    t0 = math.atan2(v.co.z - zc, v.co.x)
+    rt = np.interp(t0, np.concatenate([th - 2 * math.pi, th, th + 2 * math.pi]), np.concatenate([r, r, r]))
+    rv = math.hypot(v.co.x, v.co.z - zc); rn = rv + (rt - rv) * (w * w * (3 - 2 * w))
+    v.co.x = math.cos(t0) * rn; v.co.z = zc + math.sin(t0) * rn; n_fix += 1
+zone = [bm.verts[i] for i in wt]
+for it in range(8): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+print('CORTES', len(caps), 'vertices rehechos', n_fix)
+lay = bm.verts.layers.float.new('parche')
+for vi, w in wt.items(): bm.verts[vi][lay] = w
 bm.to_mesh(body.data); bm.free()
 for p in body.data.polygons: p.use_smooth = True
+bpy.context.view_layer.objects.active = body; body.select_set(True)
+try: bpy.ops.mesh.customdata_custom_splitnormals_clear()                         # normales del glTF partidas en las costuras UV
+except Exception as e: print('normales', e)
 dg = bpy.context.evaluated_depsgraph_get(); bvh = BVHTree.FromObject(body, dg)
 def skin_x(y, z, side=1):                                                         # punto de la piel del lado +x / -x
     h = bvh.ray_cast(Vector((side * 1.0, y, z)), Vector((-side, 0, 0)))
@@ -102,11 +135,10 @@ col = mix(nt, M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', dot, where), 0.92), col, lin((
 anal = M(nt, 'MULTIPLY', smooth(nt, zn, -0.72, -0.86), M(nt, 'MULTIPLY', smooth(nt, u, 0.62, 0.66), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.82, 0.86))))
 col = mix(nt, M(nt, 'MULTIPLY', anal, 0.85), col, lin((150, 140, 112)), 'MIX')
 col = mix(nt, M(nt, 'MULTIPLY', anal, M(nt, 'MULTIPLY', smooth(nt, zn, -0.95, -1.12), 0.8)), col, lin((236, 234, 226)), 'MIX')
-# corte de la aleta vieja (tapa de la base): sin relieve del mapa normal de Meshy
-ey = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Y, -0.552), 0.06); ez = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Z, -0.100), 0.04)
-patch = smooth(nt, M(nt, 'ADD', M(nt, 'MULTIPLY', ey, ey), M(nt, 'MULTIPLY', ez, ez)), 1.0, 0.45)
+# piel rehecha en los cortes: sin el relieve de Meshy (que ahi quedaria estirado); relieve general mas suave
+pat = N(nt, 'ShaderNodeAttribute'); pat.attribute_name = 'parche'; patch = pat.outputs['Fac']
 nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
-nt.links.new(M(nt, 'SUBTRACT', 1.0, patch), nmap.inputs['Strength'])
+nt.links.new(M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, patch), 0.6), nmap.inputs['Strength'])
 nt.links.new(col, bs.inputs['Base Color'])
 # 4) piel mojada: capa brillante, plata con algo de iridiscencia en el flanco
 bs.inputs['Coat Weight'].default_value = 0.55; bs.inputs['Coat Roughness'].default_value = 0.06
