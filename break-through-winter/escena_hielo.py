@@ -20,7 +20,7 @@ FPS, F0, F1 = 25, 1, 200
 FB = 56                                                                           # cuadro en que revienta el hielo
 sc.render.fps = FPS; sc.frame_start = F0; sc.frame_end = F1
 G = 37.0; sc.gravity = (0, 0, -G)                                                 # 9,8 m/s2 en unidades
-TH = 0.08                                                                         # espesor del hielo (~6 cm)
+TH = 0.05                                                                         # espesor medio del hielo (~1,3 cm de hielo nuevo)
 RF = 1.55                                                                         # radio de la zona fracturada
 def lin(c): return tuple(((v / 255) / 12.92 if v / 255 <= 0.04045 else ((v / 255 + 0.055) / 1.055) ** 2.4) for v in c)
 def coll(name):
@@ -239,14 +239,18 @@ for i, s in enumerate(seeds):
             else:
                 jit, fwd = edge_jit(p, q, j, n_); jit = jit if fwd else -jit
             pts.append((p[0] + (q[0] - p[0]) * t + nx * jit - cx, p[1] + (q[1] - p[1]) * t + ny * jit - cy))
-    me = bpy.data.meshes.new(f'placa{i}'); bm = bmesh.new()
+    me = bpy.data.meshes.new(f'placa{i}'); bm = bmesh.new(); th_k = rng.uniform(0.6, 1.3)
     top = bm.faces.new([bm.verts.new((x, y, 0.0)) for x, y in pts])
     ext = bmesh.ops.extrude_face_region(bm, geom=[top]); bmesh.ops.translate(bm, vec=(0, 0, -TH), verts=[v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=2, use_grid_fill=True)
     for v in bm.verts:                                                           # quiebre irregular: mismo ruido en los dos lados de cada grieta
         wp = Vector((v.co.x + cx, v.co.y + cy, v.co.z)); nv = mnoise.noise_vector(wp * 9.0)
-        v.co.x += nv.x * 0.016; v.co.y += nv.y * 0.016; v.co.z += nv.z * 0.007 * (1.0 if v.co.z < -0.01 else 0.4)
+        v.co.x += nv.x * 0.016; v.co.y += nv.y * 0.016
+        if v.co.z < -0.01:                                                       # cara de abajo: espesor irregular (0,4 a 1,7 veces), mas fino en algunos bordes
+            n1_ = mnoise.noise(wp * 4.0); n2_ = mnoise.noise(wp * 13.0)
+            v.co.z = -TH * th_k * max(0.35, 1.0 + 0.55 * n1_ + 0.25 * n2_)
+        else: v.co.z += nv.z * 0.003
     bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
     bm.to_mesh(me); bm.free(); add_pos0(me, (cx, cy, 0))
     o = obj(f'HIELO_placa_{i:02d}', me, m_cell, C_ICE); o.location = (cx, cy, 0.0); o.rotation_mode = 'XYZ'

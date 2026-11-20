@@ -24,7 +24,7 @@ def box(name, lo, hi):
     for c in o.users_collection: c.objects.unlink(o)
     C.objects.link(o); o.location = [(a + b) / 2 for a, b in zip(lo, hi)]; o.scale = [b - a for a, b in zip(lo, hi)]
     return o
-TH = 0.13
+TH = 0.05
 dom = box('AGUA_dominio', (-2.0, -1.7, -1.05), (3.0, 1.7, 2.3))
 md = dom.modifiers.new('fluido', 'FLUID'); md.fluid_type = 'DOMAIN'; ds = md.domain_settings
 ds.domain_type = 'LIQUID'; ds.resolution_max = RESN; ds.use_mesh = True; ds.use_flip_particles = False
