@@ -133,13 +133,13 @@ belly = smooth(nt, zn, -0.15, -0.70)
 col = mix(nt, M(nt, 'MULTIPLY', belly, 0.62), col, lin((238, 236, 230)), 'MIX')             # panza blanca
 # 2) banda rosa-roja de la agalla a la cola (la marca de la arcoiris), mas ancha al centro
 zb = M(nt, 'MULTIPLY_ADD', u, 0.03, -0.005)
-db = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Z, zb), M(nt, 'MULTIPLY_ADD', M(nt, 'SINE', M(nt, 'MULTIPLY', u, math.pi)), 0.022, 0.016))
+db = M(nt, 'DIVIDE', M(nt, 'SUBTRACT', Z, zb), M(nt, 'MULTIPLY_ADD', M(nt, 'SINE', M(nt, 'MULTIPLY', u, math.pi)), 0.046, 0.034))   # banda ancha, como en la trucha real
 band = M(nt, 'EXPONENT', M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', db, db), -1.0))
 band = M(nt, 'MULTIPLY', band, M(nt, 'MULTIPLY', smooth(nt, u, 0.10, 0.20), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.86, 0.95))))
-col = mix(nt, M(nt, 'MULTIPLY', band, 0.75), col, lin((200, 90, 120)), 'COLOR')      # banda: tono rosa, conserva escamas
-col = mix(nt, M(nt, 'MULTIPLY', band, 0.10), col, lin((190, 80, 105)), 'MULTIPLY')
+col = mix(nt, M(nt, 'MULTIPLY', band, 0.50), col, lin((192, 126, 134)), 'COLOR')      # banda: tono rosa, conserva escamas
+col = mix(nt, M(nt, 'MULTIPLY', band, 0.04), col, lin((190, 110, 118)), 'MULTIPLY')
 cheek = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.10, 0.17)), M(nt, 'MULTIPLY', smooth(nt, u, 0.03, 0.08), smooth(nt, zn, 0.35, -0.2)))
-col = mix(nt, M(nt, 'MULTIPLY', cheek, 0.55), col, lin((214, 108, 130)), 'COLOR')   # opérculo rosado
+col = mix(nt, M(nt, 'MULTIPLY', cheek, 0.40), col, lin((204, 132, 140)), 'COLOR')   # opérculo rosado
 # 3) pintas negras: chicas y redondas, densas en el lomo y sobre la banda; tambien en la aleta dorsal y la cola
 vo = N(nt, 'ShaderNodeTexVoronoi'); vo.feature = 'F1'; vo.inputs['Scale'].default_value = 88.0; vo.inputs['Randomness'].default_value = 1.0
 mp = N(nt, 'ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.0, 0.85, 1.0); nt.links.new(tc.outputs['Object'], mp.inputs['Vector']); nt.links.new(mp.outputs[0], vo.inputs['Vector'])

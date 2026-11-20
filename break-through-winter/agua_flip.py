@@ -25,7 +25,7 @@ def box(name, lo, hi):
     C.objects.link(o); o.location = [(a + b) / 2 for a, b in zip(lo, hi)]; o.scale = [b - a for a, b in zip(lo, hi)]
     return o
 TH = 0.13
-dom = box('AGUA_dominio', (-1.8, -1.8, -1.1), (1.8, 1.8, 2.5))
+dom = box('AGUA_dominio', (-2.0, -1.7, -1.05), (3.0, 1.7, 2.3))
 md = dom.modifiers.new('fluido', 'FLUID'); md.fluid_type = 'DOMAIN'; ds = md.domain_settings
 ds.domain_type = 'LIQUID'; ds.resolution_max = RESN; ds.use_mesh = True; ds.use_flip_particles = False
 ds.cache_directory = os.path.join(os.path.dirname(bpy.path.abspath(OUT)) or '.', 'cache_agua'); ds.cache_type = 'ALL'
@@ -36,14 +36,14 @@ for f in range(F0, F1 + 1):                                                     
     ds.time_scale = (dts(f) / 0.04) if f > FB else 1.0; ds.keyframe_insert('time_scale', frame=f)
 ds.use_diffusion = False
 # agua bajo el hielo (llena el fondo del dominio hasta justo debajo del hielo)
-water = box('AGUA_inicial', (-1.79, -1.79, -1.09), (1.79, 1.79, -TH - 0.01))
+water = box('AGUA_inicial', (-1.99, -1.69, -1.04), (2.99, 1.69, -TH - 0.01))
 mw = water.modifiers.new('fluido', 'FLUID'); mw.fluid_type = 'FLOW'; fs = mw.flow_settings
 fs.flow_type = 'LIQUID'; fs.flow_behavior = 'GEOMETRY'; fs.flow_source = 'MESH'; water.hide_render = True; water.display_type = 'WIRE'
 # chorro: la trucha arrastra una columna de agua al salir
-jet = box('AGUA_chorro', (-0.32, -0.32, -0.75), (0.32, 0.32, -0.30))
+jet = box('AGUA_chorro', (-0.75, -0.30, -0.70), (-0.15, 0.30, -0.30))
 mj = jet.modifiers.new('fluido', 'FLUID'); mj.fluid_type = 'FLOW'; fj = mj.flow_settings
 fj.flow_type = 'LIQUID'; fj.flow_behavior = 'INFLOW'; fj.flow_source = 'MESH'; fj.use_initial_velocity = True
-fj.velocity_coord = (0, 0, 11.0); jet.hide_render = True; jet.display_type = 'WIRE'
+fj.velocity_coord = (7.5, 0, 8.5); jet.hide_render = True; jet.display_type = 'WIRE'
 for f, on in ((FB - 1, False), (FB, True), (FB + 7, True), (FB + 8, False)):
     fj.use_inflow = on; fj.keyframe_insert('use_inflow', frame=f)
 # obstaculos: el hielo y la trucha (malla deformada por el rig)
