@@ -182,7 +182,7 @@ def ice_material(name, sides=False, frost=0.0, trans=0.35, snow_top=0.0):
         res = sh4.outputs[0]
     nt.links.new(res, out.inputs[0])
     return m
-m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True, frost=0.15, trans=0.95, snow_top=0.5)
+m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True, frost=0.08, trans=1.0, snow_top=0.35)
 def add_pos0(me, off=(0, 0, 0)):
     a = me.attributes.new('pos0', 'FLOAT_VECTOR', 'POINT')
     a.data.foreach_set('vector', (np.array([v.co[:] for v in me.vertices], dtype=np.float32) + np.array(off, dtype=np.float32)).ravel())

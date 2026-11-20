@@ -51,8 +51,22 @@ for name, planar in (('HIELO_estanque', False), ('TRUCHA_cuerpo', False)):
     o = bpy.data.objects[name]; me_ = o.modifiers.new('fluido', 'FLUID'); me_.fluid_type = 'EFFECTOR'
     es = me_.effector_settings; es.effector_type = 'COLLISION'; es.use_effector = True; es.subframes = 1; es.use_plane_init = planar
 # material de agua para la malla simulada
-m = bpy.data.materials.get('gota')
+# agua del chorro: transparente pero aireada (blanca donde rompe), si no se ve negra contra la noche
+m = bpy.data.materials.new('agua_chorro'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
+b.inputs['Base Color'].default_value = (0.92, 0.96, 1.0, 1); b.inputs['Roughness'].default_value = 0.03; b.inputs['IOR'].default_value = 1.333
+b.inputs['Transmission Weight'].default_value = 1.0
+tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 6.0; nz.inputs['Detail'].default_value = 8.0
+nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.5; mr.inputs['From Max'].default_value = 0.72; mr.inputs['To Max'].default_value = 0.85
+nt.links.new(nz.outputs['Fac'], mr.inputs['Value'])
+foam = nt.nodes.new('ShaderNodeBsdfPrincipled'); foam.inputs['Base Color'].default_value = (0.9, 0.94, 0.98, 1); foam.inputs['Roughness'].default_value = 0.35
+foam.inputs['Subsurface Weight'].default_value = 1.0; foam.inputs['Subsurface Radius'].default_value = (0.05, 0.06, 0.08)
+ms = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(mr.outputs[0], ms.inputs[0]); nt.links.new(b.outputs[0], ms.inputs[1]); nt.links.new(foam.outputs[0], ms.inputs[2])
+nt.links.new(ms.outputs[0], nt.nodes['Material Output'].inputs[0])
 dom.data.materials.clear(); dom.data.materials.append(m)
+for cn in ('RECIBE_LLAVE_TODO', 'RECIBE_CONTRALUZ'):                            # el chorro recibe la luz dorada y el contraluz
+    c_ = bpy.data.collections.get(cn)
+    if c_ and dom.name not in c_.objects: c_.objects.link(dom)
 for p in dom.data.polygons: p.use_smooth = True
 with bpy.context.temp_override(scene=sc, active_object=dom, object=dom, selected_objects=[dom]):
     import time; t = time.time()
