@@ -138,6 +138,8 @@ col = mix(nt, M(nt, 'MULTIPLY', anal, M(nt, 'MULTIPLY', smooth(nt, zn, -0.95, -1
 # piel rehecha en los cortes: sin el relieve de Meshy (que ahi quedaria estirado); relieve general mas suave
 pat = N(nt, 'ShaderNodeAttribute'); pat.attribute_name = 'parche'; patch = pat.outputs['Fac']
 nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
+col = mix(nt, M(nt, 'MULTIPLY', M(nt, 'POWER', patch, 0.5), 0.95), col, lin((214, 214, 210)), 'MIX')   # tapa la linea pintada del corte
+nt.links.new(col, bs.inputs['Base Color'])
 nt.links.new(M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, patch), 0.6), nmap.inputs['Strength'])
 nt.links.new(col, bs.inputs['Base Color'])
 # 4) piel mojada: capa brillante, plata con algo de iridiscencia en el flanco
