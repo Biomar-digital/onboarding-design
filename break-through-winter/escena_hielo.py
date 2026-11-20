@@ -20,7 +20,7 @@ FPS, F0, F1 = 25, 1, 200
 FB = 56                                                                           # cuadro en que revienta el hielo
 sc.render.fps = FPS; sc.frame_start = F0; sc.frame_end = F1
 G = 37.0; sc.gravity = (0, 0, -G)                                                 # 9,8 m/s2 en unidades
-TH = 0.22                                                                         # espesor del hielo (~6 cm)
+TH = 0.13                                                                         # espesor del hielo (~6 cm)
 RF = 1.55                                                                         # radio de la zona fracturada
 def lin(c): return tuple(((v / 255) / 12.92 if v / 255 <= 0.04045 else ((v / 255 + 0.055) / 1.055) ** 2.4) for v in c)
 def coll(name):
@@ -80,7 +80,7 @@ TARGET = math.atan2(1.0, 0.55)                                                  
 w = bpy.data.worlds.new('cielo_hora_azul'); sc.world = w; w.use_nodes = True; wn = w.node_tree; wn.nodes.clear()
 wo = N(wn, 'ShaderNodeOutputWorld'); bg = N(wn, 'ShaderNodeBackground'); wn.links.new(bg.outputs[0], wo.inputs[0])
 wtc = N(wn, 'ShaderNodeTexCoord'); wmp = N(wn, 'ShaderNodeMapping'); wn.links.new(wtc.outputs['Generated'], wmp.inputs['Vector'])
-wmp.inputs['Rotation'].default_value = (0, 0, a_sun - TARGET)
+wmp.inputs['Rotation'].default_value = (0, 0, a_sun - TARGET)                 # deja de fondo la linea de arboles del HDRI (sin edificios)
 env = N(wn, 'ShaderNodeTexEnvironment'); env.image = hdr; wn.links.new(wmp.outputs[0], env.inputs['Vector'])
 hs = N(wn, 'ShaderNodeHueSaturation'); hs.inputs['Saturation'].default_value = 0.85; wn.links.new(env.outputs[0], hs.inputs['Color'])
 blue = mix(wn, 0.78, hs.outputs[0], lin((70, 112, 210)), 'MULTIPLY')             # hora azul: el atardecer pasa a azul profundo
@@ -115,12 +115,12 @@ def ice_material(name, sides=False, frost=0.0):
     pol = N(nt, 'ShaderNodeCombineXYZ'); nt.links.new(M(nt, 'MULTIPLY', ang, 2.4), pol.inputs[0]); nt.links.new(M(nt, 'MULTIPLY', M(nt, 'LOGARITHM', M(nt, 'ADD', R, 0.1), 2.718), 2.8), pol.inputs[1])
     n3 = N(nt, 'ShaderNodeTexNoise'); n3.inputs['Scale'].default_value = 1.4; n3.inputs['Detail'].default_value = 5.0; nt.links.new(P, n3.inputs['Vector'])
     pw2 = N(nt, 'ShaderNodeVectorMath'); pw2.operation = 'MULTIPLY_ADD'; nt.links.new(n3.outputs['Color'], pw2.inputs[0]); pw2.inputs[1].default_value = (0.5, 0.5, 0.5); nt.links.new(pol.outputs[0], pw2.inputs[2])
-    vr = N(nt, 'ShaderNodeTexVoronoi'); vr.feature = 'DISTANCE_TO_EDGE'; vr.inputs['Scale'].default_value = 2.2; nt.links.new(pw2.outputs[0], vr.inputs['Vector'])
-    cw = M(nt, 'MULTIPLY', 0.008, M(nt, 'ADD', 1.0, M(nt, 'MULTIPLY', R, -0.12)))
+    vr = N(nt, 'ShaderNodeTexVoronoi'); vr.feature = 'DISTANCE_TO_EDGE'; vr.inputs['Scale'].default_value = 1.3; nt.links.new(pw2.outputs[0], vr.inputs['Vector'])
+    cw = M(nt, 'MULTIPLY', 0.005, M(nt, 'ADD', 1.0, M(nt, 'MULTIPLY', R, -0.12)))
     new = M(nt, 'MAXIMUM', smooth(nt, M(nt, 'SUBTRACT', vr.outputs['Distance'], cw), 0.0, -0.003),
             M(nt, 'MULTIPLY', smooth(nt, M(nt, 'SUBTRACT', vr.outputs['Distance'], M(nt, 'MULTIPLY', cw, 5.0)), 0.0, -0.012), 0.25))
     new = M(nt, 'MULTIPLY', new, M(nt, 'MULTIPLY', smooth(nt, M(nt, 'SUBTRACT', R, rv.outputs[0]), 0.0, -0.4), smooth(nt, R, RF - 0.1, RF + 0.1)))
-    crack = M(nt, 'MINIMUM', M(nt, 'ADD', M(nt, 'MULTIPLY', old, 0.30), new), 1.0)
+    crack = M(nt, 'MINIMUM', M(nt, 'ADD', M(nt, 'MULTIPLY', old, 0.30), M(nt, 'MULTIPLY', new, 0.65)), 1.0)
     if frost: crack = M(nt, 'MAXIMUM', crack, M(nt, 'MULTIPLY', smooth(nt, n2.outputs['Fac'], 0.3, 0.7), frost))   # hielo roto: lechoso
     frac = N(nt, 'ShaderNodeBsdfPrincipled'); frac.inputs['Base Color'].default_value = (*lin((228, 238, 246)), 1); frac.inputs['Roughness'].default_value = 0.45
     frac.inputs['Subsurface Weight'].default_value = 0.6; frac.inputs['Subsurface Radius'].default_value = (0.05, 0.07, 0.09)
@@ -152,15 +152,15 @@ def ice_material(name, sides=False, frost=0.0):
     if sides:                                                                        # caras de fractura: blanco-azuladas, esmeriladas
         geo = N(nt, 'ShaderNodeNewGeometry'); gz = N(nt, 'ShaderNodeSeparateXYZ'); nt.links.new(geo.outputs['Normal'], gz.inputs[0])
         side = smooth(nt, M(nt, 'ABSOLUTE', gz.outputs[2]), 0.7, 0.3)
-        fr2 = N(nt, 'ShaderNodeBsdfPrincipled'); fr2.inputs['Base Color'].default_value = (*lin((206, 226, 240)), 1); fr2.inputs['Roughness'].default_value = 0.3
-        fr2.inputs['Transmission Weight'].default_value = 0.2; fr2.inputs['IOR'].default_value = 1.31
-        fr2.inputs['Subsurface Weight'].default_value = 0.4; fr2.inputs['Subsurface Radius'].default_value = (0.04, 0.06, 0.08)
+        fr2 = N(nt, 'ShaderNodeBsdfPrincipled'); fr2.inputs['Base Color'].default_value = (*lin((240, 246, 250)), 1); fr2.inputs['Roughness'].default_value = 0.5
+        fr2.inputs['Transmission Weight'].default_value = 0.0; fr2.inputs['IOR'].default_value = 1.31
+        fr2.inputs['Subsurface Weight'].default_value = 1.0; fr2.inputs['Subsurface Radius'].default_value = (0.03, 0.045, 0.06)
         nb = N(nt, 'ShaderNodeBump'); nb.inputs['Strength'].default_value = 0.5; nb.inputs['Distance'].default_value = 0.02; nt.links.new(n2.outputs['Fac'], nb.inputs['Height']); nt.links.new(nb.outputs[0], fr2.inputs['Normal'])
         sh4 = N(nt, 'ShaderNodeMixShader'); nt.links.new(side, sh4.inputs[0]); nt.links.new(res, sh4.inputs[1]); nt.links.new(fr2.outputs[0], sh4.inputs[2])
         res = sh4.outputs[0]
     nt.links.new(res, out.inputs[0])
     return m
-m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True, frost=0.55)
+m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True, frost=0.12)
 def add_pos0(me, off=(0, 0, 0)):
     a = me.attributes.new('pos0', 'FLOAT_VECTOR', 'POINT')
     a.data.foreach_set('vector', (np.array([v.co[:] for v in me.vertices], dtype=np.float32) + np.array(off, dtype=np.float32)).ravel())
@@ -193,8 +193,8 @@ def clip(poly, a, b):
             t = sp_ / (sp_ - sq); out.append((p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t))
     return out
 seeds = []
-for i in range(9): a = rng.uniform(0, 6.283); r = rng.uniform(0.05, 0.42); seeds.append((r * math.cos(a), r * math.sin(a)))
-for i in range(16): a = 2 * math.pi * i / 16 + rng.uniform(-0.15, 0.15); r = rng.uniform(0.55, 0.85); seeds.append((r * math.cos(a), r * math.sin(a)))
+for i in range(5): a = rng.uniform(0, 6.283); r = rng.uniform(0.1, 0.4); seeds.append((r * math.cos(a), r * math.sin(a)))
+for i in range(11): a = 2 * math.pi * i / 11 + rng.uniform(-0.15, 0.15); r = rng.uniform(0.55, 0.85); seeds.append((r * math.cos(a), r * math.sin(a)))
 for i in range(20): a = 2 * math.pi * i / 20 + rng.uniform(-0.12, 0.12); r = rng.uniform(1.05, 1.40); seeds.append((r * math.cos(a), r * math.sin(a)))
 def edge_jit(p, q, j, n):                                                      # mismo quiebre en los dos lados de una grieta
     kp, kq = tuple(round(c, 4) for c in p), tuple(round(c, 4) for c in q); fwd = kp <= kq
@@ -271,7 +271,7 @@ water = obj('AGUA_agujero', me, m_w, C_ICE); water.location.z = -0.035
 me = bpy.data.meshes.new('fondo'); bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=PS); bm.to_mesh(me); bm.free()
 m_deep, nt, bs = new_mat('agua_profunda'); bs.inputs['Base Color'].default_value = (0.0, 0.003, 0.006, 1); bs.inputs['Roughness'].default_value = 0.3
 deep = obj('AGUA_debajo', me, m_deep, C_ICE); deep.location.z = -TH - 0.02
-for f, r in ((1, RF), (18, RF), (34, RF + 1.2), (46, RF + 2.4), (FB, RF + 4.0), (90, RF + 5.5), (F1, RF + 6.0)):
+for f, r in ((1, RF), (18, RF), (34, RF + 0.8), (46, RF + 1.6), (FB, RF + 2.6), (90, RF + 3.4), (F1, RF + 3.6)):
     for rv in crack_val: rv.outputs[0].default_value = r; rv.outputs[0].keyframe_insert('default_value', frame=f)
 
 # ------------------------------------------------------------------ orilla nevada, abetos reales (Poly Haven) y juncos secos atrapados en el hielo
@@ -392,7 +392,9 @@ rim = spot('LUZ_contra_fria', (1.8, 5.0, 3.0), (0, 0, 1.1), 2600, lin((150, 190,
 fish_c = bpy.data.collections.new('RECIBE_LLAVE')
 for o in bpy.data.objects:
     if o.name.startswith('TRUCHA_') and o.type == 'MESH': fish_c.objects.link(o)
-try: key.light_linking.receiver_collection = fish_c
+rim_c = bpy.data.collections.new('RECIBE_CONTRALUZ')                          # el contraluz no toca el hielo grande (si no, refleja un foco)
+for o in list(fish_c.objects) + list(C_FX.objects) + [c[0] for c in cells] + [reeds]: rim_c.objects.link(o)
+try: key.light_linking.receiver_collection = fish_c; rim.light_linking.receiver_collection = rim_c
 except Exception as e: print('light linking', e)
 
 # ------------------------------------------------------------------ camara: baja, casi a ras del hielo, empuje lento
