@@ -92,7 +92,7 @@ wn.links.new(dark, bg.inputs['Color']); bg.inputs['Strength'].default_value = 0.
 # ------------------------------------------------------------------ hielo: material fisico (hielo transparente sobre agua negra) con nieve, burbujas y grietas
 snow_d, snow_n, snow_r = img('snow_02_diff_2k.jpg'), img('snow_02_nor_gl_2k.jpg', 'Non-Color'), img('snow_02_rough_2k.jpg', 'Non-Color')
 crack_val = []
-def ice_material(name, sides=False):
+def ice_material(name, sides=False, frost=0.0):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
     out = N(nt, 'ShaderNodeOutputMaterial')
     at = N(nt, 'ShaderNodeAttribute'); at.attribute_name = 'pos0'; P = at.outputs['Vector']   # posicion original (viaja con las esquirlas)
@@ -108,7 +108,7 @@ def ice_material(name, sides=False):
     # grietas viejas de presion: planos blancos dentro del hielo
     vo = N(nt, 'ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = 0.16
     pw = N(nt, 'ShaderNodeVectorMath'); pw.operation = 'ADD'; nt.links.new(P, pw.inputs[0]); nt.links.new(n1.outputs['Color'], pw.inputs[1]); nt.links.new(pw.outputs[0], vo.inputs['Vector'])
-    old = M(nt, 'MULTIPLY', smooth(nt, vo.outputs['Distance'], 0.012, 0.0), smooth(nt, n2.outputs['Fac'], 0.35, 0.6))
+    old = M(nt, 'MULTIPLY', smooth(nt, vo.outputs['Distance'], 0.006, 0.0), smooth(nt, n2.outputs['Fac'], 0.35, 0.6))
     # grietas nuevas radiales desde el agujero (crecen con 'radio_grietas')
     rv = N(nt, 'ShaderNodeValue'); rv.name = 'radio_grietas'; crack_val.append(rv)
     ang = M(nt, 'ARCTAN2', Y, X)
@@ -120,7 +120,8 @@ def ice_material(name, sides=False):
     new = M(nt, 'MAXIMUM', smooth(nt, M(nt, 'SUBTRACT', vr.outputs['Distance'], cw), 0.0, -0.003),
             M(nt, 'MULTIPLY', smooth(nt, M(nt, 'SUBTRACT', vr.outputs['Distance'], M(nt, 'MULTIPLY', cw, 5.0)), 0.0, -0.012), 0.25))
     new = M(nt, 'MULTIPLY', new, M(nt, 'MULTIPLY', smooth(nt, M(nt, 'SUBTRACT', R, rv.outputs[0]), 0.0, -0.4), smooth(nt, R, RF - 0.1, RF + 0.1)))
-    crack = M(nt, 'MINIMUM', M(nt, 'ADD', M(nt, 'MULTIPLY', old, 0.75), new), 1.0)
+    crack = M(nt, 'MINIMUM', M(nt, 'ADD', M(nt, 'MULTIPLY', old, 0.30), new), 1.0)
+    if frost: crack = M(nt, 'MAXIMUM', crack, M(nt, 'MULTIPLY', smooth(nt, n2.outputs['Fac'], 0.3, 0.7), frost))   # hielo roto: lechoso
     frac = N(nt, 'ShaderNodeBsdfPrincipled'); frac.inputs['Base Color'].default_value = (*lin((228, 238, 246)), 1); frac.inputs['Roughness'].default_value = 0.45
     frac.inputs['Subsurface Weight'].default_value = 0.6; frac.inputs['Subsurface Radius'].default_value = (0.05, 0.07, 0.09)
     # burbujas de aire atrapadas: puntitos blancos lechosos en racimos
@@ -152,14 +153,14 @@ def ice_material(name, sides=False):
         geo = N(nt, 'ShaderNodeNewGeometry'); gz = N(nt, 'ShaderNodeSeparateXYZ'); nt.links.new(geo.outputs['Normal'], gz.inputs[0])
         side = smooth(nt, M(nt, 'ABSOLUTE', gz.outputs[2]), 0.7, 0.3)
         fr2 = N(nt, 'ShaderNodeBsdfPrincipled'); fr2.inputs['Base Color'].default_value = (*lin((206, 226, 240)), 1); fr2.inputs['Roughness'].default_value = 0.3
-        fr2.inputs['Transmission Weight'].default_value = 0.55; fr2.inputs['IOR'].default_value = 1.31
+        fr2.inputs['Transmission Weight'].default_value = 0.2; fr2.inputs['IOR'].default_value = 1.31
         fr2.inputs['Subsurface Weight'].default_value = 0.4; fr2.inputs['Subsurface Radius'].default_value = (0.04, 0.06, 0.08)
         nb = N(nt, 'ShaderNodeBump'); nb.inputs['Strength'].default_value = 0.5; nb.inputs['Distance'].default_value = 0.02; nt.links.new(n2.outputs['Fac'], nb.inputs['Height']); nt.links.new(nb.outputs[0], fr2.inputs['Normal'])
         sh4 = N(nt, 'ShaderNodeMixShader'); nt.links.new(side, sh4.inputs[0]); nt.links.new(res, sh4.inputs[1]); nt.links.new(fr2.outputs[0], sh4.inputs[2])
         res = sh4.outputs[0]
     nt.links.new(res, out.inputs[0])
     return m
-m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True)
+m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True, frost=0.55)
 def add_pos0(me, off=(0, 0, 0)):
     a = me.attributes.new('pos0', 'FLOAT_VECTOR', 'POINT')
     a.data.foreach_set('vector', (np.array([v.co[:] for v in me.vertices], dtype=np.float32) + np.array(off, dtype=np.float32)).ravel())
@@ -305,9 +306,9 @@ firs = [o for o in dst.objects if o is not None]
 for im_ in bpy.data.images:
     if im_.filepath.startswith('//textures/'): im_.filepath = os.path.join(RES, 'textures', os.path.basename(im_.filepath))
 FIR_SCALE = 1 / 0.26                                                            # los abetos estan en metros
-for k in range(70):
-    a = math.radians(rng.choice([rng.uniform(40, 80), rng.uniform(95, 130), rng.uniform(150, 175)]) if rng.random() < 0.85 else rng.uniform(20, 160))
-    rr = POND + rng.uniform(12, 70); x, y = rr * math.cos(a), rr * math.sin(a) + 30.0
+for k in range(90):
+    a = math.radians(rng.choice([rng.uniform(25, 68), rng.uniform(112, 160)]))
+    rr = rng.uniform(420, 760); x, y = rr * math.cos(a), rr * math.sin(a) + 30.0
     src_ = rng.choice(firs); inst = bpy.data.objects.new(f'ENTORNO_abeto_{k:02d}', src_.data); C_ENV.objects.link(inst)
     s = FIR_SCALE * rng.uniform(0.55, 1.15); inst.scale = (s, s, s); inst.rotation_euler = (0, 0, rng.uniform(0, 6.28)); inst.location = (x, y, 1.0)
 m_reed, nt, bs = new_mat('junco_seco')
@@ -376,8 +377,8 @@ def particles(o, name, count, f0, f1, vel, rand, size, sizer, life, src='VERT'):
     ps.normal_factor = 0.0; ps.object_align_factor = vel; ps.factor_random = rand
     ps.render_type = 'OBJECT'; ps.instance_object = drop; ps.particle_size = size; ps.size_random = sizer; ps.physics_type = 'NEWTON'
     return ps
-s1 = particles(em, 'estallido', 5000, FB, FB + 22, (0, 0, 10.0), 4.5, 0.011, 0.95, 500)
-s2 = particles(body, 'chorreo', 900, FB + 4, F1, (0, 0, 0.0), 0.2, 0.008, 0.8, 500, 'FACE'); s2.normal_factor = 0.5
+s1 = particles(em, 'estallido', 7000, FB, FB + 26, (0, 0, 11.0), 4.5, 0.022, 0.9, 500)
+s2 = particles(body, 'chorreo', 1600, FB + 4, F1, (0, 0, 0.0), 0.25, 0.014, 0.8, 500, 'FACE'); s2.normal_factor = 0.5
 for ps in (s1, s2):
     for f in range(F0, F1 + 1): ps.timestep = dts(f) if f > FB else 0.04; ps.keyframe_insert('timestep', frame=f)
 ice.modifiers.new('choque', 'COLLISION'); ice.collision.damping = 0.85; ice.collision.friction_factor = 0.7
