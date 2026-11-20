@@ -50,11 +50,31 @@ for vi, w in wt.items():
     rt = np.interp(t0, np.concatenate([th - 2 * math.pi, th, th + 2 * math.pi]), np.concatenate([r, r, r]))
     rv = math.hypot(v.co.x, v.co.z - zc); rn = rv + (rt - rv) * (w * w * (3 - 2 * w))
     v.co.x = math.cos(t0) * rn; v.co.z = zc + math.sin(t0) * rn; n_fix += 1
+lay = bm.verts.layers.float.new('parche'); bm.verts.ensure_lookup_table()
 zone = [bm.verts[i] for i in wt]
-for it in range(8): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-print('CORTES', len(caps), 'vertices rehechos', n_fix)
-lay = bm.verts.layers.float.new('parche')
 for vi, w in wt.items(): bm.verts[vi][lay] = w
+for it in range(8): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+zs = set(zone)
+bmesh.ops.dissolve_degenerate(bm, dist=0.0015, edges=[e for e in bm.edges if e.verts[0] in zs or e.verts[1] in zs])
+zone = [v for v in bm.verts if v.is_valid and v in zs]
+for it in range(6): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+# triangulitos dados vuelta que quedan del abanico de la tapa: se borran, se cierra y se alisa
+def outward(f):
+    c = f.calc_center_median(); return Vector((c.x, 0.0, c.z - (-0.02))).normalized()
+bad = [f for f in bm.faces if any(v in zs for v in f.verts) and f.normal.dot(outward(f)) < 0.15]
+print('volteados', len(bad))
+if bad:
+    bmesh.ops.delete(bm, geom=bad, context='FACES')
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    bnd = [e for e in bm.edges if e.is_boundary]
+    bmesh.ops.holes_fill(bm, edges=bnd, sides=0)
+    nf = [f for f in bm.faces if len(f.verts) > 3]
+    if nf: bmesh.ops.triangulate(bm, faces=nf)
+    zone = [v for v in bm.verts if v.is_valid and (v in zs or any(e.is_boundary for e in v.link_edges))]
+    for it in range(6): bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if v[lay] > 0.0], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+print('CORTES', len(caps), 'vertices rehechos', n_fix)
 bm.to_mesh(body.data); bm.free()
 for p in body.data.polygons: p.use_smooth = True
 bpy.context.view_layer.objects.active = body; body.select_set(True)
@@ -138,9 +158,15 @@ col = mix(nt, M(nt, 'MULTIPLY', anal, M(nt, 'MULTIPLY', smooth(nt, zn, -0.95, -1
 # piel rehecha en los cortes: sin el relieve de Meshy (que ahi quedaria estirado); relieve general mas suave
 pat = N(nt, 'ShaderNodeAttribute'); pat.attribute_name = 'parche'; patch = pat.outputs['Fac']
 nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
-col = mix(nt, M(nt, 'MULTIPLY', M(nt, 'POWER', patch, 0.5), 0.95), col, lin((214, 214, 210)), 'MIX')   # tapa la linea pintada del corte
+col = mix(nt, M(nt, 'MULTIPLY', smooth(nt, patch, 0.35, 0.9), 0.95), col, lin((202, 202, 198)), 'MIX')   # tapa la linea pintada del corte
 nt.links.new(col, bs.inputs['Base Color'])
 nt.links.new(M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, patch), 0.6), nmap.inputs['Strength'])
+# en la piel rehecha, escamas procedurales (bump) para que no quede un parche liso
+vs = N(nt, 'ShaderNodeTexVoronoi'); vs.inputs['Scale'].default_value = 150.0; vs.feature = 'SMOOTH_F1'
+nt.links.new(tc.outputs['Object'], vs.inputs['Vector'])
+bump = N(nt, 'ShaderNodeBump'); bump.inputs['Distance'].default_value = 0.002
+nt.links.new(M(nt, 'MULTIPLY', patch, 0.35), bump.inputs['Strength']); nt.links.new(vs.outputs['Distance'], bump.inputs['Height'])
+nt.links.new(nmap.outputs[0], bump.inputs['Normal']); nt.links.new(bump.outputs[0], bs.inputs['Normal'])
 nt.links.new(col, bs.inputs['Base Color'])
 # 4) piel mojada: capa brillante, plata con algo de iridiscencia en el flanco
 bs.inputs['Coat Weight'].default_value = 0.55; bs.inputs['Coat Roughness'].default_value = 0.06
