@@ -20,7 +20,7 @@ FPS, F0, F1 = 25, 1, 300                                                        
 FB = 150                                                                          # cuadro en que revienta el hielo
 sc.render.fps = FPS; sc.frame_start = F0; sc.frame_end = F1
 G = 37.0; sc.gravity = (0, 0, -G)                                                 # 9,8 m/s2 en unidades
-TH = 0.05                                                                         # espesor medio del hielo (~1,3 cm de hielo nuevo)
+TH = 0.028                                                                         # espesor medio del hielo (~1,3 cm de hielo nuevo)
 RF = 1.55                                                                         # radio de la zona fracturada
 def lin(c): return tuple(((v / 255) / 12.92 if v / 255 <= 0.04045 else ((v / 255 + 0.055) / 1.055) ** 2.4) for v in c)
 def coll(name):
@@ -83,7 +83,7 @@ TARGET = math.atan2(1.0, 0.55) - math.radians(50)                               
 w = bpy.data.worlds.new('cielo_hora_azul'); sc.world = w; w.use_nodes = True; wn = w.node_tree; wn.nodes.clear()
 wo = N(wn, 'ShaderNodeOutputWorld'); bg = N(wn, 'ShaderNodeBackground'); wn.links.new(bg.outputs[0], wo.inputs[0])
 wtc = N(wn, 'ShaderNodeTexCoord'); wmp = N(wn, 'ShaderNodeMapping'); wn.links.new(wtc.outputs['Generated'], wmp.inputs['Vector'])
-wmp.inputs['Rotation'].default_value = (0, 0, a_sun - TARGET)                 # deja de fondo la linea de arboles del HDRI (sin edificios)
+wmp.inputs['Rotation'].default_value = (0, 0, 2.62)                          # la camara mira la franja del HDRI que solo tiene arboles (u~0.38, sin edificios)                 # deja de fondo la linea de arboles del HDRI (sin edificios)
 env = N(wn, 'ShaderNodeTexEnvironment'); env.image = hdr; wn.links.new(wmp.outputs[0], env.inputs['Vector'])
 hs = N(wn, 'ShaderNodeHueSaturation'); hs.inputs['Saturation'].default_value = 0.85; wn.links.new(env.outputs[0], hs.inputs['Color'])
 blue = mix(wn, 0.78, hs.outputs[0], lin((70, 112, 210)), 'MULTIPLY')             # hora azul: el atardecer pasa a azul profundo
@@ -191,7 +191,7 @@ def ice_material(name, sides=False, frost=0.0, trans=0.35, snow_top=0.0):
     # el techo de hielo brilla con la luz del cielo que lo atraviesa; la nieve encima lo oscurece; grietas y burbujas se recortan claras
     glow = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, M(nt, 'MULTIPLY', snow_m, 0.9)), M(nt, 'ADD', 1.0, M(nt, 'ADD', M(nt, 'MULTIPLY', crack, 3.0), M(nt, 'MULTIPLY', bub, 1.5))))
     glow = M(nt, 'MULTIPLY', glow, M(nt, 'ADD', 0.75, M(nt, 'MULTIPLY', ims[0]['r'], 0.5)))   # variacion de la textura real del hielo
-    em_ = N(nt, 'ShaderNodeEmission'); em_.inputs['Color'].default_value = (*lin((120, 168, 182)), 1); nt.links.new(M(nt, 'MULTIPLY', glow, 0.32), em_.inputs['Strength'])
+    em_ = N(nt, 'ShaderNodeEmission'); em_.inputs['Color'].default_value = (*lin((120, 168, 182)), 1); nt.links.new(M(nt, 'MULTIPLY', glow, 0.16), em_.inputs['Strength'])
     bmx2 = N(nt, 'ShaderNodeAddShader'); nt.links.new(bmx.outputs[0], bmx2.inputs[0]); nt.links.new(em_.outputs[0], bmx2.inputs[1])
     fin = N(nt, 'ShaderNodeMixShader'); nt.links.new(under, fin.inputs[0]); nt.links.new(res, fin.inputs[1]); nt.links.new(bmx2.outputs[0], fin.inputs[2])
     nt.links.new(fin.outputs[0], out.inputs[0])
@@ -229,13 +229,13 @@ def clip(poly, a, b):
             t = sp_ / (sp_ - sq); out.append((p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t))
     return out
 seeds = []
-for i in range(14): a = rng.uniform(0, 6.283); r = rng.uniform(0.06, 0.45); seeds.append((r * math.cos(a), r * math.sin(a)))
+for i in range(24): a = rng.uniform(0, 6.283); r = rng.uniform(0.04, 0.5) ** 0.8; seeds.append((r * math.cos(a), r * math.sin(a)))
 for i in range(22): a = 2 * math.pi * i / 22 + rng.uniform(-0.15, 0.15); r = rng.uniform(0.55, 0.85); seeds.append((r * math.cos(a), r * math.sin(a)))
 for i in range(26): a = 2 * math.pi * i / 26 + rng.uniform(-0.12, 0.12); r = rng.uniform(1.05, 1.40); seeds.append((r * math.cos(a), r * math.sin(a)))
 def edge_jit(p, q, j, n):                                                      # mismo quiebre en los dos lados de una grieta
     kp, kq = tuple(round(c, 4) for c in p), tuple(round(c, 4) for c in q); fwd = kp <= kq
     idx = j if fwd else n - j
-    return random.Random(str((min(kp, kq), max(kp, kq), idx))).uniform(-0.012, 0.012), fwd
+    return random.Random(str((min(kp, kq), max(kp, kq), idx))).uniform(-0.022, 0.022), fwd
 cells = []
 for i, s in enumerate(seeds):
     poly = list(ring)
@@ -253,14 +253,14 @@ for i, s in enumerate(seeds):
             else:
                 jit, fwd = edge_jit(p, q, j, n_); jit = jit if fwd else -jit
             pts.append((p[0] + (q[0] - p[0]) * t + nx * jit - cx, p[1] + (q[1] - p[1]) * t + ny * jit - cy))
-    me = bpy.data.meshes.new(f'placa{i}'); bm = bmesh.new(); th_k = rng.uniform(0.6, 1.3)
+    me = bpy.data.meshes.new(f'placa{i}'); bm = bmesh.new(); th_k = rng.uniform(0.35, 1.5)
     top = bm.faces.new([bm.verts.new((x, y, 0.0)) for x, y in pts])
     ext = bmesh.ops.extrude_face_region(bm, geom=[top]); bmesh.ops.translate(bm, vec=(0, 0, -TH), verts=[v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=2, use_grid_fill=True)
     for v in bm.verts:                                                           # quiebre irregular: mismo ruido en los dos lados de cada grieta
         wp = Vector((v.co.x + cx, v.co.y + cy, v.co.z)); nv = mnoise.noise_vector(wp * 9.0)
-        v.co.x += nv.x * 0.016; v.co.y += nv.y * 0.016
+        v.co.x += nv.x * 0.024; v.co.y += nv.y * 0.024
         if v.co.z < -0.01:                                                       # cara de abajo: espesor irregular (0,4 a 1,7 veces), mas fino en algunos bordes
             n1_ = mnoise.noise(wp * 4.0); n2_ = mnoise.noise(wp * 13.0)
             v.co.z = -TH * th_k * max(0.35, 1.0 + 0.55 * n1_ + 0.25 * n2_)
@@ -386,6 +386,16 @@ for p in me.polygons: p.use_smooth = True
 rig = bpy.data.objects['TRUCHA_rig']; body = bpy.data.objects['TRUCHA_cuerpo']
 names = ['Head'] + [f'Spine{i}' for i in range(1, 9)]
 YAW = Matrix.Rotation(math.radians(-18), 4, 'Z')                                  # un poco de 3/4 hacia la camara
+import json
+NADO = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'salmon_nado_ciclo.json')))['local']   # ciclo de nado del salmon del RAS
+def nado(ph):
+    n = len(NADO); x = (ph % 1.0) * n; i0 = int(x) % n; i1 = (i0 + 1) % n; w = x - int(x)
+    return [NADO[i0][j] * (1 - w) + NADO[i1][j] * w for j in range(9)]
+PHASE = {}; ph_ = 0.0
+for f in range(F0, F1 + 1):
+    if f <= FB: rate = (1 / 1.6) * (1 + 3.5 * max(0.0, 1 - (FB - f) / 16.0) ** 2) / FPS   # nado tranquilo, coletazos rapidos al acelerar
+    else: rate = dts(f) / 0.30                                                       # en el aire: coletazos rapidos en camara lenta
+    ph_ += rate; PHASE[f] = ph_
 # antes del estallido: nada bajo el hielo hacia +X, gira hacia arriba y acelera hasta salir a 45 grados (se integra hacia atras desde la salida)
 SWIM = {}
 VEX = math.hypot(VX, VZ)
@@ -415,13 +425,13 @@ for f in range(F0, F1 + 1):
     Rm = Matrix(((0, -c, -s_), (1, 0, 0), (0, -s_, c)))                             # columnas: X->(0,1,0), Y->-d, Z->dorso
     rig.location = (x, 0.0, z); rig.rotation_euler = (YAW @ Rm.to_4x4()).to_euler('XYZ', rig.rotation_euler)   # euler continuo
     rig.keyframe_insert('location', frame=f); rig.keyframe_insert('rotation_euler', frame=f)
-    amp = 0.20 * (1 - 0.55 * k) if f > FB - 14 else 0.13                              # nado tranquilo, coletazo fuerte al acelerar
-    for i, n in enumerate(names[1:], 1):
+    amp = (1.5 + 0.6 * max(0.0, 1 - (FB - f) / 16.0)) if f <= FB else 1.9 * (1 - 0.45 * k)   # ciclo del salmon, amplificado para que se lea; mas fuerte al acelerar
+    cyc = nado(PHASE[f])
+    for i, n in enumerate(names):
         pb = rig.pose.bones[n]; s2_ = i / 8.0
-        lat = amp * (0.15 + 0.85 * s2_ * s2_) * math.sin(2 * math.pi * ((4.5 if f > FB - 14 else 2.0) * t + 0.35 * i) - 0.3)
-        arch = 0.06 * k * math.sin(math.pi * s2_)                                     # se curva siguiendo el arco
-        pb.rotation_euler = (arch, 0.0, lat); pb.keyframe_insert('rotation_euler', frame=f)
-    jaw = rig.pose.bones['Jaw']; jaw.rotation_mode = 'XYZ'; jaw.rotation_euler = (0.18 * k, 0, 0); jaw.keyframe_insert('rotation_euler', frame=f)
+        arch = 0.06 * k * math.sin(math.pi * s2_) if i else 0.0                       # en el aire se curva siguiendo el arco
+        pb.rotation_euler = (arch, 0.0, -amp * cyc[i] * (0.5 if i == 0 else 1.0)); pb.keyframe_insert('rotation_euler', frame=f)
+    jaw = rig.pose.bones['Jaw']; jaw.rotation_mode = 'XYZ'; jaw.rotation_euler = (-0.17 * (0.5 + 0.5 * math.sin(2 * math.pi * f / 30.0)) * (1 - k), 0, 0);   # la boca del modelo ya esta abierta: solo se cierra (respira) y vuelve jaw.keyframe_insert('rotation_euler', frame=f)
 for fc in rig.animation_data.action.fcurves:
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 for ms in body.material_slots:                                                   # piel mas mojada para Cycles
@@ -477,27 +487,39 @@ def fishpos(f):
 FP = {f: fishpos(f) for f in range(F0, F1 + 1)}
 def smoothstep(a, b, x): x = min(1.0, max(0.0, (x - a) / (b - a))); return x * x * (3 - 2 * x)
 END_C, END_T = Vector((1.45, -7.7, 0.38)), Vector((1.55, 0.0, 0.82))
+CL, TL = {}, {}
 for f in range(F0, F1 + 1):
     fp = FP[f]
-    under = fp + Vector((-0.5, -2.4, -1.0))                                         # bajo el agua: abajo del pez, mirando hacia el techo de hielo
+    under = fp + Vector((1.1, -2.3, -1.0))                                          # bajo el agua: 3/4 de frente y abajo (se ve el coleteo lateral contra el techo)
     PB, PA = Vector((-1.3, -2.5, -0.45)), Vector((-1.1, -2.8, 0.38))                  # cruza la superficie del hielo junto al agujero
-    if f <= FB - 25: cl = under; tl = fp + Vector((0.6, 0, 0.45))
+    if f <= FB - 40: cl = under; tl = fp + Vector((0.6, 0, 0.45))
     elif f <= FB + 1:
-        u = smoothstep(FB - 25, FB + 1, f); cl = under.lerp(PB, u); tl = fp
+        u = smoothstep(FB - 40, FB + 1, f); cl = under.lerp(PB, u); tl = (fp + Vector((0.6, 0, 0.45))).lerp(fp, u)
     elif f <= FB + 7:
         u = smoothstep(FB + 1, FB + 7, f); cl = PB.lerp(PA, u); tl = fp                # rompe la superficie con el estallido
     else:
         u = smoothstep(FB + 7, F1 - 20, f); cl = PA.lerp(END_C, u); tl = fp.lerp(END_T, u * 0.7)
-    cam.location = cl; tgt.location = tl; cam.keyframe_insert('location', frame=f); tgt.keyframe_insert('location', frame=f)
+    CL[f], TL[f] = cl.copy(), tl.copy()
+def suave(D, sig):                                                               # suavizado gaussiano: sin cambios bruscos de camara
+    out = {}
+    for f in D:
+        acc, ws = Vector(), 0.0
+        for g in range(f - 3 * sig, f + 3 * sig + 1):
+            if g in D: w = math.exp(-0.5 * ((g - f) / sig) ** 2); acc += D[g] * w; ws += w
+        out[f] = acc / ws
+    return out
+CL, TL = suave(CL, 9), suave(TL, 7)
+for f in range(F0, F1 + 1):
+    cam.location = CL[f]; tgt.location = TL[f]; cam.keyframe_insert('location', frame=f); tgt.keyframe_insert('location', frame=f)
     cam.data.lens = 32 + 26 * smoothstep(FB + 7, F1 - 20, f); cam.data.keyframe_insert('lens', frame=f)
 sc['KF'] = KF; sc['KT'] = KT; sc['FB'] = FB
 
 # ------------------------------------------------------------------ bajo el agua: volumen de agua turbia, fondo de barro, juncos, particulas y burbujas bajo el hielo
 m_vol = bpy.data.materials.new('agua_volumen'); m_vol.use_nodes = True; vt = m_vol.node_tree; vt.nodes.clear()
 vo_ = N(vt, 'ShaderNodeOutputMaterial'); pv = N(vt, 'ShaderNodeVolumePrincipled')
-pv.inputs['Color'].default_value = (*lin((150, 200, 185)), 1); pv.inputs['Density'].default_value = 0.06; pv.inputs['Anisotropy'].default_value = 0.75
+pv.inputs['Color'].default_value = (*lin((150, 200, 185)), 1); pv.inputs['Density'].default_value = 0.09; pv.inputs['Anisotropy'].default_value = 0.75
 pv.inputs['Absorption Color'].default_value = (*lin((95, 155, 140)), 1)
-pv.inputs['Emission Color'].default_value = (*lin((40, 90, 100)), 1); pv.inputs['Emission Strength'].default_value = 0.015   # luz ambiente difusa bajo el hielo
+pv.inputs['Emission Color'].default_value = (*lin((40, 90, 100)), 1); pv.inputs['Emission Strength'].default_value = 0.005   # luz ambiente difusa bajo el hielo
 vt.links.new(pv.outputs[0], vo_.inputs['Volume'])
 me = bpy.data.meshes.new('agua_vol'); bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
 vol = obj('AGUA_volumen', me, m_vol, C_ICE); vol.location = (0, 0, -3.0 - TH / 2 - 0.005); vol.scale = (70, 70, 6.0 - TH - 0.01)
@@ -549,13 +571,24 @@ sn_ = obj('AGUA_sombra_nieve', me, m_sn, C_ICE); sn_.location.z = 0.03
 for attr in ('visible_camera', 'visible_diffuse', 'visible_glossy', 'visible_transmission', 'visible_volume_scatter'): setattr(sn_, attr, False)
 for f, h in ((F0, False), (FB + 3, False), (FB + 4, True)): sn_.hide_render = h; sn_.keyframe_insert('hide_render', frame=f)
 for o in [ice] + [c[0] for c in cells] + [water]: o.visible_shadow = False          # sin causticas el vidrio bloquearia la luz: el hielo deja pasar la luz
-uw = bpy.data.lights.new('LUZ_bajo_agua', 'AREA'); uw.shape = 'DISK'; uw.size = 3.0; uw.color = lin((225, 238, 236))
+uw = bpy.data.lights.new('LUZ_bajo_agua', 'AREA'); uw.shape = 'DISK'; uw.size = 2.0; uw.color = lin((255, 196, 130))   # mismo tono dorado que arriba
 uwo = obj('LUZ_bajo_agua', uw, None, C_ENV); uwo.rotation_euler = (0, 0, 0)
 cl_ = uwo.constraints.new('COPY_LOCATION'); cl_.target = rig; cl_.use_offset = True
 uwo.location = (0.3, 0.4, 1.0); off = uwo.constraints.new('LIMIT_LOCATION'); off.use_max_z = True; off.max_z = -TH - 0.3
-for f, e in ((F0, 60.0), (FB - 6, 60.0), (FB + 6, 0.0)): uw.energy = e; uw.keyframe_insert('energy', frame=f)   # luz suave del hielo sobre el pez bajo el agua
+for f, e in ((F0, 45.0), (FB - 6, 45.0), (FB + 6, 0.0)): uw.energy = e; uw.keyframe_insert('energy', frame=f)   # luz suave del hielo sobre el pez bajo el agua
 try: uwo.light_linking.receiver_collection = fish_c
 except Exception: pass
+# causticas: un foco desde arriba con un patron de voronoi que se mueve (dibuja la luz del agua sobre el pez y el fondo y hace rayos en el volumen)
+ca = bpy.data.lights.new('LUZ_causticas', 'SPOT'); ca.spot_size = math.radians(70); ca.spot_blend = 0.4; ca.color = lin((190, 230, 225)); ca.shadow_soft_size = 0.02
+ca.use_nodes = True; ln = ca.node_tree; em2 = ln.nodes['Emission']
+ltc = ln.nodes.new('ShaderNodeTexCoord'); lvo = ln.nodes.new('ShaderNodeTexVoronoi'); lvo.voronoi_dimensions = '4D'; lvo.feature = 'SMOOTH_F1'; lvo.feature = 'DISTANCE_TO_EDGE'
+lvo.inputs['Scale'].default_value = 14.0; ln.links.new(ltc.outputs['Normal'], lvo.inputs['Vector'])
+for f, w in ((F0, 0.0), (F1, 30.0)): lvo.inputs['W'].default_value = w; lvo.inputs['W'].keyframe_insert('default_value', frame=f)
+lmr = ln.nodes.new('ShaderNodeMapRange'); lmr.inputs['From Min'].default_value = 0.0; lmr.inputs['From Max'].default_value = 0.06; lmr.inputs['To Min'].default_value = 3.0; lmr.inputs['To Max'].default_value = 0.15
+ln.links.new(lvo.outputs['Distance'], lmr.inputs['Value']); ln.links.new(lmr.outputs[0], em2.inputs['Strength'])
+cao = obj('LUZ_causticas', ca, None, C_ENV); cl2 = cao.constraints.new('COPY_LOCATION'); cl2.target = rig; cl2.use_offset = True; cao.location = (-0.5, 0.6, 4.5)                      # encima del hielo: la luz entra por el techo (sin cono visible)
+cao.rotation_euler = (math.radians(8), math.radians(-6), 0)
+for f, e in ((F0, 900.0), (FB - 4, 900.0), (FB + 4, 0.0)): ca.energy = e; ca.keyframe_insert('energy', frame=f)
 
 # ------------------------------------------------------------------ render: Cycles
 sc.render.resolution_x, sc.render.resolution_y, sc.render.resolution_percentage = 1080, 1350, 100

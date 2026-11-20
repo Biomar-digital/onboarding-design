@@ -386,6 +386,16 @@ for p in me.polygons: p.use_smooth = True
 rig = bpy.data.objects['TRUCHA_rig']; body = bpy.data.objects['TRUCHA_cuerpo']
 names = ['Head'] + [f'Spine{i}' for i in range(1, 9)]
 YAW = Matrix.Rotation(math.radians(-18), 4, 'Z')                                  # un poco de 3/4 hacia la camara
+import json
+NADO = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'salmon_nado_ciclo.json')))['local']   # ciclo de nado del salmon del RAS
+def nado(ph):
+    n = len(NADO); x = (ph % 1.0) * n; i0 = int(x) % n; i1 = (i0 + 1) % n; w = x - int(x)
+    return [NADO[i0][j] * (1 - w) + NADO[i1][j] * w for j in range(9)]
+PHASE = {}; ph_ = 0.0
+for f in range(F0, F1 + 1):
+    if f <= FB: rate = (1 / 1.6) * (1 + 3.5 * max(0.0, 1 - (FB - f) / 16.0) ** 2) / FPS   # nado tranquilo, coletazos rapidos al acelerar
+    else: rate = dts(f) / 0.30                                                       # en el aire: coletazos rapidos en camara lenta
+    ph_ += rate; PHASE[f] = ph_
 # antes del estallido: nada bajo el hielo hacia +X, gira hacia arriba y acelera hasta salir a 45 grados (se integra hacia atras desde la salida)
 SWIM = {}
 VEX = math.hypot(VX, VZ)
@@ -415,12 +425,12 @@ for f in range(F0, F1 + 1):
     Rm = Matrix(((0, -c, -s_), (1, 0, 0), (0, -s_, c)))                             # columnas: X->(0,1,0), Y->-d, Z->dorso
     rig.location = (x, 0.0, z); rig.rotation_euler = (YAW @ Rm.to_4x4()).to_euler('XYZ', rig.rotation_euler)   # euler continuo
     rig.keyframe_insert('location', frame=f); rig.keyframe_insert('rotation_euler', frame=f)
-    amp = 0.20 * (1 - 0.55 * k) if f > FB - 14 else 0.13                              # nado tranquilo, coletazo fuerte al acelerar
-    for i, n in enumerate(names[1:], 1):
+    amp = (0.85 + 0.45 * max(0.0, 1 - (FB - f) / 16.0)) if f <= FB else 1.3 * (1 - 0.5 * k)   # ciclo del salmon; mas fuerte al acelerar
+    cyc = nado(PHASE[f])
+    for i, n in enumerate(names):
         pb = rig.pose.bones[n]; s2_ = i / 8.0
-        lat = amp * (0.15 + 0.85 * s2_ * s2_) * math.sin(2 * math.pi * ((4.5 if f > FB - 14 else 2.0) * t + 0.35 * i) - 0.3)
-        arch = 0.06 * k * math.sin(math.pi * s2_)                                     # se curva siguiendo el arco
-        pb.rotation_euler = (arch, 0.0, lat); pb.keyframe_insert('rotation_euler', frame=f)
+        arch = 0.06 * k * math.sin(math.pi * s2_) if i else 0.0                       # en el aire se curva siguiendo el arco
+        pb.rotation_euler = (arch, 0.0, -amp * cyc[i] * (0.5 if i == 0 else 1.0)); pb.keyframe_insert('rotation_euler', frame=f)
     jaw = rig.pose.bones['Jaw']; jaw.rotation_mode = 'XYZ'; jaw.rotation_euler = (0.18 * k, 0, 0); jaw.keyframe_insert('rotation_euler', frame=f)
 for fc in rig.animation_data.action.fcurves:
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'

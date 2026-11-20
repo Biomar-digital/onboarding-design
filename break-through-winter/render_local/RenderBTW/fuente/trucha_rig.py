@@ -41,7 +41,7 @@ co = np.array([v.co[:] for v in bm.verts]); n_fix = 0
 for vi, w in wt.items():
     v = bm.verts[vi]; y = v.co.y
     sl = np.where(np.abs(co[:, 1] - y) < 0.006)[0]
-    sl = [i for i in sl if wt.get(i, 0.0) == 0.0]
+    sl = [i for i in sl if wt.get(i, 0.0) == 0.0 and abs(co[i, 0]) > 0.03]           # sin las aletas finas del medio (dorsal / anal), que corrian el centro
     if len(sl) < 12: continue
     P = co[sl]; zc = 0.5 * (P[:, 2].max() + P[:, 2].min())
     th = np.arctan2(P[:, 2] - zc, P[:, 0]); r = np.hypot(P[:, 0], P[:, 2] - zc)
