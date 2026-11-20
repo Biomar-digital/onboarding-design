@@ -79,7 +79,7 @@ hdr = img('winter_lake_01_4k.hdr', 'Linear Rec.709')
 px = np.array(hdr.pixels[:], dtype=np.float32).reshape(hdr.size[1], hdr.size[0], 4)
 lum = px[..., :3].sum(-1); iy, ix = np.unravel_index(np.argmax(lum), lum.shape); del px
 u_sun = (ix + 0.5) / hdr.size[0]; a_sun = 2 * math.pi * (u_sun - 0.5)          # azimut del sol en el HDRI (atan2(y, -x))
-TARGET = math.atan2(1.0, 0.55)                                                   # resplandor detras, a la izquierda del pez
+TARGET = math.atan2(1.0, 0.55) - math.radians(50)                                                   # resplandor detras, a la izquierda del pez
 w = bpy.data.worlds.new('cielo_hora_azul'); sc.world = w; w.use_nodes = True; wn = w.node_tree; wn.nodes.clear()
 wo = N(wn, 'ShaderNodeOutputWorld'); bg = N(wn, 'ShaderNodeBackground'); wn.links.new(bg.outputs[0], wo.inputs[0])
 wtc = N(wn, 'ShaderNodeTexCoord'); wmp = N(wn, 'ShaderNodeMapping'); wn.links.new(wtc.outputs['Generated'], wmp.inputs['Vector'])
@@ -301,7 +301,7 @@ for o, r0, a0 in cells:
 
 # agua: negra bajo el hielo, y una superficie con ondas dentro del agujero
 m_w, nt, bs = new_mat('agua')
-bs.inputs['Base Color'].default_value = (*lin((2, 6, 10)), 1); bs.inputs['Roughness'].default_value = 0.01; bs.inputs['IOR'].default_value = 1.333
+bs.inputs['Base Color'].default_value = (1, 1, 1, 1); bs.inputs['Roughness'].default_value = 0.01; bs.inputs['IOR'].default_value = 1.333; bs.inputs['Transmission Weight'].default_value = 1.0
 bs.inputs['Specular IOR Level'].default_value = 0.5
 wtc2 = N(nt, 'ShaderNodeTexCoord'); wave = N(nt, 'ShaderNodeTexWave'); wave.wave_type = 'RINGS'; wave.inputs['Scale'].default_value = 2.2; wave.inputs['Distortion'].default_value = 3.0
 nt.links.new(wtc2.outputs['Object'], wave.inputs['Vector'])
@@ -470,23 +470,24 @@ END_C, END_T = Vector((1.45, -7.7, 0.38)), Vector((1.55, 0.0, 0.82))
 for f in range(F0, F1 + 1):
     fp = FP[f]
     under = fp + Vector((-0.6, -3.0, -0.35))                                        # bajo el agua: al costado y un poco abajo del pez
-    hole = Vector((-0.75, -0.7, 0.05))                                              # pasa por el agujero
+    PB, PA = Vector((-1.3, -2.5, -0.45)), Vector((-1.1, -2.8, 0.38))                  # cruza la superficie del hielo junto al agujero
     if f <= FB - 25: cl = under; tl = fp + Vector((0.6, 0, 0.15))
-    elif f <= FB + 12:
-        u = smoothstep(FB - 25, FB + 12, f); cl = under.lerp(hole + Vector((0, 0, -0.35)), u); tl = fp
-    elif f <= FB + 30:
-        u = smoothstep(FB + 12, FB + 30, f); cl = (hole + Vector((0, 0, -0.35))).lerp(hole + Vector((0.1, -0.6, 0.45)), u); tl = fp
+    elif f <= FB + 1:
+        u = smoothstep(FB - 25, FB + 1, f); cl = under.lerp(PB, u); tl = fp
+    elif f <= FB + 7:
+        u = smoothstep(FB + 1, FB + 7, f); cl = PB.lerp(PA, u); tl = fp                # rompe la superficie con el estallido
     else:
-        u = smoothstep(FB + 30, F1 - 20, f); cl = (hole + Vector((0.1, -0.6, 0.45))).lerp(END_C, u); tl = fp.lerp(END_T, u * 0.7)
+        u = smoothstep(FB + 7, F1 - 20, f); cl = PA.lerp(END_C, u); tl = fp.lerp(END_T, u * 0.7)
     cam.location = cl; tgt.location = tl; cam.keyframe_insert('location', frame=f); tgt.keyframe_insert('location', frame=f)
-    cam.data.lens = 32 if f <= FB + 12 else 32 + 26 * smoothstep(FB + 30, F1 - 20, f); cam.data.keyframe_insert('lens', frame=f)
+    cam.data.lens = 32 + 26 * smoothstep(FB + 7, F1 - 20, f); cam.data.keyframe_insert('lens', frame=f)
 sc['KF'] = KF; sc['KT'] = KT; sc['FB'] = FB
 
 # ------------------------------------------------------------------ bajo el agua: volumen de agua turbia, fondo de barro, juncos, particulas y burbujas bajo el hielo
 m_vol = bpy.data.materials.new('agua_volumen'); m_vol.use_nodes = True; vt = m_vol.node_tree; vt.nodes.clear()
 vo_ = N(vt, 'ShaderNodeOutputMaterial'); pv = N(vt, 'ShaderNodeVolumePrincipled')
-pv.inputs['Color'].default_value = (*lin((120, 170, 160)), 1); pv.inputs['Density'].default_value = 0.12; pv.inputs['Anisotropy'].default_value = 0.65
-pv.inputs['Absorption Color'].default_value = (*lin((40, 95, 100)), 1)
+pv.inputs['Color'].default_value = (*lin((120, 170, 160)), 1); pv.inputs['Density'].default_value = 0.035; pv.inputs['Anisotropy'].default_value = 0.65
+pv.inputs['Absorption Color'].default_value = (*lin((70, 140, 135)), 1)
+pv.inputs['Emission Color'].default_value = (*lin((40, 90, 100)), 1); pv.inputs['Emission Strength'].default_value = 0.015   # luz ambiente difusa bajo el hielo
 vt.links.new(pv.outputs[0], vo_.inputs['Volume'])
 me = bpy.data.meshes.new('agua_vol'); bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
 vol = obj('AGUA_volumen', me, m_vol, C_ICE); vol.location = (0, 0, -3.0 - TH / 2 - 0.005); vol.scale = (70, 70, 6.0 - TH - 0.01)
@@ -500,7 +501,7 @@ for p in me.polygons: p.use_smooth = True
 deep.hide_render = True                                                         # el plano negro de abajo ya no hace falta: hay agua de verdad
 me = bpy.data.meshes.new('tallos'); bm = bmesh.new()
 for _ in range(140):                                                            # tallos de juncos desde el fondo hasta el hielo
-    b = Vector((rng.uniform(-16, 10), rng.uniform(-6, 14), -5.1)); stalk(b, rng.uniform(3.0, 5.0), rng.uniform(0.02, 0.15), rng.uniform(0.012, 0.02))
+    b = Vector((rng.uniform(-16, 10), rng.choice([rng.uniform(-9, -5), rng.uniform(-0.8, 14)]), -5.1)); stalk(b, rng.uniform(3.0, 5.0), rng.uniform(0.02, 0.15), rng.uniform(0.012, 0.02))
 bm.to_mesh(me); bm.free(); obj('AGUA_tallos', me, m_reed, C_ICE)
 m_sp, nt, bs = new_mat('particulas'); bs.inputs['Base Color'].default_value = (*lin((180, 190, 170)), 1); bs.inputs['Roughness'].default_value = 0.8
 bs.inputs['Emission Color'].default_value = (0.5, 0.6, 0.6, 1); bs.inputs['Emission Strength'].default_value = 0.05
@@ -511,14 +512,27 @@ me = bpy.data.meshes.new('motas'); me.from_pydata(pts, [], []); mo_ = obj('AGUA_
 mo_.instance_type = 'VERTS'; mota.parent = mo_; mota.location = (0, 0, 0); mota.scale = (0.006, 0.006, 0.006); mota.hide_render = False
 bub_pts = [(rng.uniform(-12, 4), rng.uniform(-5, 3), -TH - 0.004) for _ in range(900)]
 m_bu, nt, bs = new_mat('burbuja_aire'); bs.inputs['Base Color'].default_value = (1, 1, 1, 1); bs.inputs['Metallic'].default_value = 0.8; bs.inputs['Roughness'].default_value = 0.05
+bs.inputs['Emission Color'].default_value = (*lin((190, 215, 235)), 1); bs.inputs['Emission Strength'].default_value = 0.12   # reflejo total: se ven plateadas
 me = bpy.data.meshes.new('burbuja'); bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1.0)
 for v in bm.verts: v.co.z *= 0.25
-bm.to_mesh(me); bm.free(); bu = obj('AGUA_burbuja', me, m_bu, C_FX); bu.hide_render = False
-me = bpy.data.meshes.new('burbujas'); me.from_pydata(bub_pts, [], []); bo_ = obj('AGUA_burbujas_bajo_hielo', me, None, C_FX)
-bo_.instance_type = 'VERTS'; bu.parent = bo_; bu.location = (0, 0, 0); bu.scale = (0.03, 0.03, 0.03)
+bm.to_mesh(me); bm.free()
+for k in range(28):                                                              # racimos de burbujas atrapadas, de tamanos distintos
+    cxb, cyb = rng.uniform(-12, 3), rng.uniform(-5, 3)
+    for _ in range(rng.randint(3, 14)):
+        b_ = obj(f'AGUA_burbuja_{k}_{_}', me, None, C_FX); r_ = rng.uniform(0.006, 0.05) ** 1.0
+        b_.location = (cxb + rng.gauss(0, 0.25), cyb + rng.gauss(0, 0.25), -TH - 0.004 - r_ * 0.2); b_.scale = (r_ * rng.uniform(0.7, 1.4), r_, r_)
+if 'burbuja_aire' not in [m_.name for m_ in me.materials]: me.materials.append(m_bu)
 # luz de luna/cielo que entra por el hielo (rayos bajo el agua) y suma un poco de luz arriba
 moon = bpy.data.lights.new('LUZ_cielo_alto', 'SUN'); moon.energy = 0.9; moon.color = lin((160, 190, 255)); moon.angle = math.radians(12)
 mo = obj('LUZ_cielo_alto', moon, None, C_ENV); mo.rotation_euler = (math.radians(18), math.radians(-10), 0)
+for o in [ice] + [c[0] for c in cells] + [water]: o.visible_shadow = False          # sin causticas el vidrio bloquearia la luz: el hielo deja pasar la luz
+uw = bpy.data.lights.new('LUZ_bajo_agua', 'AREA'); uw.shape = 'DISK'; uw.size = 3.0; uw.color = lin((225, 238, 236))
+uwo = obj('LUZ_bajo_agua', uw, None, C_ENV); uwo.rotation_euler = (0, 0, 0)
+cl_ = uwo.constraints.new('COPY_LOCATION'); cl_.target = rig; cl_.use_offset = True
+uwo.location = (0.3, 0.4, 1.0); off = uwo.constraints.new('LIMIT_LOCATION'); off.use_max_z = True; off.max_z = -TH - 0.3
+for f, e in ((F0, 110.0), (FB - 6, 110.0), (FB + 6, 0.0)): uw.energy = e; uw.keyframe_insert('energy', frame=f)   # luz suave del hielo sobre el pez bajo el agua
+try: uwo.light_linking.receiver_collection = fish_c
+except Exception: pass
 
 # ------------------------------------------------------------------ render: Cycles
 sc.render.resolution_x, sc.render.resolution_y, sc.render.resolution_percentage = 1080, 1350, 100
