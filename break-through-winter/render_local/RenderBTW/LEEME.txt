@@ -1,0 +1,14 @@
+BREAK THROUGH WINTER - render en tu compu
+
+1. Descomprimi esta carpeta en un disco con espacio (ej. C:\BTW_render). Necesita unos 10 GB libres.
+2. Doble clic en RENDER_BTW.bat
+3. Espera. Al terminar se abre solo BreakThroughWinter_1080x1350.mp4 y queda la foto en la carpeta "foto".
+
+- No hace falta instalar nada: la primera vez baja Blender 4.2 portable (no toca tu Blender 5.2)
+  y los recursos libres (cielo HDRI, nieve, hielo y abetos de Poly Haven / ambientCG).
+- Pasos: arma la trucha, arma el estanque, simula el agua (procesador, 20-60 min) y renderiza en Cycles
+  con tu NVIDIA RTX automaticamente. Tiempo estimado del render: 3 a 8 horas segun la placa.
+- Si Windows muestra "Windows protegio su PC": Mas informacion > Ejecutar de todas formas.
+- Si se corta o apagas la compu, volve a hacer doble clic: sigue desde el ultimo cuadro.
+- Video: 12 s a 25 fps, 1080x1350. Nado bajo el hielo, subida y estallido en camara lenta.
+- Foto: cuadro 245 (apice del salto) a 2160x2700.
