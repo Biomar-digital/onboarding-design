@@ -30,7 +30,7 @@ bmesh.ops.poke(bm, faces=caps)
 kd = KDTree(len(cut_pts))
 for i, c in enumerate(cut_pts): kd.insert(c, i)
 kd.balance()
-R0, R1 = 0.030, 0.060
+R0, R1 = 0.050, 0.085                                                             # zona reemplazada mas grande: no queda borde del hueco
 wt = {}
 for v in bm.verts:
     if not cut_pts: break
@@ -38,24 +38,59 @@ for v in bm.verts:
     if d < R1: wt[v.index] = 1.0 if d < R0 else 1.0 - (d - R0) / (R1 - R0)
 bm.verts.ensure_lookup_table()
 co = np.array([v.co[:] for v in bm.verts]); n_fix = 0
-for vi, w in wt.items():
-    v = bm.verts[vi]; y = v.co.y
-    sl = np.where(np.abs(co[:, 1] - y) < 0.006)[0]
-    sl = [i for i in sl if wt.get(i, 0.0) == 0.0 and abs(co[i, 0]) > 0.03]           # sin las aletas finas del medio (dorsal / anal), que corrian el centro
-    if len(sl) < 12: continue
+# cada corte se rehace interpolando la seccion sana de adelante y la de atras (la panza queda lisa, sin bultos)
+def perfil(y0):
+    sl = [i for i in np.where(np.abs(co[:, 1] - y0) < 0.007)[0] if wt.get(i, 0.0) == 0.0 and abs(co[i, 0]) > 0.012]
     P = co[sl]; zc = 0.5 * (P[:, 2].max() + P[:, 2].min())
-    th = np.arctan2(P[:, 2] - zc, P[:, 0]); r = np.hypot(P[:, 0], P[:, 2] - zc)
-    o = np.argsort(th); th, r = th[o], r[o]
-    t0 = math.atan2(v.co.z - zc, v.co.x)
-    rt = np.interp(t0, np.concatenate([th - 2 * math.pi, th, th + 2 * math.pi]), np.concatenate([r, r, r]))
-    rv = math.hypot(v.co.x, v.co.z - zc); rn = rv + (rt - rv) * (w * w * (3 - 2 * w))
-    v.co.x = math.cos(t0) * rn; v.co.z = zc + math.sin(t0) * rn; n_fix += 1
+    th = np.arctan2(P[:, 2] - zc, P[:, 0]); r = np.hypot(P[:, 0], P[:, 2] - zc); o = np.argsort(th)
+    th, r = th[o], r[o]; return zc, np.concatenate([th - 2 * math.pi, th, th + 2 * math.pi]), np.concatenate([r, r, r])
+def sobre(pf, x, z):
+    zc, th, r = pf; t0 = math.atan2(z - zc, x); rt = np.interp(t0, th, r); return math.cos(t0) * rt, zc + math.sin(t0) * rt
+ys_ = np.array([co[i, 1] for i in wt])
+for lo_, hi_ in ((-0.75, -0.30), (-0.30, 0.45)):                                   # zona pectoral y zona pelvica
+    idx = [i for i in wt if lo_ <= co[i, 1] < hi_]
+    if not idx: continue
+    ya, yb = min(co[i, 1] for i in idx) - 0.015, max(co[i, 1] for i in idx) + 0.015
+    pa, pb = perfil(ya), perfil(yb)
+    for vi in idx:
+        v = bm.verts[vi]; w = wt[vi]; t = (v.co.y - ya) / (yb - ya)
+        xa, za = sobre(pa, v.co.x, v.co.z); xb, zb = sobre(pb, v.co.x, v.co.z)
+        xt, zt = xa + (xb - xa) * t, za + (zb - za) * t; ww = w * w * (3 - 2 * w)
+        v.co.x += (xt - v.co.x) * ww; v.co.z += (zt - v.co.z) * ww; n_fix += 1
+# panza completa entre la pectoral y la anal: se rehace como una transicion suave entre la panza sana de adelante y la de atras
+co = np.array([v.co[:] for v in bm.verts])
+YA_, YB_ = -0.13, 0.33
+loft = []; LW = {}
+pa_, pb_ = perfil(YA_), perfil(YB_)
+for v in bm.verts:
+    y = v.co.y
+    if not (YA_ < y < YB_) or abs(v.co.x) < 0.010 and v.co.z < -0.15 and y > 0.25: continue
+    t = (y - YA_) / (YB_ - YA_)
+    zc = pa_[0] + (pb_[0] - pa_[0]) * t
+    th0 = math.atan2(v.co.z - zc, v.co.x)
+    if th0 > -0.15: continue                                                    # solo la mitad de abajo
+    d = abs(abs(th0) - math.pi / 2)                                             # 0 justo abajo
+    wth = 1.0 if d < 0.85 else max(0.0, 1 - (d - 0.85) / 0.45)
+    wy = min(1.0, (y - YA_) / 0.05, (YB_ - y) / 0.05)
+    w = wth * wy
+    if w <= 0: continue
+    xa, za = sobre(pa_, v.co.x, v.co.z); xb, zb = sobre(pb_, v.co.x, v.co.z)
+    xt, zt = xa + (xb - xa) * t, za + (zb - za) * t; ww = w * w * (3 - 2 * w)
+    v.co.x += (xt - v.co.x) * ww; v.co.z += (zt - v.co.z) * ww
+    wt[v.index] = max(wt.get(v.index, 0.0), ww * 0.8); loft.append(v); LW[v] = ww
+def reproy(v, ww):
+    t = (v.co.y - YA_) / (YB_ - YA_)
+    xa, za = sobre(pa_, v.co.x, v.co.z); xb, zb = sobre(pb_, v.co.x, v.co.z)
+    xt, zt = xa + (xb - xa) * t, za + (zb - za) * t; v.co.x += (xt - v.co.x) * ww; v.co.z += (zt - v.co.z) * ww
+for it in range(8):                                                             # alisa y vuelve a apoyar sobre la panza: despliega los pliegues sin achicar
+    bmesh.ops.smooth_vert(bm, verts=loft, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for v in loft: reproy(v, LW[v])
 lay = bm.verts.layers.float.new('parche'); bm.verts.ensure_lookup_table()
 zone = [bm.verts[i] for i in wt]
 for vi, w in wt.items(): bm.verts[vi][lay] = w
-for it in range(8): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+for it in range(3): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.3, use_axis_x=True, use_axis_y=False, use_axis_z=True)   # poco: suavizar mucho achica y deja pozo
 zs = set(zone)
-bmesh.ops.dissolve_degenerate(bm, dist=0.0015, edges=[e for e in bm.edges if e.verts[0] in zs or e.verts[1] in zs])
+bmesh.ops.dissolve_degenerate(bm, dist=0.004, edges=[e for e in bm.edges if e.verts[0] in zs or e.verts[1] in zs])
 zone = [v for v in bm.verts if v.is_valid and v in zs]
 for it in range(6): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
@@ -80,6 +115,31 @@ for p in body.data.polygons: p.use_smooth = True
 bpy.context.view_layer.objects.active = body; body.select_set(True)
 try: bpy.ops.mesh.customdata_custom_splitnormals_clear()                         # normales del glTF partidas en las costuras UV
 except Exception as e: print('normales', e)
+# el ojo que trae el modelo (bulto de piel) se hunde bajo la cupula del ojo nuevo, para que no lo tape
+EYE_Y, EYE_Z, ER = -0.834, 0.033, 0.025                                        # ojo: mas chico, alto y un poco mas atras (como en la trucha real)
+_b0 = BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get())
+_h = _b0.ray_cast(Vector((1.0, EYE_Y, EYE_Z)), Vector((-1, 0, 0)))
+EYE_SKIN = _h[0].x if _h[0] else 0.055
+_E = (EYE_SKIN + 0.006 - ER * 0.62, EYE_Y, EYE_Z); _R = ER * 0.94; _RX = ER * 0.5
+cv = np.array([v.co[:] for v in body.data.vertices])
+for side in (1, -1):
+    d = np.hypot(cv[:, 1] - _E[1], cv[:, 2] - _E[2]); m = (d < 0.040) & (cv[:, 0] * side > 0.02)
+    ring = (d > 0.040) & (d < 0.046) & (cv[:, 0] * side > 0.02); base = np.median(np.abs(cv[ring, 0]))
+    dome = np.where(d < _R, (_E[0] - 0.004) + _RX * np.sqrt(np.clip(1 - (d / _R) ** 2, 0, 1)) - 0.004, base)   # la piel queda por debajo del globo del ojo
+    tgt = np.minimum(np.abs(cv[:, 0]), np.where(d < _R, dome, base + (np.abs(cv[:, 0]) - base) * np.clip((d - _R) / (0.040 - _R), 0, 1)))
+    cv[m, 0] = side * tgt[m]
+# el bulto del ojo viejo (mas adelante y mas bajo) se aplana a la superficie de la cabeza alrededor
+for side in (1, -1):
+    d = np.hypot(cv[:, 1] - (-0.861), cv[:, 2] - 0.020); m = (d < 0.034) & (cv[:, 0] * side > 0.02)
+    dn = np.hypot(cv[:, 1] - _E[1], cv[:, 2] - _E[2]); m &= dn > _R * 1.05             # sin tocar el ojo nuevo
+    ring = (d > 0.034) & (d < 0.042) & (cv[:, 0] * side > 0.02)
+    # plano de la cabeza alrededor: ajuste lineal x = a + b*y + c*z con el anillo
+    RY, RZ, RX = cv[ring, 1], cv[ring, 2], np.abs(cv[ring, 0]); xs = np.abs(cv[:, 0]).copy()
+    for i in np.nonzero(m)[0]:                                                     # piel interpolada desde el anillo de alrededor (membrana suave)
+        dd = (RY - cv[i, 1]) ** 2 + (RZ - cv[i, 2]) ** 2 + 1e-8; wq = 1 / dd ** 1.5; xs[i] = (wq * RX).sum() / wq.sum()
+    w = np.clip(1 - (d - 0.022) / 0.012, 0, 1); w = w * w * (3 - 2 * w)
+    cv[m, 0] = side * (np.abs(cv[m, 0]) + (xs[m] - np.abs(cv[m, 0])) * w[m])
+body.data.vertices.foreach_set('co', cv.ravel()); body.data.update()
 dg = bpy.context.evaluated_depsgraph_get(); bvh = BVHTree.FromObject(body, dg)
 def skin_x(y, z, side=1):                                                         # punto de la piel del lado +x / -x
     h = bvh.ray_cast(Vector((side * 1.0, y, z)), Vector((-side, 0, 0)))
@@ -138,8 +198,10 @@ band = M(nt, 'EXPONENT', M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', db, db), -1.0))
 band = M(nt, 'MULTIPLY', band, M(nt, 'MULTIPLY', smooth(nt, u, 0.10, 0.20), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.86, 0.95))))
 col = mix(nt, M(nt, 'MULTIPLY', band, 0.50), col, lin((192, 126, 134)), 'COLOR')      # banda: tono rosa, conserva escamas
 col = mix(nt, M(nt, 'MULTIPLY', band, 0.04), col, lin((190, 110, 118)), 'MULTIPLY')
-cheek = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.10, 0.17)), M(nt, 'MULTIPLY', smooth(nt, u, 0.03, 0.08), smooth(nt, zn, 0.35, -0.2)))
-col = mix(nt, M(nt, 'MULTIPLY', cheek, 0.40), col, lin((204, 132, 140)), 'COLOR')   # opérculo rosado
+cheek = M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', smooth(nt, u, 0.06, 0.095), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.14, 0.17))), M(nt, 'MULTIPLY', smooth(nt, Z, 0.045, 0.01), smooth(nt, Z, -0.12, -0.07)))
+col = mix(nt, M(nt, 'MULTIPLY', cheek, 0.62), col, lin((196, 100, 110)), 'COLOR')   # operculo rosado-rojo (mejilla de la arcoiris)
+headtop = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.15, 0.21)), smooth(nt, Z, 0.015, 0.06))
+col = mix(nt, M(nt, 'MULTIPLY', headtop, 0.7), col, lin((112, 114, 60)), 'COLOR')    # arriba de la cabeza oliva
 # 3) pintas negras: chicas y redondas, densas en el lomo y sobre la banda; tambien en la aleta dorsal y la cola
 vo = N(nt, 'ShaderNodeTexVoronoi'); vo.feature = 'F1'; vo.inputs['Scale'].default_value = 88.0; vo.inputs['Randomness'].default_value = 1.0
 mp = N(nt, 'ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.0, 0.85, 1.0); nt.links.new(tc.outputs['Object'], mp.inputs['Vector']); nt.links.new(mp.outputs[0], vo.inputs['Vector'])
@@ -150,6 +212,7 @@ keep = smooth(nt, sep.outputs[1], 0.18, 0.23)                                   
 dot = M(nt, 'MULTIPLY', smooth(nt, M(nt, 'SUBTRACT', rad, vo.outputs['Distance']), 0.0, 0.035), keep)
 tail = smooth(nt, u, 0.84, 0.88); fintop = smooth(nt, zn, 0.95, 1.10)
 where = M(nt, 'MAXIMUM', M(nt, 'MULTIPLY', smooth(nt, zn, -0.05, 0.25), smooth(nt, u, 0.12, 0.2)), M(nt, 'MAXIMUM', tail, fintop))
+where = M(nt, 'MAXIMUM', where, M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', smooth(nt, Z, 0.0, 0.035), smooth(nt, u, 0.015, 0.04)), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.12, 0.2))))   # pintas tambien en la cabeza
 col = mix(nt, M(nt, 'MULTIPLY', tail, 0.55), col, lin((104, 102, 80)), 'MIX')     # la cola no negra lisa: gris oliva con pintas
 col = mix(nt, M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', dot, where), 0.92), col, lin((16, 15, 13)), 'MIX')
 anal = M(nt, 'MULTIPLY', smooth(nt, zn, -0.72, -0.86), M(nt, 'MULTIPLY', smooth(nt, u, 0.62, 0.66), M(nt, 'SUBTRACT', 1.0, smooth(nt, u, 0.82, 0.86))))
@@ -157,8 +220,17 @@ col = mix(nt, M(nt, 'MULTIPLY', anal, 0.85), col, lin((150, 140, 112)), 'MIX')
 col = mix(nt, M(nt, 'MULTIPLY', anal, M(nt, 'MULTIPLY', smooth(nt, zn, -0.95, -1.12), 0.8)), col, lin((236, 234, 226)), 'MIX')
 # piel rehecha en los cortes: sin el relieve de Meshy (que ahi quedaria estirado); relieve general mas suave
 pat = N(nt, 'ShaderNodeAttribute'); pat.attribute_name = 'parche'; patch = pat.outputs['Fac']
+# el ojo viejo pintado en la textura (mas adelante y mas bajo) se tapa con piel de la cabeza y sin relieve
+dy_ = M(nt, 'SUBTRACT', Y, -0.861); dz_ = M(nt, 'SUBTRACT', Z, 0.020)
+oe = smooth(nt, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'MULTIPLY', dy_, dy_), M(nt, 'MULTIPLY', dz_, dz_))), 0.027, 0.018)
+dy2 = M(nt, 'SUBTRACT', Y, EYE_Y); dz2 = M(nt, 'SUBTRACT', Z, EYE_Z)
+oe = M(nt, 'MULTIPLY', oe, smooth(nt, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'MULTIPLY', dy2, dy2), M(nt, 'MULTIPLY', dz2, dz2))), ER * 0.95, ER * 1.25))
+col = mix(nt, M(nt, 'MULTIPLY', oe, 0.92), col, lin((112, 114, 92)), 'MIX')
+patch = M(nt, 'MAXIMUM', patch, M(nt, 'MULTIPLY', oe, 0.5))                    # deja algo del relieve de escamas
+nt.links.new(M(nt, 'MULTIPLY', 0.55, M(nt, 'SUBTRACT', 1.0, M(nt, 'MULTIPLY', oe, 0.85))), bs.inputs['Coat Weight'])   # sin espejo sobre el ojo viejo
+nt.links.new(M(nt, 'MULTIPLY', 0.6, M(nt, 'SUBTRACT', 1.0, M(nt, 'MULTIPLY', oe, 0.6))), bs.inputs['Specular IOR Level'])
 nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
-col = mix(nt, M(nt, 'MULTIPLY', smooth(nt, patch, 0.35, 0.9), 0.95), col, lin((202, 202, 198)), 'MIX')   # tapa la linea pintada del corte
+col = mix(nt, M(nt, 'MULTIPLY', smooth(nt, patch, 0.5, 0.95), 0.6), col, lin((202, 202, 198)), 'MIX')   # tapa la linea pintada del corte
 nt.links.new(col, bs.inputs['Base Color'])
 nt.links.new(M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, patch), 0.6), nmap.inputs['Strength'])
 # en la piel rehecha, escamas procedurales (bump) para que no quede un parche liso
@@ -175,21 +247,45 @@ try: bs.inputs['Thin Film Thickness'].default_value = 260.0; bs.inputs['Thin Fil
 except KeyError: pass
 
 # ------------------------------------------------------------------ ojos nuevos: cupula con iris dorado-plata y pupila negra
-m_eye = bpy.data.materials.new('trucha_ojo'); m_eye.use_nodes = True; en = m_eye.node_tree; eb = en.nodes['Principled BSDF']
+# ojo realista en dos capas: globo (iris dorado metalico con fibras radiales, motas y pupila negra profunda)
+# y cornea de vidrio encima (refracta y refleja el entorno, como el ojo mojado de una trucha)
+m_eye = bpy.data.materials.new('trucha_ojo_iris'); m_eye.use_nodes = True; en = m_eye.node_tree; eb = en.nodes['Principled BSDF']
 etc = N(en, 'ShaderNodeTexCoord'); esp = N(en, 'ShaderNodeSeparateXYZ'); en.links.new(etc.outputs['Object'], esp.inputs[0])
-rr = M(en, 'SQRT', M(en, 'ADD', M(en, 'MULTIPLY', esp.outputs[1], esp.outputs[1]), M(en, 'MULTIPLY', esp.outputs[2], esp.outputs[2])))   # radio desde el eje del ojo
-ec = mix(en, smooth(en, rr, 0.42, 0.50), (0.004, 0.004, 0.005), lin((196, 168, 92)))   # pupila -> iris dorado
-ec = mix(en, smooth(en, rr, 0.70, 0.86), ec, lin((206, 206, 196)))                    # iris -> anillo plateado
-en.links.new(ec, eb.inputs['Base Color']); eb.inputs['Roughness'].default_value = 0.25; eb.inputs['Metallic'].default_value = 0.35
-eb.inputs['Coat Weight'].default_value = 1.0; eb.inputs['Coat Roughness'].default_value = 0.02
-EYE = (0.050, -0.862, 0.020); ER = 0.0205
+EYy, EYz = esp.outputs[1], esp.outputs[2]
+rp = M(en, 'SQRT', M(en, 'ADD', M(en, 'MULTIPLY', M(en, 'MULTIPLY', EYy, 0.88), M(en, 'MULTIPLY', EYy, 0.88)), M(en, 'MULTIPLY', EYz, EYz)))   # pupila apenas ovalada
+rr = M(en, 'SQRT', M(en, 'ADD', M(en, 'MULTIPLY', EYy, EYy), M(en, 'MULTIPLY', EYz, EYz)))
+ang = M(en, 'ARCTAN2', EYz, EYy)
+fib = N(en, 'ShaderNodeCombineXYZ'); en.links.new(M(en, 'MULTIPLY', ang, 9.0), fib.inputs[0]); en.links.new(M(en, 'MULTIPLY', rr, 3.0), fib.inputs[1])
+fn_ = N(en, 'ShaderNodeTexNoise'); fn_.inputs['Scale'].default_value = 3.0; fn_.inputs['Detail'].default_value = 12.0; fn_.inputs['Roughness'].default_value = 0.7
+en.links.new(fib.outputs[0], fn_.inputs['Vector'])                                     # fibras radiales del iris
+gl = N(en, 'ShaderNodeTexVoronoi'); gl.inputs['Scale'].default_value = 140.0; en.links.new(etc.outputs['Object'], gl.inputs['Vector'])
+glc = N(en, 'ShaderNodeSeparateColor'); en.links.new(gl.outputs['Color'], glc.inputs[0])        # escamitas de guanina (brillo dorado granulado)
+mo = N(en, 'ShaderNodeTexVoronoi'); mo.inputs['Scale'].default_value = 55.0; en.links.new(etc.outputs['Object'], mo.inputs['Vector'])
+mel = M(en, 'MULTIPLY', smooth(en, mo.outputs['Distance'], 0.10, 0.03), smooth(en, rr, 0.62, 0.78))   # motas de melanina hacia el borde
+iris = mix(en, fn_.outputs['Fac'], lin((128, 92, 30)), lin((214, 172, 72)))
+iris = mix(en, M(en, 'MULTIPLY', glc.outputs[0], 0.5), iris, lin((246, 214, 120)))
+iris = mix(en, smooth(en, rr, 0.62, 0.86), iris, lin((96, 70, 30)))                   # mas oscuro hacia afuera
+iris = mix(en, smooth(en, EYz, 0.1, 0.8), iris, lin((110, 66, 28)))                    # arriba cobrizo
+iris = mix(en, M(en, 'MULTIPLY', mel, 0.8), iris, lin((30, 22, 12)))
+iris = mix(en, M(en, 'MULTIPLY', smooth(en, rp, 0.60, 0.555), smooth(en, rp, 0.515, 0.535)), iris, lin((250, 226, 150)))   # aro dorado fino junto a la pupila
+ec = mix(en, smooth(en, rp, 0.50, 0.52), (0.001, 0.0012, 0.0015), iris)                # pupila
+ec = mix(en, smooth(en, rr, 0.88, 0.97), ec, lin((150, 140, 110)))                    # borde que se mete bajo la piel
+en.links.new(ec, eb.inputs['Base Color'])
+en.links.new(M(en, 'MULTIPLY', smooth(en, rp, 0.51, 0.53), M(en, 'SUBTRACT', 1.0, smooth(en, rr, 0.86, 0.95))), eb.inputs['Metallic'])
+en.links.new(M(en, 'ADD', 0.18, M(en, 'MULTIPLY', glc.outputs[1], 0.25)), eb.inputs['Roughness'])
+eb.inputs['Coat Weight'].default_value = 0.0
+m_cor = bpy.data.materials.new('trucha_ojo_cornea'); m_cor.use_nodes = True; cb = m_cor.node_tree.nodes['Principled BSDF']
+cb.inputs['Base Color'].default_value = (1, 1, 1, 1); cb.inputs['Roughness'].default_value = 0.0; cb.inputs['IOR'].default_value = 1.376
+cb.inputs['Transmission Weight'].default_value = 1.0; cb.inputs['Specular IOR Level'].default_value = 0.6
+EYE = _E
 eyes = []
 for side in (1, -1):
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=48, ring_count=24); e = bpy.context.object
-    e.name = f'TRUCHA_ojo_{"I" if side > 0 else "D"}'; e.scale = (ER, ER, ER); e.location = (side * EYE[0], EYE[1], EYE[2])
-    e.rotation_euler = (0, 0, 0 if side > 0 else math.pi)                         # el eje +X local mira hacia afuera
-    for p in e.data.polygons: p.use_smooth = True
-    e.data.materials.append(m_eye); eyes.append(e)
+    for kind, sx, sr, mat, dx in (('globo', 0.50, 0.94, m_eye, -0.004), ('cornea', 0.62, 1.0, m_cor, 0.0)):
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=64, ring_count=32); e = bpy.context.object
+        e.name = f'TRUCHA_ojo_{kind}_{"I" if side > 0 else "D"}'; e.scale = (ER * sx, ER * sr, ER * sr)
+        e.location = (side * (EYE[0] + dx), EYE[1], EYE[2]); e.rotation_euler = (0, 0, 0 if side > 0 else math.pi)
+        for p in e.data.polygons: p.use_smooth = True
+        e.data.materials.append(mat); eyes.append(e)
 
 # ------------------------------------------------------------------ aletas en abanico con radios (pectorales y pelvicas)
 m_fin = bpy.data.materials.new('trucha_aleta'); m_fin.use_nodes = True; fn = m_fin.node_tree; fb = fn.nodes['Principled BSDF']
@@ -261,10 +357,17 @@ for i in range(NB):
     half = (JY[i + 1] - JY[i]) * 0.85
     W[:, i] = np.clip(1 - np.abs(V[:, 1] - cen[i]) / (half * 1.6), 0, None) ** 1.5
 W[V[:, 1] < -0.66, :] = 0; W[V[:, 1] < -0.66, 0] = 1                                # cabeza rigida (no se deforma el craneo)
+# mandibula: todo lo que esta bajo la linea de la boca, desde la punta hasta la comisura (y ~ -0.80)
+zl = -0.015 + (V[:, 1] + 0.95) * -0.36                                             # linea de la boca (sube hacia la punta)
+wj = np.clip((zl - V[:, 2]) / 0.012, 0, 1) * np.clip((-0.78 - V[:, 1]) / 0.06, 0, 1)
+WJ = wj
 W /= np.maximum(W.sum(1, keepdims=True), 1e-9)
 for i, n in enumerate(names):
     idx = np.nonzero(W[:, i] > 1e-3)[0]
     for k in idx: groups[n].add([int(k)], float(W[k, i]), 'REPLACE')
+gj = body.vertex_groups.new(name='Jaw')
+for k in np.nonzero(WJ > 1e-3)[0]:
+    gj.add([int(k)], float(WJ[k]), 'REPLACE'); groups['Head'].add([int(k)], float(1 - WJ[k]), 'REPLACE')
 md = body.modifiers.new('rig', 'ARMATURE'); md.object = rig; body.parent = rig
 def parent_bone(o, bone):
     mw = o.matrix_world.copy(); o.parent = rig; o.parent_type = 'BONE'; o.parent_bone = bone

@@ -60,6 +60,7 @@ for lo_, hi_ in ((-0.75, -0.30), (-0.30, 0.45)):                                
 # panza completa entre la pectoral y la anal: se rehace como una transicion suave entre la panza sana de adelante y la de atras
 co = np.array([v.co[:] for v in bm.verts])
 YA_, YB_ = -0.13, 0.33
+loft = []; LW = {}
 pa_, pb_ = perfil(YA_), perfil(YB_)
 for v in bm.verts:
     y = v.co.y
@@ -76,13 +77,20 @@ for v in bm.verts:
     xa, za = sobre(pa_, v.co.x, v.co.z); xb, zb = sobre(pb_, v.co.x, v.co.z)
     xt, zt = xa + (xb - xa) * t, za + (zb - za) * t; ww = w * w * (3 - 2 * w)
     v.co.x += (xt - v.co.x) * ww; v.co.z += (zt - v.co.z) * ww
-    wt[v.index] = max(wt.get(v.index, 0.0), ww * 0.8)
+    wt[v.index] = max(wt.get(v.index, 0.0), ww * 0.8); loft.append(v); LW[v] = ww
+def reproy(v, ww):
+    t = (v.co.y - YA_) / (YB_ - YA_)
+    xa, za = sobre(pa_, v.co.x, v.co.z); xb, zb = sobre(pb_, v.co.x, v.co.z)
+    xt, zt = xa + (xb - xa) * t, za + (zb - za) * t; v.co.x += (xt - v.co.x) * ww; v.co.z += (zt - v.co.z) * ww
+for it in range(8):                                                             # alisa y vuelve a apoyar sobre la panza: despliega los pliegues sin achicar
+    bmesh.ops.smooth_vert(bm, verts=loft, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for v in loft: reproy(v, LW[v])
 lay = bm.verts.layers.float.new('parche'); bm.verts.ensure_lookup_table()
 zone = [bm.verts[i] for i in wt]
 for vi, w in wt.items(): bm.verts[vi][lay] = w
 for it in range(3): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.3, use_axis_x=True, use_axis_y=False, use_axis_z=True)   # poco: suavizar mucho achica y deja pozo
 zs = set(zone)
-bmesh.ops.dissolve_degenerate(bm, dist=0.0015, edges=[e for e in bm.edges if e.verts[0] in zs or e.verts[1] in zs])
+bmesh.ops.dissolve_degenerate(bm, dist=0.004, edges=[e for e in bm.edges if e.verts[0] in zs or e.verts[1] in zs])
 zone = [v for v in bm.verts if v.is_valid and v in zs]
 for it in range(6): bmesh.ops.smooth_vert(bm, verts=zone, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
@@ -218,7 +226,9 @@ oe = smooth(nt, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'MULTIPLY', dy_, dy_), M(nt, 'M
 dy2 = M(nt, 'SUBTRACT', Y, EYE_Y); dz2 = M(nt, 'SUBTRACT', Z, EYE_Z)
 oe = M(nt, 'MULTIPLY', oe, smooth(nt, M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'MULTIPLY', dy2, dy2), M(nt, 'MULTIPLY', dz2, dz2))), ER * 0.95, ER * 1.25))
 col = mix(nt, M(nt, 'MULTIPLY', oe, 0.92), col, lin((112, 114, 92)), 'MIX')
-patch = M(nt, 'MAXIMUM', patch, oe)
+patch = M(nt, 'MAXIMUM', patch, M(nt, 'MULTIPLY', oe, 0.5))                    # deja algo del relieve de escamas
+nt.links.new(M(nt, 'MULTIPLY', 0.55, M(nt, 'SUBTRACT', 1.0, M(nt, 'MULTIPLY', oe, 0.85))), bs.inputs['Coat Weight'])   # sin espejo sobre el ojo viejo
+nt.links.new(M(nt, 'MULTIPLY', 0.6, M(nt, 'SUBTRACT', 1.0, M(nt, 'MULTIPLY', oe, 0.6))), bs.inputs['Specular IOR Level'])
 nmap = [n for n in nt.nodes if n.type == 'NORMAL_MAP'][0]
 col = mix(nt, M(nt, 'MULTIPLY', smooth(nt, patch, 0.5, 0.95), 0.6), col, lin((202, 202, 198)), 'MIX')   # tapa la linea pintada del corte
 nt.links.new(col, bs.inputs['Base Color'])
