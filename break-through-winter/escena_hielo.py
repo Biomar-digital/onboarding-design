@@ -85,8 +85,8 @@ R = M(nt, 'SQRT', M(nt, 'ADD', M(nt, 'MULTIPLY', X, X), M(nt, 'MULTIPLY', Y, Y))
 ANG = M(nt, 'ARCTAN2', Y, X)
 n1 = N(nt, 'ShaderNodeTexNoise'); n1.inputs['Scale'].default_value = 0.35; n1.inputs['Detail'].default_value = 8.0; nt.links.new(tco.outputs['Object'], n1.inputs['Vector'])
 n2 = N(nt, 'ShaderNodeTexNoise'); n2.inputs['Scale'].default_value = 6.0; n2.inputs['Detail'].default_value = 10.0; nt.links.new(tco.outputs['Object'], n2.inputs['Vector'])
-snow = smooth(nt, M(nt, 'ADD', n1.outputs['Fac'], M(nt, 'MULTIPLY', n2.outputs['Fac'], 0.25)), 0.55, 0.72)   # parches de nieve soplada
-ice_c = mix(nt, n2.outputs['Fac'], lin((60, 88, 112)), lin((118, 150, 170)))                # hielo negro-azulado con vetas
+snow = smooth(nt, M(nt, 'ADD', n1.outputs['Fac'], M(nt, 'MULTIPLY', n2.outputs['Fac'], 0.25)), 0.64, 0.80)   # parches de nieve soplada
+ice_c = mix(nt, n2.outputs['Fac'], lin((22, 40, 60)), lin((74, 104, 130)))                # hielo negro-azulado con vetas
 col = mix(nt, snow, ice_c, lin((214, 224, 236)))
 # grietas de presion grandes y viejas (blanquecinas) por todo el estanque
 vo = N(nt, 'ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = 0.22
@@ -114,7 +114,7 @@ bs.inputs['Coat Weight'].default_value = 0.6; bs.inputs['Coat Roughness'].defaul
 bump = N(nt, 'ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.25; bump.inputs['Distance'].default_value = 0.01
 nt.links.new(M(nt, 'ADD', M(nt, 'MULTIPLY', n2.outputs['Fac'], 0.4), M(nt, 'MULTIPLY', crack, -0.6)), bump.inputs['Height']); nt.links.new(bump.outputs[0], bs.inputs['Normal'])
 me = bpy.data.meshes.new('hielo'); bm = bmesh.new()
-bmesh.ops.create_grid(bm, x_segments=60, y_segments=60, size=600.0); bm.to_mesh(me); bm.free()
+bmesh.ops.create_grid(bm, x_segments=120, y_segments=120, size=2200.0); bm.to_mesh(me); bm.free()
 ice = obj('HIELO', me, m_ice)
 so = ice.modifiers.new('espesor', 'SOLIDIFY'); so.thickness = 0.10; so.offset = -1
 # agujero irregular (se activa al estallar)
@@ -166,14 +166,14 @@ for fc in (rig.animation_data.action.fcurves):
 
 # ------------------------------------------------------------------ esquirlas de hielo: losas rotas que salen volando y caen sobre el hielo
 m_sh, nt, bs = new_mat('hielo_roto')
-bs.inputs['Base Color'].default_value = (*lin((190, 214, 232)), 1); bs.inputs['Roughness'].default_value = 0.05
-bs.inputs['Transmission Weight'].default_value = 0.85; bs.inputs['IOR'].default_value = 1.31; bs.inputs['Coat Weight'].default_value = 0.5
+bs.inputs['Base Color'].default_value = (*lin((222, 236, 246)), 1); bs.inputs['Roughness'].default_value = 0.12
+bs.inputs['Transmission Weight'].default_value = 0.6; bs.inputs['IOR'].default_value = 1.31; bs.inputs['Coat Weight'].default_value = 0.5
 n4 = N(nt, 'ShaderNodeTexNoise'); n4.inputs['Scale'].default_value = 18.0; nt.links.new(M(nt, 'MULTIPLY', n4.outputs['Fac'], 0.2), bs.inputs['Roughness'])
 if hasattr(m_sh, 'use_raytrace_refraction'): m_sh.use_raytrace_refraction = True
 shards = []
-for k in range(56):
-    a = rng.uniform(0, 2 * math.pi); r0 = rng.uniform(0.15, 0.72); size = rng.uniform(0.06, 0.26) * (1.2 if r0 > 0.5 else 1.0)
-    th = rng.uniform(0.05, 0.10)
+for k in range(34):
+    a = rng.uniform(0, 2 * math.pi); r0 = rng.uniform(0.15, 0.72); size = rng.uniform(0.05, 0.17) * (1.2 if r0 > 0.5 else 1.0)
+    th = rng.uniform(0.025, 0.055)
     me = bpy.data.meshes.new(f'esquirla{k}'); bm = bmesh.new()
     pts = [Vector((rng.uniform(-1, 1) * size, rng.uniform(-0.6, 0.6) * size, z)) for _ in range(7) for z in (-th / 2, th / 2)]
     for p in pts: bm.verts.new(p)
@@ -226,7 +226,7 @@ def particles(o, name, count, f0, f1, vel, rand, size, sizer, life):
     ps.render_type = 'OBJECT'; ps.instance_object = drop; ps.particle_size = size; ps.size_random = sizer
     ps.use_rotations = False; ps.physics_type = 'NEWTON'
     return md.particle_system, ps
-ps1, s1 = particles(em, 'estallido', 2600, FB, FB + 18, (0, 0, 9.0), 3.5, 0.016, 0.8, 400)
+ps1, s1 = particles(em, 'estallido', 4200, FB, FB + 20, (0, 0, 9.0), 4.0, 0.012, 0.9, 400)
 s1.tangent_factor = 0.0; s1.object_factor = 0.0
 s1.normal_factor = 0.0
 col_ = ice.modifiers.new('choque', 'COLLISION'); ice.collision.damping = 0.8; ice.collision.friction_factor = 0.6
@@ -257,7 +257,7 @@ for j in range(NZc + 1):
 for j in range(NZc):
     for i in range(NC): bm.faces.new((rows[j][i], rows[j][(i + 1) % NC], rows[j + 1][(i + 1) % NC], rows[j + 1][i]))
 bm.to_mesh(me); bm.free()
-crown = obj('AGUA_corona', me, m_cr)
+crown = obj('AGUA_corona', me, m_cr); crown.hide_viewport = True   # se descarto: se veia como una caja; el estallido lo hacen las gotas
 for p in crown.data.polygons: p.use_smooth = True
 crown.modifiers.new('grosor', 'SOLIDIFY').thickness = 0.01
 d = crown.modifiers.new('rotura', 'DISPLACE'); tx = bpy.data.textures.new('rotura', 'CLOUDS'); tx.noise_scale = 0.25; d.texture = tx; d.strength = 0.08
@@ -265,7 +265,7 @@ for f in range(F0, F1 + 1):
     t = ts(f); u = min(1.0, t / 0.30)
     rad = 0.30 + 0.75 * (1 - (1 - u) ** 2); hgt = 1.10 * math.sin(math.pi * min(1.0, t / 0.40)) ** 0.8 if f > FB else 0.0
     crown.scale = (rad, rad, max(hgt, 0.001)); crown.keyframe_insert('scale', frame=f)
-    crown.hide_render = f <= FB or hgt < 0.02; crown.keyframe_insert('hide_render', frame=f)
+    crown.hide_render = True
 
 # ------------------------------------------------------------------ fondo: bosque bajo y oscuro, granja blanca con una ventana encendida, niebla baja
 m_tr, nt, bs = new_mat('bosque'); bs.inputs['Base Color'].default_value = (*lin((14, 22, 32)), 1); bs.inputs['Roughness'].default_value = 0.9
@@ -281,15 +281,15 @@ def tree(cx, cy, h, kind):
         for k in range(5):
             bmesh.ops.create_icosphere(bm, subdivisions=1, radius=h * rng.uniform(0.14, 0.24),
                                        matrix=Matrix.Translation((cx + rng.uniform(-0.2, 0.2) * h, cy + rng.uniform(-0.1, 0.1) * h, h * rng.uniform(0.55, 0.85))))
-for i in range(520):
-    a = math.radians(rng.uniform(-10, 190)); r = rng.uniform(260, 330)
-    tree(r * math.cos(a), r * math.sin(a) + 40, rng.uniform(28, 62) * (1.3 if rng.random() < 0.3 else 1.0), 0 if rng.random() < 0.45 else 1)
+for i in range(900):
+    a = math.radians(rng.uniform(-10, 190)); r = rng.uniform(720, 860)
+    tree(r * math.cos(a), r * math.sin(a) + 60, rng.uniform(30, 64) * (1.3 if rng.random() < 0.3 else 1.0), 0 if rng.random() < 0.6 else 1)
 bm.to_mesh(me); bm.free(); forest = obj('FONDO_bosque', me, m_tr)
 # granja: casa blanca de muros encalados y techo oscuro, con ventana calida
 m_wall, nt, bs = new_mat('muro'); bs.inputs['Base Color'].default_value = (*lin((150, 156, 168)), 1); bs.inputs['Roughness'].default_value = 0.8
 m_roof, nt, bs = new_mat('techo'); bs.inputs['Base Color'].default_value = (*lin((26, 26, 30)), 1)
 m_win, nt, bs = new_mat('ventana'); bs.inputs['Emission Color'].default_value = (*lin((255, 176, 92)), 1); bs.inputs['Emission Strength'].default_value = 6.0
-HX, HY = -95.0, 245.0
+HX, HY = -230.0, 690.0
 def box(name, c, s, mat):
     me = bpy.data.meshes.new(name); bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
     o = obj(name, me, mat); o.location = c; o.scale = s; return o
@@ -301,30 +301,30 @@ bm.to_mesh(me); bm.free(); roof = obj('FONDO_techo', me, m_roof); roof.location 
 for wx in (-9, 4): box(f'FONDO_ventana{wx}', (HX + wx, HY - 6.05, 6), (3, 0.2, 3.4), m_win)
 box('FONDO_granero', (HX + 48, HY + 8, 9), (34, 16, 18), m_roof)
 # niebla baja: carteles con ruido delante del bosque
-m_fog, nt, bs = new_mat('niebla'); bs.inputs['Base Color'].default_value = (*lin((70, 92, 128)), 1); bs.inputs['Roughness'].default_value = 1.0
-bs.inputs['Emission Color'].default_value = (*lin((40, 58, 92)), 1); bs.inputs['Emission Strength'].default_value = 0.6
+m_fog, nt, bs = new_mat('niebla'); bs.inputs['Base Color'].default_value = (*lin((96, 120, 160)), 1); bs.inputs['Roughness'].default_value = 1.0
+bs.inputs['Emission Color'].default_value = (*lin((70, 96, 140)), 1); bs.inputs['Emission Strength'].default_value = 0.6
 gco = N(nt, 'ShaderNodeTexCoord'); gs = N(nt, 'ShaderNodeSeparateXYZ'); nt.links.new(gco.outputs['Generated'], gs.inputs[0])
 nf = N(nt, 'ShaderNodeTexNoise'); nf.inputs['Scale'].default_value = 3.0; nf.inputs['Detail'].default_value = 4.0; nt.links.new(gco.outputs['Generated'], nf.inputs['Vector'])
-fa = M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', smooth(nt, gs.outputs[2], 1.0, 0.0), smooth(nt, gs.outputs[2], 0.0, 0.15)), M(nt, 'MULTIPLY', smooth(nt, nf.outputs['Fac'], 0.35, 0.7), 0.75))
+fa = M(nt, 'MULTIPLY', M(nt, 'MULTIPLY', smooth(nt, gs.outputs[2], 1.0, 0.0), smooth(nt, gs.outputs[2], 0.0, 0.15)), M(nt, 'MULTIPLY', smooth(nt, nf.outputs['Fac'], 0.35, 0.7), 0.45))
 nt.links.new(fa, bs.inputs['Alpha']); m_fog.surface_render_method = 'BLENDED'
-for k, (r, hh) in enumerate(((150, 18), (215, 30), (250, 40))):
+for k, (r, hh) in enumerate(((420, 10), (560, 16), (690, 22))):
     me = bpy.data.meshes.new(f'niebla{k}'); bm = bmesh.new()
     bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1.0); bm.to_mesh(me); bm.free()
-    o = obj(f'FONDO_niebla_{k}', me, m_fog); o.location = (0, r, hh * 0.45); o.rotation_euler = (math.pi / 2, 0, 0); o.scale = (r * 1.6, hh * 0.5, 1)
+    o = obj(f'FONDO_niebla_{k}', me, m_fog); o.location = (0, r, hh * 0.35); o.rotation_euler = (math.pi / 2, 0, 0); o.scale = (r * 1.6, hh * 0.5, 1)
 
 # ------------------------------------------------------------------ luz: llave calida dorada desde adelante, contraluz frio, cielo de relleno
 def area(name, loc, target, energy, color, size):
     l = bpy.data.lights.new(name, 'AREA'); l.energy = energy; l.color = color; l.size = size; l.shape = 'DISK'
     o = obj(name, l); o.location = loc; d = Vector(target) - Vector(loc); o.rotation_euler = d.to_track_quat('-Z', 'Y').to_euler(); return o
-area('LUZ_llave_dorada', (-3.8, -5.0, 2.2), (0, 0, 1.2), 2600, lin((255, 178, 96)), 3.0)
+k_ = bpy.data.lights.new('LUZ_llave_dorada', 'SPOT'); k_.energy = 2400; k_.color = lin((255, 172, 84)); k_.spot_size = math.radians(24); k_.spot_blend = 0.6; k_.shadow_soft_size = 0.6
+ko = obj('LUZ_llave_dorada', k_); ko.location = (-3.6, -4.6, 3.4); ko.rotation_euler = (Vector((0, 0, 1.3)) - ko.location).to_track_quat('-Z', 'Y').to_euler()
 area('LUZ_contra_fria', (1.5, 5.5, 3.2), (0, 0, 1.0), 3200, lin((150, 190, 255)), 2.0)
-area('LUZ_relleno', (4.5, -3.0, 0.6), (0, 0, 0.9), 400, lin((120, 150, 220)), 4.0)
-area('LUZ_agua', (0, 0, -0.03), (0, 0, 1.0), 0, (1, 1, 1), 1.0)
+area('LUZ_relleno', (4.0, -3.0, 3.0), (0, 0, 1.0), 220, lin((120, 150, 220)), 4.0)
 sun = bpy.data.lights.new('LUZ_cielo', 'SUN'); sun.energy = 0.35; sun.color = lin((150, 175, 230)); so_ = obj('LUZ_cielo', sun); so_.rotation_euler = (math.radians(60), 0, math.radians(200))
 
 # ------------------------------------------------------------------ camara: baja, casi a ras del hielo, empuje lento
-cam = obj('CAMARA', bpy.data.cameras.new('CAMARA')); sc.camera = cam; cam.data.lens = 50; cam.data.clip_end = 3000
-cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 4.0
+cam = obj('CAMARA', bpy.data.cameras.new('CAMARA')); sc.camera = cam; cam.data.lens = 50; cam.data.clip_end = 5000
+cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 8.0
 tgt = obj('CAMARA_mira', None); tgt.empty_display_size = 0.2
 cam.data.dof.focus_object = tgt
 tc_ = cam.constraints.new('TRACK_TO'); tc_.target = tgt; tc_.track_axis = 'TRACK_NEGATIVE_Z'; tc_.up_axis = 'UP_Y'
