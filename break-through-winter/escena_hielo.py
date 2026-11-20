@@ -188,8 +188,11 @@ def ice_material(name, sides=False, frost=0.0, trans=0.35, snow_top=0.0):
     nt.links.new(inorm.outputs[0], bot.inputs['Normal'])
     silver = N(nt, 'ShaderNodeBsdfPrincipled'); silver.inputs['Base Color'].default_value = (0.9, 0.95, 1.0, 1); silver.inputs['Metallic'].default_value = 0.6; silver.inputs['Roughness'].default_value = 0.15
     bmx = N(nt, 'ShaderNodeMixShader'); nt.links.new(M(nt, 'MINIMUM', M(nt, 'MULTIPLY', bub, 2.0), 1.0), bmx.inputs[0]); nt.links.new(bot.outputs[0], bmx.inputs[1]); nt.links.new(silver.outputs[0], bmx.inputs[2])
-    snow_dark = N(nt, 'ShaderNodeBsdfDiffuse'); snow_dark.inputs['Color'].default_value = (*lin((70, 90, 100)), 1)   # nieve encima vista desde abajo: sombra
-    bmx2 = N(nt, 'ShaderNodeMixShader'); nt.links.new(M(nt, 'MULTIPLY', snow_m, 0.85), bmx2.inputs[0]); nt.links.new(bmx.outputs[0], bmx2.inputs[1]); nt.links.new(snow_dark.outputs[0], bmx2.inputs[2])
+    # el techo de hielo brilla con la luz del cielo que lo atraviesa; la nieve encima lo oscurece; grietas y burbujas se recortan claras
+    glow = M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, M(nt, 'MULTIPLY', snow_m, 0.9)), M(nt, 'ADD', 1.0, M(nt, 'ADD', M(nt, 'MULTIPLY', crack, 3.0), M(nt, 'MULTIPLY', bub, 1.5))))
+    glow = M(nt, 'MULTIPLY', glow, M(nt, 'ADD', 0.75, M(nt, 'MULTIPLY', ims[0]['r'], 0.5)))   # variacion de la textura real del hielo
+    em_ = N(nt, 'ShaderNodeEmission'); em_.inputs['Color'].default_value = (*lin((120, 168, 182)), 1); nt.links.new(M(nt, 'MULTIPLY', glow, 0.32), em_.inputs['Strength'])
+    bmx2 = N(nt, 'ShaderNodeAddShader'); nt.links.new(bmx.outputs[0], bmx2.inputs[0]); nt.links.new(em_.outputs[0], bmx2.inputs[1])
     fin = N(nt, 'ShaderNodeMixShader'); nt.links.new(under, fin.inputs[0]); nt.links.new(res, fin.inputs[1]); nt.links.new(bmx2.outputs[0], fin.inputs[2])
     nt.links.new(fin.outputs[0], out.inputs[0])
     return m
@@ -384,14 +387,21 @@ rig = bpy.data.objects['TRUCHA_rig']; body = bpy.data.objects['TRUCHA_cuerpo']
 names = ['Head'] + [f'Spine{i}' for i in range(1, 9)]
 YAW = Matrix.Rotation(math.radians(-18), 4, 'Z')                                  # un poco de 3/4 hacia la camara
 # antes del estallido: nada bajo el hielo hacia +X, gira hacia arriba y acelera hasta salir a 45 grados (se integra hacia atras desde la salida)
-SWIM = {}; px_, pz_ = X0, Z0
+SWIM = {}
 VEX = math.hypot(VX, VZ)
-for f in range(FB, F0 - 1, -1):
-    head = ANG * max(0.0, min(1.0, (f - (FB - 55)) / 45.0)) ** 1.5                 # gira de horizontal a 45 grados
+def head_spd(f):
+    head = ANG * max(0.0, min(1.0, (f - (FB - 45)) / 38.0)) ** 1.5                # gira de horizontal a 45 grados
     spd = 1.5 + (VEX - 1.5) * max(0.0, 1 - (FB - f) / 14.0) ** 2 + 0.6 * max(0.0, 1 - (FB - f) / 45.0)
-    SWIM[f] = (px_, pz_, head, spd)
-    px_ -= spd / FPS * math.cos(head); pz_ -= spd / FPS * math.sin(head)
-    pz_ += 0.0 if f > FB - 60 else (-1.35 - pz_) * 0.08                           # nado a media agua, bajo el hielo
+    return head, spd
+px_, pz_ = 0.0, -1.45; raw = {}
+for f in range(F0, FB + 1):                                                     # se integra hacia adelante desde media agua
+    h_, v_ = head_spd(f); raw[f] = (px_, pz_, h_, v_)
+    px_ += v_ / FPS * math.cos(h_); pz_ += v_ / FPS * math.sin(h_)
+ex, ez = raw[FB][0], raw[FB][1]
+kz = (Z0 + 1.45) / max(ez + 1.45, 1e-3)                                         # la subida se escala para llegar justo a la salida
+for f in range(F0, FB + 1):
+    x_, z_, h_, v_ = raw[f]
+    SWIM[f] = (x_ + (X0 - ex), -1.45 + (z_ + 1.45) * kz, h_, v_)
 for f in range(F0, F1 + 1):
     t = ts(f) if f > FB else 0.0
     if f > FB:
@@ -469,9 +479,9 @@ def smoothstep(a, b, x): x = min(1.0, max(0.0, (x - a) / (b - a))); return x * x
 END_C, END_T = Vector((1.45, -7.7, 0.38)), Vector((1.55, 0.0, 0.82))
 for f in range(F0, F1 + 1):
     fp = FP[f]
-    under = fp + Vector((-0.6, -3.0, -0.35))                                        # bajo el agua: al costado y un poco abajo del pez
+    under = fp + Vector((-0.5, -2.4, -1.0))                                         # bajo el agua: abajo del pez, mirando hacia el techo de hielo
     PB, PA = Vector((-1.3, -2.5, -0.45)), Vector((-1.1, -2.8, 0.38))                  # cruza la superficie del hielo junto al agujero
-    if f <= FB - 25: cl = under; tl = fp + Vector((0.6, 0, 0.15))
+    if f <= FB - 25: cl = under; tl = fp + Vector((0.6, 0, 0.45))
     elif f <= FB + 1:
         u = smoothstep(FB - 25, FB + 1, f); cl = under.lerp(PB, u); tl = fp
     elif f <= FB + 7:
@@ -485,8 +495,8 @@ sc['KF'] = KF; sc['KT'] = KT; sc['FB'] = FB
 # ------------------------------------------------------------------ bajo el agua: volumen de agua turbia, fondo de barro, juncos, particulas y burbujas bajo el hielo
 m_vol = bpy.data.materials.new('agua_volumen'); m_vol.use_nodes = True; vt = m_vol.node_tree; vt.nodes.clear()
 vo_ = N(vt, 'ShaderNodeOutputMaterial'); pv = N(vt, 'ShaderNodeVolumePrincipled')
-pv.inputs['Color'].default_value = (*lin((120, 170, 160)), 1); pv.inputs['Density'].default_value = 0.035; pv.inputs['Anisotropy'].default_value = 0.65
-pv.inputs['Absorption Color'].default_value = (*lin((70, 140, 135)), 1)
+pv.inputs['Color'].default_value = (*lin((150, 200, 185)), 1); pv.inputs['Density'].default_value = 0.06; pv.inputs['Anisotropy'].default_value = 0.75
+pv.inputs['Absorption Color'].default_value = (*lin((95, 155, 140)), 1)
 pv.inputs['Emission Color'].default_value = (*lin((40, 90, 100)), 1); pv.inputs['Emission Strength'].default_value = 0.015   # luz ambiente difusa bajo el hielo
 vt.links.new(pv.outputs[0], vo_.inputs['Volume'])
 me = bpy.data.meshes.new('agua_vol'); bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
@@ -512,7 +522,7 @@ me = bpy.data.meshes.new('motas'); me.from_pydata(pts, [], []); mo_ = obj('AGUA_
 mo_.instance_type = 'VERTS'; mota.parent = mo_; mota.location = (0, 0, 0); mota.scale = (0.006, 0.006, 0.006); mota.hide_render = False
 bub_pts = [(rng.uniform(-12, 4), rng.uniform(-5, 3), -TH - 0.004) for _ in range(900)]
 m_bu, nt, bs = new_mat('burbuja_aire'); bs.inputs['Base Color'].default_value = (1, 1, 1, 1); bs.inputs['Metallic'].default_value = 0.8; bs.inputs['Roughness'].default_value = 0.05
-bs.inputs['Emission Color'].default_value = (*lin((190, 215, 235)), 1); bs.inputs['Emission Strength'].default_value = 0.12   # reflejo total: se ven plateadas
+bs.inputs['Emission Color'].default_value = (*lin((190, 215, 235)), 1); bs.inputs['Emission Strength'].default_value = 0.9   # reflejo total: se ven plateadas
 me = bpy.data.meshes.new('burbuja'); bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1.0)
 for v in bm.verts: v.co.z *= 0.25
 bm.to_mesh(me); bm.free()
@@ -523,14 +533,27 @@ for k in range(28):                                                             
         b_.location = (cxb + rng.gauss(0, 0.25), cyb + rng.gauss(0, 0.25), -TH - 0.004 - r_ * 0.2); b_.scale = (r_ * rng.uniform(0.7, 1.4), r_, r_)
 if 'burbuja_aire' not in [m_.name for m_ in me.materials]: me.materials.append(m_bu)
 # luz de luna/cielo que entra por el hielo (rayos bajo el agua) y suma un poco de luz arriba
-moon = bpy.data.lights.new('LUZ_cielo_alto', 'SUN'); moon.energy = 0.9; moon.color = lin((160, 190, 255)); moon.angle = math.radians(12)
-mo = obj('LUZ_cielo_alto', moon, None, C_ENV); mo.rotation_euler = (math.radians(18), math.radians(-10), 0)
+moon = bpy.data.lights.new('LUZ_cielo_alto', 'SUN'); moon.energy = 0.9;   moon.color = lin((160, 190, 255)); moon.angle = math.radians(12)
+mo = obj('LUZ_cielo_alto', moon, None, C_ENV); mo.rotation_euler = (math.radians(24), math.radians(-14), 0)
+for f, e in ((F0, 3.2), (FB + 3, 3.2), (FB + 7, 0.9)): moon.energy = e; moon.keyframe_insert('energy', frame=f)   # fuerte bajo el agua (rayos), suave arriba
+# sombra de la nieve: un plano invisible encima del hielo que solo hace sombra -> rayos de luz bajo el agua entre las manchas de nieve
+m_sn = bpy.data.materials.new('sombra_nieve'); m_sn.use_nodes = True; st_ = m_sn.node_tree; st_.nodes.clear()
+so_ = N(st_, 'ShaderNodeOutputMaterial'); tr_ = N(st_, 'ShaderNodeBsdfTransparent'); df_ = N(st_, 'ShaderNodeBsdfDiffuse')
+tcs = N(st_, 'ShaderNodeTexCoord'); ns_ = N(st_, 'ShaderNodeTexNoise'); ns_.inputs['Scale'].default_value = 0.35; ns_.inputs['Detail'].default_value = 6.0; st_.links.new(tcs.outputs['Object'], ns_.inputs['Vector'])
+ss2 = N(st_, 'ShaderNodeSeparateXYZ'); st_.links.new(tcs.outputs['Object'], ss2.inputs[0])
+rr2 = M(st_, 'SQRT', M(st_, 'ADD', M(st_, 'MULTIPLY', ss2.outputs[0], ss2.outputs[0]), M(st_, 'MULTIPLY', ss2.outputs[1], ss2.outputs[1])))
+msk = M(st_, 'MULTIPLY', smooth(st_, ns_.outputs['Fac'], 0.47, 0.53), smooth(st_, rr2, RF + 0.1, RF + 0.6))
+mxs = N(st_, 'ShaderNodeMixShader'); st_.links.new(msk, mxs.inputs[0]); st_.links.new(tr_.outputs[0], mxs.inputs[1]); st_.links.new(df_.outputs[0], mxs.inputs[2]); st_.links.new(mxs.outputs[0], so_.inputs[0])
+me = bpy.data.meshes.new('sombra_nieve'); bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=40.0); bm.to_mesh(me); bm.free()
+sn_ = obj('AGUA_sombra_nieve', me, m_sn, C_ICE); sn_.location.z = 0.03
+for attr in ('visible_camera', 'visible_diffuse', 'visible_glossy', 'visible_transmission', 'visible_volume_scatter'): setattr(sn_, attr, False)
+for f, h in ((F0, False), (FB + 3, False), (FB + 4, True)): sn_.hide_render = h; sn_.keyframe_insert('hide_render', frame=f)
 for o in [ice] + [c[0] for c in cells] + [water]: o.visible_shadow = False          # sin causticas el vidrio bloquearia la luz: el hielo deja pasar la luz
 uw = bpy.data.lights.new('LUZ_bajo_agua', 'AREA'); uw.shape = 'DISK'; uw.size = 3.0; uw.color = lin((225, 238, 236))
 uwo = obj('LUZ_bajo_agua', uw, None, C_ENV); uwo.rotation_euler = (0, 0, 0)
 cl_ = uwo.constraints.new('COPY_LOCATION'); cl_.target = rig; cl_.use_offset = True
 uwo.location = (0.3, 0.4, 1.0); off = uwo.constraints.new('LIMIT_LOCATION'); off.use_max_z = True; off.max_z = -TH - 0.3
-for f, e in ((F0, 110.0), (FB - 6, 110.0), (FB + 6, 0.0)): uw.energy = e; uw.keyframe_insert('energy', frame=f)   # luz suave del hielo sobre el pez bajo el agua
+for f, e in ((F0, 60.0), (FB - 6, 60.0), (FB + 6, 0.0)): uw.energy = e; uw.keyframe_insert('energy', frame=f)   # luz suave del hielo sobre el pez bajo el agua
 try: uwo.light_linking.receiver_collection = fish_c
 except Exception: pass
 
