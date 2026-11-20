@@ -64,7 +64,7 @@ foam.inputs['Subsurface Weight'].default_value = 1.0; foam.inputs['Subsurface Ra
 ms = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(mr.outputs[0], ms.inputs[0]); nt.links.new(b.outputs[0], ms.inputs[1]); nt.links.new(foam.outputs[0], ms.inputs[2])
 nt.links.new(ms.outputs[0], nt.nodes['Material Output'].inputs[0])
 dom.data.materials.clear(); dom.data.materials.append(m)
-for cn in ('RECIBE_LLAVE_TODO', 'RECIBE_CONTRALUZ'):                            # el chorro recibe la luz dorada y el contraluz
+for cn in ('RECIBE_CONTRALUZ',):                                             # el chorro solo recibe el contraluz frio (con la dorada parecia oro fundido)
     c_ = bpy.data.collections.get(cn)
     if c_ and dom.name not in c_.objects: c_.objects.link(dom)
 for p in dom.data.polygons: p.use_smooth = True
