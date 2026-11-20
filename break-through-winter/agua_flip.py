@@ -43,7 +43,7 @@ fs.flow_type = 'LIQUID'; fs.flow_behavior = 'GEOMETRY'; fs.flow_source = 'MESH';
 jet = box('AGUA_chorro', (-0.75, -0.30, -0.70), (-0.15, 0.30, -0.30))
 mj = jet.modifiers.new('fluido', 'FLUID'); mj.fluid_type = 'FLOW'; fj = mj.flow_settings
 fj.flow_type = 'LIQUID'; fj.flow_behavior = 'INFLOW'; fj.flow_source = 'MESH'; fj.use_initial_velocity = True
-fj.velocity_coord = (7.5, 0, 8.5); jet.hide_render = True; jet.display_type = 'WIRE'
+fj.velocity_coord = (8.0, 0, 8.0); jet.hide_render = True; jet.display_type = 'WIRE'
 for f, on in ((FB - 1, False), (FB, True), (FB + 7, True), (FB + 8, False)):
     fj.use_inflow = on; fj.keyframe_insert('use_inflow', frame=f)
 # obstaculos: el hielo y la trucha (malla deformada por el rig)
