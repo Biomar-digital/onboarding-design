@@ -162,10 +162,10 @@ col = mix(nt, M(nt, 'MULTIPLY', smooth(nt, patch, 0.35, 0.9), 0.95), col, lin((2
 nt.links.new(col, bs.inputs['Base Color'])
 nt.links.new(M(nt, 'MULTIPLY', M(nt, 'SUBTRACT', 1.0, patch), 0.6), nmap.inputs['Strength'])
 # en la piel rehecha, escamas procedurales (bump) para que no quede un parche liso
-vs = N(nt, 'ShaderNodeTexVoronoi'); vs.inputs['Scale'].default_value = 150.0; vs.feature = 'SMOOTH_F1'
+vs = N(nt, 'ShaderNodeTexVoronoi'); vs.inputs['Scale'].default_value = 210.0; vs.feature = 'SMOOTH_F1'
 nt.links.new(tc.outputs['Object'], vs.inputs['Vector'])
 bump = N(nt, 'ShaderNodeBump'); bump.inputs['Distance'].default_value = 0.002
-nt.links.new(M(nt, 'MULTIPLY', patch, 0.35), bump.inputs['Strength']); nt.links.new(vs.outputs['Distance'], bump.inputs['Height'])
+nt.links.new(M(nt, 'MULTIPLY', patch, 0.10), bump.inputs['Strength']); nt.links.new(vs.outputs['Distance'], bump.inputs['Height'])
 nt.links.new(nmap.outputs[0], bump.inputs['Normal']); nt.links.new(bump.outputs[0], bs.inputs['Normal'])
 nt.links.new(col, bs.inputs['Base Color'])
 # 4) piel mojada: capa brillante, plata con algo de iridiscencia en el flanco
