@@ -7,8 +7,8 @@ from mathutils import Vector
 A = sys.argv[sys.argv.index('--') + 1:]
 RESN = int(A[0]); OUT = A[1] if len(A) > 1 else bpy.data.filepath
 sc = bpy.context.scene
-FB = 56; F0, F1 = sc.frame_start, sc.frame_end
-KF = [FB, FB + 10, 150, F1 + 10]; KT = [0.0, 0.20, 0.353, 0.40]
+FB = int(sc['FB']); F0, F1 = sc.frame_start, sc.frame_end
+KF = list(sc['KF']); KT = list(sc['KT'])                                       # misma camara lenta que escena_hielo.py
 def ts(f):
     if f <= FB: return 0.0
     for i in range(len(KF) - 1):
@@ -29,7 +29,7 @@ dom = box('AGUA_dominio', (-2.0, -1.7, -1.05), (3.0, 1.7, 2.3))
 md = dom.modifiers.new('fluido', 'FLUID'); md.fluid_type = 'DOMAIN'; ds = md.domain_settings
 ds.domain_type = 'LIQUID'; ds.resolution_max = RESN; ds.use_mesh = True; ds.use_flip_particles = False
 ds.cache_directory = os.path.join(os.path.dirname(bpy.path.abspath(OUT)) or '.', 'cache_agua'); ds.cache_type = 'ALL'
-ds.cache_frame_start = F0; ds.cache_frame_end = F1
+ds.cache_frame_start = FB - 5; ds.cache_frame_end = F1                  # antes del estallido el agua esta quieta
 ds.mesh_scale = 2; ds.mesh_particle_radius = 1.6; ds.mesh_smoothen_pos = 2; ds.mesh_smoothen_neg = 2
 ds.use_collision_border_top = False
 for f in range(F0, F1 + 1):                                                     # misma camara lenta que el pez
@@ -64,6 +64,8 @@ foam.inputs['Subsurface Weight'].default_value = 1.0; foam.inputs['Subsurface Ra
 ms = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(mr.outputs[0], ms.inputs[0]); nt.links.new(b.outputs[0], ms.inputs[1]); nt.links.new(foam.outputs[0], ms.inputs[2])
 nt.links.new(ms.outputs[0], nt.nodes['Material Output'].inputs[0])
 dom.data.materials.clear(); dom.data.materials.append(m)
+for f, h in ((F0, True), (FB + 10, True), (FB + 11, False)):                   # bajo el agua no se ve la malla (hay volumen)
+    dom.hide_render = h; dom.keyframe_insert('hide_render', frame=f)
 for cn in ('RECIBE_CONTRALUZ',):                                             # el chorro solo recibe el contraluz frio (con la dorada parecia oro fundido)
     c_ = bpy.data.collections.get(cn)
     if c_ and dom.name not in c_.objects: c_.objects.link(dom)

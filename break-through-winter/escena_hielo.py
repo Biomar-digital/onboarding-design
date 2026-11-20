@@ -16,8 +16,8 @@ sc = bpy.context.scene
 for o in list(bpy.data.objects):
     if o.type in ('CAMERA', 'LIGHT'): bpy.data.objects.remove(o)
 rng = random.Random(11)
-FPS, F0, F1 = 25, 1, 200
-FB = 56                                                                           # cuadro en que revienta el hielo
+FPS, F0, F1 = 25, 1, 300                                                          # 12 s: nado bajo el hielo, subida y estallido en camara lenta
+FB = 150                                                                          # cuadro en que revienta el hielo
 sc.render.fps = FPS; sc.frame_start = F0; sc.frame_end = F1
 G = 37.0; sc.gravity = (0, 0, -G)                                                 # 9,8 m/s2 en unidades
 TH = 0.05                                                                         # espesor medio del hielo (~1,3 cm de hielo nuevo)
@@ -31,7 +31,7 @@ C_ICE, C_ENV, C_FX = coll('HIELO'), coll('ENTORNO'), coll('AGUA_FX')
 # salto a 45 grados: el centro del pez sale de (X0, Z0) bajo el hielo y llega al apice en ZAP
 X0, Z0, ZAP, ANG = -0.95, -0.95, 0.72, math.radians(45)
 VZ = math.sqrt(2 * G * (ZAP - Z0)); VX = VZ / math.tan(ANG); TAP = VZ / G
-KF = [FB, FB + 10, 150, F1 + 10]; KT = [0.0, 0.20, TAP, TAP + 0.045]
+KF = [FB, FB + 10, FB + 95, F1 + 10]; KT = [0.0, 0.20, TAP, TAP + 0.045]
 def ts(f):
     if f <= FB: return 0.0
     for i in range(len(KF) - 1):
@@ -90,7 +90,7 @@ blue = mix(wn, 0.78, hs.outputs[0], lin((70, 112, 210)), 'MULTIPLY')            
 wsep = N(wn, 'ShaderNodeSeparateXYZ'); wn.links.new(wtc.outputs['Generated'], wsep.inputs[0])
 zen = smooth(wn, wsep.outputs[2], 0.02, 0.6)                                     # cielo alto mas oscuro
 dark = mix(wn, M(wn, 'MULTIPLY', zen, 0.55), blue, lin((4, 10, 30)), 'MULTIPLY')
-wn.links.new(dark, bg.inputs['Color']); bg.inputs['Strength'].default_value = 0.42
+wn.links.new(dark, bg.inputs['Color']); bg.inputs['Strength'].default_value = 0.52
 
 # ------------------------------------------------------------------ hielo: material fisico (hielo transparente sobre agua negra) con nieve, burbujas y grietas
 ice_c, ice_n, ice_r = img('Ice003_2K-JPG_Color.jpg'), img('Ice003_2K-JPG_NormalGL.jpg', 'Non-Color'), img('Ice003_2K-JPG_Roughness.jpg', 'Non-Color')
@@ -180,7 +180,18 @@ def ice_material(name, sides=False, frost=0.0, trans=0.35, snow_top=0.0):
         nb = N(nt, 'ShaderNodeBump'); nb.inputs['Strength'].default_value = 0.5; nb.inputs['Distance'].default_value = 0.02; nt.links.new(n2.outputs['Fac'], nb.inputs['Height']); nt.links.new(nb.outputs[0], fr2.inputs['Normal'])
         sh4 = N(nt, 'ShaderNodeMixShader'); nt.links.new(side, sh4.inputs[0]); nt.links.new(res, sh4.inputs[1]); nt.links.new(fr2.outputs[0], sh4.inputs[2])
         res = sh4.outputs[0]
-    nt.links.new(res, out.inputs[0])
+    # cara de abajo (vista desde el agua): hielo claro con burbujas plateadas; la nieve de arriba tapa la luz
+    tcb = N(nt, 'ShaderNodeTexCoord'); nbz = N(nt, 'ShaderNodeSeparateXYZ'); nt.links.new(tcb.outputs['Normal'], nbz.inputs[0])
+    under = smooth(nt, nbz.outputs[2], -0.5, -0.8)
+    bot = N(nt, 'ShaderNodeBsdfPrincipled'); bot.inputs['Base Color'].default_value = (*lin((200, 225, 235)), 1); bot.inputs['Roughness'].default_value = 0.06
+    bot.inputs['Transmission Weight'].default_value = 1.0; bot.inputs['IOR'].default_value = 1.31
+    nt.links.new(inorm.outputs[0], bot.inputs['Normal'])
+    silver = N(nt, 'ShaderNodeBsdfPrincipled'); silver.inputs['Base Color'].default_value = (0.9, 0.95, 1.0, 1); silver.inputs['Metallic'].default_value = 0.6; silver.inputs['Roughness'].default_value = 0.15
+    bmx = N(nt, 'ShaderNodeMixShader'); nt.links.new(M(nt, 'MINIMUM', M(nt, 'MULTIPLY', bub, 2.0), 1.0), bmx.inputs[0]); nt.links.new(bot.outputs[0], bmx.inputs[1]); nt.links.new(silver.outputs[0], bmx.inputs[2])
+    snow_dark = N(nt, 'ShaderNodeBsdfDiffuse'); snow_dark.inputs['Color'].default_value = (*lin((70, 90, 100)), 1)   # nieve encima vista desde abajo: sombra
+    bmx2 = N(nt, 'ShaderNodeMixShader'); nt.links.new(M(nt, 'MULTIPLY', snow_m, 0.85), bmx2.inputs[0]); nt.links.new(bmx.outputs[0], bmx2.inputs[1]); nt.links.new(snow_dark.outputs[0], bmx2.inputs[2])
+    fin = N(nt, 'ShaderNodeMixShader'); nt.links.new(under, fin.inputs[0]); nt.links.new(res, fin.inputs[1]); nt.links.new(bmx2.outputs[0], fin.inputs[2])
+    nt.links.new(fin.outputs[0], out.inputs[0])
     return m
 m_ice = ice_material('hielo'); m_cell = ice_material('hielo_placas', sides=True, frost=0.08, trans=1.0, snow_top=0.35)
 def add_pos0(me, off=(0, 0, 0)):
@@ -267,7 +278,7 @@ for o, r0, a0 in cells:
     t_prev = 0.0; landed = False; sunk = False
     for f in range(F0, F1 + 1):
         t = ts(f); dt = t - t_prev; t_prev = t
-        gap = 1.003 - 0.014 * min(1.0, max(0.0, (f - 18) / (FB - 18)))              # las grietas se abren antes de romper
+        gap = 1.003 - 0.014 * min(1.0, max(0.0, (f - (FB - 38)) / 38.0))            # las grietas se abren antes de romper
         if fly and f > FB and not landed and not sunk and dt > 0:
             for _ in range(4):
                 h = dt / 4; v.z -= G * h; p += v * h; rot += wv_ * h
@@ -298,10 +309,11 @@ for f, ph in ((FB, 0.0), (F1, -14.0)): wave.inputs['Phase Offset'].default_value
 wb = N(nt, 'ShaderNodeBump'); wb.inputs['Strength'].default_value = 0.3; nt.links.new(wave.outputs['Fac'], wb.inputs['Height']); nt.links.new(wb.outputs[0], bs.inputs['Normal'])
 me = bpy.data.meshes.new('agua'); bm = bmesh.new(); bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=RF + 0.05); bm.to_mesh(me); bm.free()
 water = obj('AGUA_agujero', me, m_w, C_ICE); water.location.z = -0.035
+for f, h in ((F0, True), (FB, True), (FB + 1, False)): water.hide_render = h; water.keyframe_insert('hide_render', frame=f)   # desde abajo taparia la vista
 me = bpy.data.meshes.new('fondo'); bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=PS); bm.to_mesh(me); bm.free()
 m_deep, nt, bs = new_mat('agua_profunda'); bs.inputs['Base Color'].default_value = (0.0, 0.003, 0.006, 1); bs.inputs['Roughness'].default_value = 0.3
 deep = obj('AGUA_debajo', me, m_deep, C_ICE); deep.location.z = -TH - 0.02
-for f, r in ((1, RF), (18, RF), (34, RF + 0.8), (46, RF + 1.6), (FB, RF + 2.6), (90, RF + 3.4), (F1, RF + 3.6)):
+for f, r in ((1, RF), (FB - 38, RF), (FB - 22, RF + 0.8), (FB - 10, RF + 1.6), (FB, RF + 2.6), (FB + 34, RF + 3.4), (F1, RF + 3.6)):
     for rv in crack_val: rv.outputs[0].default_value = r; rv.outputs[0].keyframe_insert('default_value', frame=f)
 
 # ------------------------------------------------------------------ orilla nevada, abetos reales (Poly Haven) y juncos secos atrapados en el hielo
@@ -371,19 +383,32 @@ for p in me.polygons: p.use_smooth = True
 rig = bpy.data.objects['TRUCHA_rig']; body = bpy.data.objects['TRUCHA_cuerpo']
 names = ['Head'] + [f'Spine{i}' for i in range(1, 9)]
 YAW = Matrix.Rotation(math.radians(-18), 4, 'Z')                                  # un poco de 3/4 hacia la camara
+# antes del estallido: nada bajo el hielo hacia +X, gira hacia arriba y acelera hasta salir a 45 grados (se integra hacia atras desde la salida)
+SWIM = {}; px_, pz_ = X0, Z0
+VEX = math.hypot(VX, VZ)
+for f in range(FB, F0 - 1, -1):
+    head = ANG * max(0.0, min(1.0, (f - (FB - 55)) / 45.0)) ** 1.5                 # gira de horizontal a 45 grados
+    spd = 1.5 + (VEX - 1.5) * max(0.0, 1 - (FB - f) / 14.0) ** 2 + 0.6 * max(0.0, 1 - (FB - f) / 45.0)
+    SWIM[f] = (px_, pz_, head, spd)
+    px_ -= spd / FPS * math.cos(head); pz_ -= spd / FPS * math.sin(head)
+    pz_ += 0.0 if f > FB - 60 else (-1.35 - pz_) * 0.08                           # nado a media agua, bajo el hielo
 for f in range(F0, F1 + 1):
     t = ts(f) if f > FB else 0.0
-    x = X0 + VX * t; z = Z0 + VZ * t - 0.5 * G * t * t
-    phi = 0.30 * math.atan2(VZ - G * t, VX) + 0.70 * ANG                           # el cuerpo queda a ~45 grados, apenas sigue la curva
-    k = min(1.0, t / TAP)
+    if f > FB:
+        x = X0 + VX * t; z = Z0 + VZ * t - 0.5 * G * t * t
+        phi = 0.30 * math.atan2(VZ - G * t, VX) + 0.70 * ANG                       # el cuerpo queda a ~45 grados, apenas sigue la curva
+    else:
+        x, z, phi, spd = SWIM[f]
+        t = (f - FB) / FPS                                                          # tiempo real para el coleteo
+    k = min(1.0, max(0.0, t) / TAP)
     c, s_ = math.cos(phi), math.sin(phi)
     Rm = Matrix(((0, -c, -s_), (1, 0, 0), (0, -s_, c)))                             # columnas: X->(0,1,0), Y->-d, Z->dorso
     rig.location = (x, 0.0, z); rig.rotation_euler = (YAW @ Rm.to_4x4()).to_euler('XYZ', rig.rotation_euler)   # euler continuo
     rig.keyframe_insert('location', frame=f); rig.keyframe_insert('rotation_euler', frame=f)
-    amp = 0.20 * (1 - 0.55 * k) if f > FB - 8 else 0.05
+    amp = 0.20 * (1 - 0.55 * k) if f > FB - 14 else 0.13                              # nado tranquilo, coletazo fuerte al acelerar
     for i, n in enumerate(names[1:], 1):
         pb = rig.pose.bones[n]; s2_ = i / 8.0
-        lat = amp * (0.15 + 0.85 * s2_ * s2_) * math.sin(2 * math.pi * (4.5 * t + 0.35 * i) - 0.3)
+        lat = amp * (0.15 + 0.85 * s2_ * s2_) * math.sin(2 * math.pi * ((4.5 if f > FB - 14 else 2.0) * t + 0.35 * i) - 0.3)
         arch = 0.06 * k * math.sin(math.pi * s2_)                                     # se curva siguiendo el arco
         pb.rotation_euler = (arch, 0.0, lat); pb.keyframe_insert('rotation_euler', frame=f)
     jaw = rig.pose.bones['Jaw']; jaw.rotation_mode = 'XYZ'; jaw.rotation_euler = (0.18 * k, 0, 0); jaw.keyframe_insert('rotation_euler', frame=f)
@@ -419,8 +444,8 @@ ice.modifiers.new('choque', 'COLLISION'); ice.collision.damping = 0.85; ice.coll
 def spot(name, loc, target, energy, color, size, ang):
     l = bpy.data.lights.new(name, 'SPOT'); l.energy = energy; l.color = color; l.spot_size = math.radians(ang); l.spot_blend = 0.7; l.shadow_soft_size = size
     o = obj(name, l, None, C_ENV); o.location = loc; o.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler(); return o
-key = spot('LUZ_llave_dorada', (-3.4, -4.4, 3.2), (0, 0, 1.3), 1800, lin((255, 170, 82)), 0.8, 26)
-rim = spot('LUZ_contra_fria', (1.8, 5.0, 3.0), (0, 0, 1.1), 2600, lin((150, 190, 255)), 0.6, 30)
+key = spot('LUZ_llave_dorada', (-3.4, -4.4, 3.2), (0, 0, 1.3), 2200, lin((255, 170, 82)), 0.8, 26)
+rim = spot('LUZ_contra_fria', (1.8, 5.0, 3.0), (0, 0, 1.1), 3000, lin((150, 190, 255)), 0.6, 30)
 fish_c = bpy.data.collections.new('RECIBE_LLAVE')
 for o in bpy.data.objects:
     if o.name.startswith('TRUCHA_') and o.type == 'MESH': fish_c.objects.link(o)
@@ -436,8 +461,64 @@ cam = obj('CAMARA', bpy.data.cameras.new('CAMARA')); sc.camera = cam; cam.data.l
 cam.data.dof.use_dof = True; cam.data.dof.aperture_fstop = 5.6
 tgt = obj('CAMARA_mira', None); tgt.empty_display_size = 0.2; cam.data.dof.focus_object = tgt
 tc_ = cam.constraints.new('TRACK_TO'); tc_.target = tgt; tc_.track_axis = 'TRACK_NEGATIVE_Z'; tc_.up_axis = 'UP_Y'
-for f, cl, tl in ((F0, (0.4, -9.4, 0.30), (0.2, 0, 0.35)), (FB, (0.7, -8.6, 0.32), (0.6, 0, 0.45)), (110, (1.25, -7.9, 0.36), (1.35, 0, 0.75)), (150, (1.45, -7.7, 0.38), (1.55, 0, 0.82)), (F1, (1.5, -7.65, 0.40), (1.6, 0, 0.82))):
+sc.frame_set(F0)
+def fishpos(f):
+    sc.frame_set(f); return rig.matrix_world.translation.copy()
+FP = {f: fishpos(f) for f in range(F0, F1 + 1)}
+def smoothstep(a, b, x): x = min(1.0, max(0.0, (x - a) / (b - a))); return x * x * (3 - 2 * x)
+END_C, END_T = Vector((1.45, -7.7, 0.38)), Vector((1.55, 0.0, 0.82))
+for f in range(F0, F1 + 1):
+    fp = FP[f]
+    under = fp + Vector((-0.6, -3.0, -0.35))                                        # bajo el agua: al costado y un poco abajo del pez
+    hole = Vector((-0.75, -0.7, 0.05))                                              # pasa por el agujero
+    if f <= FB - 25: cl = under; tl = fp + Vector((0.6, 0, 0.15))
+    elif f <= FB + 12:
+        u = smoothstep(FB - 25, FB + 12, f); cl = under.lerp(hole + Vector((0, 0, -0.35)), u); tl = fp
+    elif f <= FB + 30:
+        u = smoothstep(FB + 12, FB + 30, f); cl = (hole + Vector((0, 0, -0.35))).lerp(hole + Vector((0.1, -0.6, 0.45)), u); tl = fp
+    else:
+        u = smoothstep(FB + 30, F1 - 20, f); cl = (hole + Vector((0.1, -0.6, 0.45))).lerp(END_C, u); tl = fp.lerp(END_T, u * 0.7)
     cam.location = cl; tgt.location = tl; cam.keyframe_insert('location', frame=f); tgt.keyframe_insert('location', frame=f)
+    cam.data.lens = 32 if f <= FB + 12 else 32 + 26 * smoothstep(FB + 30, F1 - 20, f); cam.data.keyframe_insert('lens', frame=f)
+sc['KF'] = KF; sc['KT'] = KT; sc['FB'] = FB
+
+# ------------------------------------------------------------------ bajo el agua: volumen de agua turbia, fondo de barro, juncos, particulas y burbujas bajo el hielo
+m_vol = bpy.data.materials.new('agua_volumen'); m_vol.use_nodes = True; vt = m_vol.node_tree; vt.nodes.clear()
+vo_ = N(vt, 'ShaderNodeOutputMaterial'); pv = N(vt, 'ShaderNodeVolumePrincipled')
+pv.inputs['Color'].default_value = (*lin((120, 170, 160)), 1); pv.inputs['Density'].default_value = 0.12; pv.inputs['Anisotropy'].default_value = 0.65
+pv.inputs['Absorption Color'].default_value = (*lin((40, 95, 100)), 1)
+vt.links.new(pv.outputs[0], vo_.inputs['Volume'])
+me = bpy.data.meshes.new('agua_vol'); bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
+vol = obj('AGUA_volumen', me, m_vol, C_ICE); vol.location = (0, 0, -3.0 - TH / 2 - 0.005); vol.scale = (70, 70, 6.0 - TH - 0.01)
+m_mud, nt, bs = new_mat('barro'); tco = N(nt, 'ShaderNodeTexCoord'); nm_ = N(nt, 'ShaderNodeTexNoise'); nm_.inputs['Scale'].default_value = 0.6; nm_.inputs['Detail'].default_value = 12.0
+nt.links.new(tco.outputs['Object'], nm_.inputs['Vector']); nt.links.new(mix(nt, nm_.outputs['Fac'], lin((30, 32, 22)), lin((70, 66, 46))), bs.inputs['Base Color']); bs.inputs['Roughness'].default_value = 0.9
+mb = N(nt, 'ShaderNodeBump'); mb.inputs['Strength'].default_value = 0.6; nt.links.new(nm_.outputs['Fac'], mb.inputs['Height']); nt.links.new(mb.outputs[0], bs.inputs['Normal'])
+me = bpy.data.meshes.new('fondo_barro'); bm = bmesh.new(); bmesh.ops.create_grid(bm, x_segments=80, y_segments=80, size=35.0)
+for v in bm.verts: v.co.z = 0.35 * mnoise.noise(v.co * 0.25) + 0.08 * mnoise.noise(v.co * 1.7)
+bm.to_mesh(me); bm.free(); mud = obj('AGUA_fondo_barro', me, m_mud, C_ICE); mud.location.z = -5.2
+for p in me.polygons: p.use_smooth = True
+deep.hide_render = True                                                         # el plano negro de abajo ya no hace falta: hay agua de verdad
+me = bpy.data.meshes.new('tallos'); bm = bmesh.new()
+for _ in range(140):                                                            # tallos de juncos desde el fondo hasta el hielo
+    b = Vector((rng.uniform(-16, 10), rng.uniform(-6, 14), -5.1)); stalk(b, rng.uniform(3.0, 5.0), rng.uniform(0.02, 0.15), rng.uniform(0.012, 0.02))
+bm.to_mesh(me); bm.free(); obj('AGUA_tallos', me, m_reed, C_ICE)
+m_sp, nt, bs = new_mat('particulas'); bs.inputs['Base Color'].default_value = (*lin((180, 190, 170)), 1); bs.inputs['Roughness'].default_value = 0.8
+bs.inputs['Emission Color'].default_value = (0.5, 0.6, 0.6, 1); bs.inputs['Emission Strength'].default_value = 0.05
+me = bpy.data.meshes.new('mota'); bm = bmesh.new(); bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1.0); bm.to_mesh(me); bm.free()
+mota = obj('AGUA_mota', me, m_sp, C_FX); mota.location = (0, 0, -80); mota.hide_render = True
+pts = [(rng.uniform(-14, 6), rng.uniform(-7, 3), rng.uniform(-4.8, -0.2)) for _ in range(2500)]
+me = bpy.data.meshes.new('motas'); me.from_pydata(pts, [], []); mo_ = obj('AGUA_motas', me, None, C_FX)
+mo_.instance_type = 'VERTS'; mota.parent = mo_; mota.location = (0, 0, 0); mota.scale = (0.006, 0.006, 0.006); mota.hide_render = False
+bub_pts = [(rng.uniform(-12, 4), rng.uniform(-5, 3), -TH - 0.004) for _ in range(900)]
+m_bu, nt, bs = new_mat('burbuja_aire'); bs.inputs['Base Color'].default_value = (1, 1, 1, 1); bs.inputs['Metallic'].default_value = 0.8; bs.inputs['Roughness'].default_value = 0.05
+me = bpy.data.meshes.new('burbuja'); bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, radius=1.0)
+for v in bm.verts: v.co.z *= 0.25
+bm.to_mesh(me); bm.free(); bu = obj('AGUA_burbuja', me, m_bu, C_FX); bu.hide_render = False
+me = bpy.data.meshes.new('burbujas'); me.from_pydata(bub_pts, [], []); bo_ = obj('AGUA_burbujas_bajo_hielo', me, None, C_FX)
+bo_.instance_type = 'VERTS'; bu.parent = bo_; bu.location = (0, 0, 0); bu.scale = (0.03, 0.03, 0.03)
+# luz de luna/cielo que entra por el hielo (rayos bajo el agua) y suma un poco de luz arriba
+moon = bpy.data.lights.new('LUZ_cielo_alto', 'SUN'); moon.energy = 0.9; moon.color = lin((160, 190, 255)); moon.angle = math.radians(12)
+mo = obj('LUZ_cielo_alto', moon, None, C_ENV); mo.rotation_euler = (math.radians(18), math.radians(-10), 0)
 
 # ------------------------------------------------------------------ render: Cycles
 sc.render.resolution_x, sc.render.resolution_y, sc.render.resolution_percentage = 1080, 1350, 100
@@ -450,6 +531,7 @@ sc.view_settings.view_transform = 'AgX'
 try: sc.view_settings.look = 'AgX - Medium High Contrast'
 except TypeError: pass
 sc.render.image_settings.file_format = 'PNG'; sc.render.filepath = '//render/btw_'
+cy.volume_step_rate = 4.0; cy.volume_max_steps = 256
 bpy.ops.ptcache.bake_all(bake=True)
 bpy.ops.wm.save_as_mainfile(filepath=OUT, compress=True)
 print('ESCENA_OK', OUT, 'placas', len(cells), 'sol', round(math.degrees(a_sun), 1))
